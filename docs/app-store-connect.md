@@ -1,7 +1,6 @@
 # App Store Connect & TestFlight — My Penny
 
-**Preferred path: Xcode Cloud** (same as Void Runner).  
-GitHub Actions archive upload is optional fallback only.
+**Pipeline: Xcode Cloud only** (same as Void Runner). No GitHub Actions upload path.
 
 ## Identifiers
 
@@ -17,46 +16,39 @@ GitHub Actions archive upload is optional fallback only.
 | Primary locale | English (Canada) |
 | Internal TestFlight group | **Internal Testers** (`e2003e1f-f82e-4bd0-85f9-a5dfc4f4cec5`) |
 
-## Recommended: Xcode Cloud (like Void Runner)
+## Xcode Cloud (required for auto TestFlight)
 
-Void Runner (`ApolloX_IOS`) already has an Xcode Cloud product with a **TestFlight** workflow that archives on branch pushes and sends builds to TestFlight.
-
-Penny does **not** have Xcode Cloud enabled yet (no `ciProduct` in App Store Connect). After a one-time enable, every push to `main` can archive and land in TestFlight with **no GitHub Actions secrets and no Mac uploads**.
+Void Runner (`ApolloX_IOS`) already has Xcode Cloud. Penny needs a one-time enable, then every push to `main` archives to TestFlight.
 
 ### One-time setup (App Store Connect or Xcode)
 
-Do this once on your Mac (browser Apple ID login / GitHub OAuth cannot be finished from this Linux agent):
-
 1. Open [App Store Connect](https://appstoreconnect.apple.com) → **My Penny** → **Xcode Cloud**  
-   *(or in Xcode: Product → Xcode Cloud → Create Workflow…)*
-2. **Get Started** / create product for **My Penny**.
-3. Connect the GitHub repo **MayooranThava/penny** (approve the Xcode Cloud GitHub app if asked).
-4. Create a workflow (mirror Void Runner’s **TestFlight** workflow):
+   *(or Xcode: Product → Xcode Cloud → Create Workflow…)*
+2. Get Started / create the product for **My Penny**.
+3. Connect GitHub repo **MayooranThava/penny** (approve the Xcode Cloud GitHub app if asked).
+4. Create a workflow:
    - **Name:** `TestFlight`
-   - **Start condition:** Branch changes → `main` (Void Runner uses `development`; for Penny use `main`)
-   - **Action:** Archive – iOS  
-     - Scheme: `Penny`  
-     - Deployment: **TestFlight and App Store** (or Internal Testing Only if you prefer)
-   - **Post-actions:** TestFlight Internal Testing → group **Internal Testers**  
-     - Optional: add an External Testing post-action later
+   - **Start condition:** Branch changes → `main`
+   - **Action:** Archive – iOS, scheme `Penny`  
+     Deployment: **TestFlight and App Store** (or Internal Testing Only)
+   - **Post-action:** TestFlight Internal Testing → **Internal Testers**
 5. Save → start a first build (or push to `main`).
-
-After that, every commit to `main` produces a new TestFlight build. Internal Testers already have **access to all builds**.
 
 ### External testing
 
 1. Create an External group under TestFlight.
-2. Add an External Testing post-action on the same Xcode Cloud workflow (or a separate release workflow).
-3. First external build of a version still needs **Beta App Review** once.
+2. Add an External Testing post-action (or a separate release workflow).
+3. First external build of a version still needs **Beta App Review**.
 
-## Optional fallback: GitHub Actions
+## Export compliance (encryption question)
 
-Only if you do not want Xcode Cloud. Workflow: [`.github/workflows/testflight.yml`](../.github/workflows/testflight.yml)
+Penny does **not** implement its own crypto (no CryptoKit / custom AES). It only uses encryption already in Apple’s OS (e.g. HTTPS if networking is used).
 
-GitHub secrets: `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_PRIVATE_KEY`  
-Optional: `TESTFLIGHT_EXTERNAL_GROUP_ID`
+**In the App Store Connect dialog, choose:**
 
-Prefer Xcode Cloud when possible — it matches Void Runner and uses Apple’s signing/hosting.
+> **None of the algorithms mentioned above**
+
+The project sets `ITSAppUsesNonExemptEncryption = NO` so future uploads can skip this prompt.
 
 ## Manual Mac upload (rare)
 

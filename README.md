@@ -102,7 +102,17 @@ Core calculation logic was also validated on Linux via `Tools/PennyCoreLogic` (S
 4. Press **Run (⌘R)**.
 5. Choose **Explore with sample data** on first launch to see a populated household.
 
-If signing is required for a physical device, set your Development Team in the Penny target signing settings.
+If signing is required for a physical device, select your Development Team on the Penny target (**Signing & Capabilities**). The project defaults to team `2YJ478267N`.
+
+## TestFlight (internal)
+
+Same pattern as Void Runner:
+
+1. Follow **[docs/app-store-connect.md](docs/app-store-connect.md)** (Bundle ID + one-time app create in ASC).
+2. On a Mac: `./scripts/archive-for-testflight.sh`
+3. Internal testers install from TestFlight after processing.
+
+API helper: `python3 scripts/asc_setup_penny.py status`
 
 Regenerating the Xcode project after adding files:
 

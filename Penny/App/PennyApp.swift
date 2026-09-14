@@ -4,7 +4,6 @@ import SwiftData
 @main
 struct PennyApp: App {
     @State private var session = AppSession()
-<<<<<<< HEAD
     @State private var container: ModelContainer?
     @State private var launchError: String?
     @State private var didStartLaunch = false
@@ -21,33 +20,10 @@ struct PennyApp: App {
             .tint(PennyColors.brand)
             .task {
                 await startIfNeeded()
-=======
-    private let launch: LaunchState
-
-    init() {
-        do {
-            let container = try PennyPersistence.makeContainer()
-            launch = .ready(container)
-        } catch {
-            launch = .failed(error.localizedDescription)
-        }
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            switch launch {
-            case .ready(let container):
-                RootView()
-                    .environment(session)
-                    .modelContainer(container)
-            case .failed(let message):
-                StorageErrorView(message: message)
->>>>>>> origin/main
             }
         }
     }
 
-<<<<<<< HEAD
     @ViewBuilder
     private var content: some View {
         if let launchError {
@@ -94,11 +70,6 @@ struct LaunchSplashView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityLabel("Loading Penny")
-=======
-    private enum LaunchState {
-        case ready(ModelContainer)
-        case failed(String)
->>>>>>> origin/main
     }
 }
 
@@ -181,10 +152,7 @@ struct MainTabView: View {
         .environment(AppSession())
         .modelContainer(PennyPersistence.previewContainer())
 }
-<<<<<<< HEAD
 
 #Preview("Splash") {
     LaunchSplashView()
 }
-=======
->>>>>>> origin/main

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Archive Penny and upload to App Store Connect (TestFlight) from a Mac.
-# Prefer CI on main: .github/workflows/testflight.yml (scripts/ci_testflight.sh).
+# Prefer Xcode Cloud on main (same as Void Runner). This script is a rare manual fallback.
 # Same signing team as Void Runner (ApolloX_IOS).
 set -euo pipefail
 

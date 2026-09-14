@@ -14,8 +14,8 @@ Usage:
 
 Note: Apple's public API cannot CREATE the App Store Connect app record.
 After the Bundle ID exists, create the app once in the ASC website
-(My Apps → + → New App), then uploads via GitHub Actions / scripts/ci_testflight.sh
-appear under TestFlight.
+(My Apps → + → New App). Prefer Xcode Cloud for TestFlight uploads
+(same as Void Runner); use scripts/archive-for-testflight.sh only as a rare Mac fallback.
 """
 
 from __future__ import annotations

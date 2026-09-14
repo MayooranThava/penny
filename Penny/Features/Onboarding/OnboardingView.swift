@@ -136,12 +136,15 @@ struct OnboardingView: View {
             }
             .padding(PennySpacing.screenPadding)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .pennyKeyboardDone()
     }
 
     private var bottomControls: some View {
         VStack(spacing: PennySpacing.sm) {
             if page < 3 {
                 Button("Continue") {
+                    Keyboard.dismiss()
                     withAnimation(PennyAnimation.prefer(PennyAnimation.standard, reduceMotion: reduceMotion)) {
                         page += 1
                     }
@@ -175,6 +178,7 @@ struct OnboardingView: View {
     }
 
     private func finish(useDemo: Bool) {
+        Keyboard.dismiss()
         isWorking = true
         let income = Decimal.from(incomeText) ?? (useDemo ? DemoDataService.demoMonthlyIncome : 0)
         let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -183,7 +187,8 @@ struct OnboardingView: View {
                 try DemoDataService.seedDemo(
                     in: modelContext,
                     currencyCode: currency.rawValue,
-                    markOnboardingComplete: true
+                    markOnboardingComplete: true,
+                    replaceExisting: true
                 )
                 if let settings = try modelContext.fetch(FetchDescriptor<UserSettings>()).first {
                     settings.monthlyIncome = income > 0 ? income : DemoDataService.demoMonthlyIncome
@@ -197,7 +202,8 @@ struct OnboardingView: View {
                     in: modelContext,
                     currencyCode: currency.rawValue,
                     monthlyIncome: income,
-                    displayName: name
+                    displayName: name,
+                    replaceExisting: true
                 )
             }
             try modelContext.save()

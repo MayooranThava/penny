@@ -53,6 +53,8 @@ struct GoalsPlanView: View {
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
     @State private var showAdd = false
+    @State private var editingGoal: SavingsGoal?
+    @State private var pendingDelete: SavingsGoal?
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
 
@@ -68,36 +70,46 @@ struct GoalsPlanView: View {
                     ) { showAdd = true }
                 } else {
                     ForEach(goals, id: \.id) { goal in
-                        PennyCard {
-                            VStack(alignment: .leading, spacing: PennySpacing.sm) {
-                                GoalProgressView(
-                                    name: goal.name,
-                                    current: goal.currentAmount,
-                                    target: goal.targetAmount,
-                                    currencyCode: currency,
-                                    icon: goal.icon,
-                                    colourIdentifier: goal.colourIdentifier,
-                                    estimatedCompletion: goal.targetDate ?? FinanceCalculator.estimatedCompletionDate(
+                        Button {
+                            editingGoal = goal
+                        } label: {
+                            PennyCard {
+                                VStack(alignment: .leading, spacing: PennySpacing.sm) {
+                                    GoalProgressView(
+                                        name: goal.name,
                                         current: goal.currentAmount,
                                         target: goal.targetAmount,
-                                        monthlyContribution: (settingsList.first?.plannedMonthlySavings ?? 500) / Decimal(max(goals.count, 1))
+                                        currencyCode: currency,
+                                        icon: goal.icon,
+                                        colourIdentifier: goal.colourIdentifier,
+                                        estimatedCompletion: goal.targetDate ?? FinanceCalculator.estimatedCompletionDate(
+                                            current: goal.currentAmount,
+                                            target: goal.targetAmount,
+                                            monthlyContribution: (settingsList.first?.plannedMonthlySavings ?? 500) / Decimal(max(goals.count, 1))
+                                        )
                                     )
-                                )
-                                if let target = goal.targetDate,
-                                   let required = FinanceCalculator.requiredMonthlySavings(
-                                    current: goal.currentAmount,
-                                    target: goal.targetAmount,
-                                    targetDate: target
-                                   ), required > 0 {
-                                    Text("To reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target)), save about \(MoneyFormatters.compact(from: required, currencyCode: currency))/month.")
-                                        .font(PennyTypography.caption)
-                                        .foregroundStyle(PennyColors.textSecondary)
+                                    if let target = goal.targetDate,
+                                       let required = FinanceCalculator.requiredMonthlySavings(
+                                        current: goal.currentAmount,
+                                        target: goal.targetAmount,
+                                        targetDate: target
+                                       ), required > 0 {
+                                        Text("To reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target)), save about \(MoneyFormatters.compact(from: required, currencyCode: currency))/month.")
+                                            .font(PennyTypography.caption)
+                                            .foregroundStyle(PennyColors.textSecondary)
+                                    }
                                 }
                             }
                         }
+                        .buttonStyle(.plain)
                         .contextMenu {
+                            Button {
+                                editingGoal = goal
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
                             Button(role: .destructive) {
-                                modelContext.delete(goal)
+                                pendingDelete = goal
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -118,12 +130,44 @@ struct GoalsPlanView: View {
         .sheet(isPresented: $showAdd) {
             AddGoalView()
         }
+        .sheet(isPresented: Binding(
+            get: { editingGoal != nil },
+            set: { if !$0 { editingGoal = nil } }
+        )) {
+            if let editingGoal {
+                AddGoalView(goal: editingGoal)
+            }
+        }
+        .confirmationDialog(
+            "Delete goal?",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let pendingDelete {
+                    modelContext.delete(pendingDelete)
+                    try? modelContext.save()
+                    Haptics.warning()
+                }
+                pendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: {
+            if let pendingDelete {
+                Text("Remove “\(pendingDelete.name)”? This can’t be undone.")
+            }
+        }
     }
 }
 
 struct AddGoalView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+
+    var goal: SavingsGoal? = nil
 
     @State private var name = ""
     @State private var targetText = ""
@@ -132,6 +176,7 @@ struct AddGoalView: View {
     @State private var targetDate = Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? .now
     @State private var icon = "target"
     @State private var selectedPreset: String?
+    @State private var didLoadExisting = false
 
     private let presets: [(String, String)] = [
         ("Emergency Fund", "shield.fill"),
@@ -141,6 +186,8 @@ struct AddGoalView: View {
         ("Wedding", "heart.fill"),
         ("Education", "graduationcap.fill")
     ]
+
+    private var isEditing: Bool { goal != nil }
 
     var body: some View {
         NavigationStack {
@@ -181,28 +228,59 @@ struct AddGoalView: View {
                     }
                 }
             }
-            .navigationTitle("New Goal")
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle(isEditing ? "Edit Goal" : "New Goal")
+            .pennyKeyboardDone()
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        Keyboard.dismiss()
+                        dismiss()
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
                         .disabled(name.isEmpty || Decimal.from(targetText) == nil)
                 }
             }
+            .onAppear { loadExistingIfNeeded() }
         }
     }
 
+    private func loadExistingIfNeeded() {
+        guard !didLoadExisting, let goal else { return }
+        didLoadExisting = true
+        name = goal.name
+        targetText = NSDecimalNumber(decimal: goal.targetAmount).stringValue
+        currentText = NSDecimalNumber(decimal: goal.currentAmount).stringValue
+        hasTargetDate = goal.targetDate != nil
+        targetDate = goal.targetDate ?? targetDate
+        icon = goal.icon
+        selectedPreset = presets.first { $0.1 == goal.icon }?.0
+    }
+
     private func save() {
+        Keyboard.dismiss()
         guard let target = Decimal.from(targetText), target > 0 else { return }
         let current = Decimal.from(currentText) ?? 0
-        let goal = SavingsGoal(
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-            targetAmount: target,
-            currentAmount: max(0, current),
-            targetDate: hasTargetDate ? targetDate : nil,
-            icon: icon
-        )
-        modelContext.insert(goal)
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let goal {
+            goal.name = trimmed
+            goal.targetAmount = target
+            goal.currentAmount = max(0, current)
+            goal.targetDate = hasTargetDate ? targetDate : nil
+            goal.icon = icon
+        } else {
+            let goal = SavingsGoal(
+                name: trimmed,
+                targetAmount: target,
+                currentAmount: max(0, current),
+                targetDate: hasTargetDate ? targetDate : nil,
+                icon: icon
+            )
+            modelContext.insert(goal)
+        }
         try? modelContext.save()
         Haptics.success()
         dismiss()
@@ -217,6 +295,8 @@ struct BillsPlanView: View {
     private var bills: [RecurringBill]
     @Query private var settingsList: [UserSettings]
     @State private var showAdd = false
+    @State private var editingBill: RecurringBill?
+    @State private var pendingDelete: RecurringBill?
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
     private var monthlyTotal: Decimal {
@@ -253,20 +333,30 @@ struct BillsPlanView: View {
                     PennyCard {
                         VStack(spacing: PennySpacing.md) {
                             ForEach(bills, id: \.id) { bill in
-                                BillRow(
-                                    name: bill.name,
-                                    dueDate: bill.nextDueDate,
-                                    amount: bill.amount,
-                                    currencyCode: currency,
-                                    icon: bill.icon,
-                                    categoryName: bill.categoryName,
-                                    recurrenceLabel: bill.recurrence.displayName
-                                )
+                                Button {
+                                    editingBill = bill
+                                } label: {
+                                    BillRow(
+                                        name: bill.name,
+                                        dueDate: bill.nextDueDate,
+                                        amount: bill.amount,
+                                        currencyCode: currency,
+                                        icon: bill.icon,
+                                        categoryName: bill.categoryName,
+                                        recurrenceLabel: bill.recurrence.displayName
+                                    )
+                                }
+                                .buttonStyle(.plain)
                                 .contextMenu {
-                                    Button(role: .destructive) {
-                                        bill.isActive = false
+                                    Button {
+                                        editingBill = bill
                                     } label: {
-                                        Label("Remove", systemImage: "trash")
+                                        Label("Edit", systemImage: "pencil")
+                                    }
+                                    Button(role: .destructive) {
+                                        pendingDelete = bill
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
                                     }
                                 }
                                 if bill.id != bills.last?.id { Divider() }
@@ -288,6 +378,36 @@ struct BillsPlanView: View {
         .sheet(isPresented: $showAdd) {
             AddBillView()
         }
+        .sheet(isPresented: Binding(
+            get: { editingBill != nil },
+            set: { if !$0 { editingBill = nil } }
+        )) {
+            if let editingBill {
+                AddBillView(bill: editingBill)
+            }
+        }
+        .confirmationDialog(
+            "Delete bill?",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let pendingDelete {
+                    pendingDelete.isActive = false
+                    try? modelContext.save()
+                    Haptics.warning()
+                }
+                pendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: {
+            if let pendingDelete {
+                Text("Remove “\(pendingDelete.name)” from your recurring bills?")
+            }
+        }
     }
 }
 
@@ -295,12 +415,17 @@ struct AddBillView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    var bill: RecurringBill? = nil
+
     @State private var name = ""
     @State private var amountText = ""
     @State private var recurrence: BillRecurrence = .monthly
     @State private var startDate = Date.now
     @State private var dueDay = Calendar.current.component(.day, from: .now)
     @State private var category = "Subscriptions"
+    @State private var didLoadExisting = false
+
+    private var isEditing: Bool { bill != nil }
 
     var body: some View {
         NavigationStack {
@@ -332,14 +457,22 @@ struct AddBillView: View {
                     }
                 }
             }
-            .navigationTitle("New Bill")
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle(isEditing ? "Edit Bill" : "New Bill")
+            .pennyKeyboardDone()
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        Keyboard.dismiss()
+                        dismiss()
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
                         .disabled(name.isEmpty || Decimal.from(amountText) == nil)
                 }
             }
+            .onAppear { loadExistingIfNeeded() }
         }
     }
 
@@ -351,7 +484,19 @@ struct AddBillView: View {
         return "Repeats every \(recurrence == .weekly ? "week" : "two weeks") on \(formatter.string(from: startDate))"
     }
 
+    private func loadExistingIfNeeded() {
+        guard !didLoadExisting, let bill else { return }
+        didLoadExisting = true
+        name = bill.name
+        amountText = NSDecimalNumber(decimal: bill.amount).stringValue
+        recurrence = bill.recurrence
+        startDate = bill.startDate
+        dueDay = bill.dueDay
+        category = bill.categoryName
+    }
+
     private func save() {
+        Keyboard.dismiss()
         guard let amount = Decimal.from(amountText), amount > 0 else { return }
         let day = clampedDueDay
         let next = DateHelpers.nextDueDate(
@@ -359,17 +504,31 @@ struct AddBillView: View {
             recurrence: recurrence,
             dueDay: day
         )
-        let bill = RecurringBill(
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-            amount: amount,
-            dueDay: day,
-            categoryName: category,
-            recurrence: recurrence,
-            nextDueDate: next,
-            startDate: startDate,
-            icon: CategoryCatalog.icon(for: category)
-        )
-        modelContext.insert(bill)
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let icon = CategoryCatalog.icon(for: category)
+
+        if let bill {
+            bill.name = trimmed
+            bill.amount = amount
+            bill.dueDay = day
+            bill.categoryName = category
+            bill.recurrence = recurrence
+            bill.nextDueDate = next
+            bill.startDate = startDate
+            bill.icon = icon
+        } else {
+            let bill = RecurringBill(
+                name: trimmed,
+                amount: amount,
+                dueDay: day,
+                categoryName: category,
+                recurrence: recurrence,
+                nextDueDate: next,
+                startDate: startDate,
+                icon: icon
+            )
+            modelContext.insert(bill)
+        }
         try? modelContext.save()
         Haptics.success()
         dismiss()
@@ -383,6 +542,8 @@ struct DebtPlanView: View {
     @Query(sort: \Debt.name) private var debts: [Debt]
     @Query private var settingsList: [UserSettings]
     @State private var showAdd = false
+    @State private var editingDebt: Debt?
+    @State private var pendingDelete: Debt?
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
 
@@ -398,14 +559,24 @@ struct DebtPlanView: View {
                     ) { showAdd = true }
                 } else {
                     ForEach(debts, id: \.id) { debt in
-                        DebtCard(debt: debt, currencyCode: currency)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(debt)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
+                        Button {
+                            editingDebt = debt
+                        } label: {
+                            DebtCard(debt: debt, currencyCode: currency)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                editingDebt = debt
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
                             }
+                            Button(role: .destructive) {
+                                pendingDelete = debt
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
                 Button {
@@ -420,6 +591,36 @@ struct DebtPlanView: View {
         }
         .sheet(isPresented: $showAdd) {
             AddDebtView()
+        }
+        .sheet(isPresented: Binding(
+            get: { editingDebt != nil },
+            set: { if !$0 { editingDebt = nil } }
+        )) {
+            if let editingDebt {
+                AddDebtView(debt: editingDebt)
+            }
+        }
+        .confirmationDialog(
+            "Delete debt?",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let pendingDelete {
+                    modelContext.delete(pendingDelete)
+                    try? modelContext.save()
+                    Haptics.warning()
+                }
+                pendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: {
+            if let pendingDelete {
+                Text("Remove “\(pendingDelete.name)”? This can’t be undone.")
+            }
         }
     }
 }
@@ -490,11 +691,16 @@ struct AddDebtView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    var debt: Debt? = nil
+
     @State private var name = ""
     @State private var balanceText = ""
     @State private var rateText = "19.99"
     @State private var paymentText = ""
     @State private var minimumText = ""
+    @State private var didLoadExisting = false
+
+    private var isEditing: Bool { debt != nil }
 
     var body: some View {
         NavigationStack {
@@ -505,31 +711,60 @@ struct AddDebtView: View {
                 TextField("Minimum payment", text: $minimumText).keyboardType(.decimalPad)
                 TextField("Planned monthly payment", text: $paymentText).keyboardType(.decimalPad)
             }
-            .navigationTitle("New Debt")
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle(isEditing ? "Edit Debt" : "New Debt")
+            .pennyKeyboardDone()
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        Keyboard.dismiss()
+                        dismiss()
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
                         .disabled(name.isEmpty || Decimal.from(balanceText) == nil)
                 }
             }
+            .onAppear { loadExistingIfNeeded() }
         }
     }
 
+    private func loadExistingIfNeeded() {
+        guard !didLoadExisting, let debt else { return }
+        didLoadExisting = true
+        name = debt.name
+        balanceText = NSDecimalNumber(decimal: debt.currentBalance).stringValue
+        rateText = NSDecimalNumber(decimal: debt.interestRate).stringValue
+        minimumText = NSDecimalNumber(decimal: debt.minimumPayment).stringValue
+        paymentText = NSDecimalNumber(decimal: debt.plannedMonthlyPayment).stringValue
+    }
+
     private func save() {
+        Keyboard.dismiss()
         guard let balance = Decimal.from(balanceText), balance >= 0 else { return }
         let rate = Decimal.from(rateText) ?? 0
         let minimum = Decimal.from(minimumText) ?? 0
         let payment = Decimal.from(paymentText) ?? minimum
-        let debt = Debt(
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-            originalBalance: balance,
-            currentBalance: balance,
-            interestRate: rate,
-            minimumPayment: minimum,
-            plannedMonthlyPayment: payment
-        )
-        modelContext.insert(debt)
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let debt {
+            debt.name = trimmed
+            debt.currentBalance = balance
+            debt.interestRate = rate
+            debt.minimumPayment = minimum
+            debt.plannedMonthlyPayment = payment
+        } else {
+            let debt = Debt(
+                name: trimmed,
+                originalBalance: balance,
+                currentBalance: balance,
+                interestRate: rate,
+                minimumPayment: minimum,
+                plannedMonthlyPayment: payment
+            )
+            modelContext.insert(debt)
+        }
         try? modelContext.save()
         Haptics.success()
         dismiss()
@@ -553,7 +788,11 @@ struct ForecastPlanView: View {
             .reduce(0) { $0 + $1.balance }
     }
 
-    private var recurring: Decimal { bills.reduce(0) { $0 + $1.amount } }
+    private var recurring: Decimal {
+        bills.reduce(0) {
+            $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
+        }
+    }
 
     private var averageDiscretionary: Decimal {
         let monthStart = DateHelpers.startOfMonth(for: session.selectedMonth)

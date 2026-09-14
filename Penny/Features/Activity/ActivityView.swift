@@ -10,6 +10,8 @@ struct ActivityView: View {
     @State private var searchText = ""
     @State private var filter: ActivityFilter = .all
     @State private var categoryFilter: String? = nil
+    @State private var editingTransaction: Transaction?
+    @State private var pendingDelete: Transaction?
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
 
@@ -76,18 +78,40 @@ struct ActivityView: View {
                         ForEach(grouped, id: \.date) { group in
                             Section {
                                 ForEach(group.items, id: \.id) { tx in
-                                    TransactionRow(
-                                        title: tx.title,
-                                        categoryName: tx.categoryName,
-                                        amount: tx.amount,
-                                        type: tx.transactionType,
-                                        currencyCode: currency
-                                    )
+                                    Button {
+                                        editingTransaction = tx
+                                    } label: {
+                                        TransactionRow(
+                                            title: tx.title,
+                                            categoryName: tx.categoryName,
+                                            amount: tx.amount,
+                                            type: tx.transactionType,
+                                            currencyCode: currency
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
                                     .listRowBackground(PennyColors.surface)
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
-                                            modelContext.delete(tx)
-                                            Haptics.warning()
+                                            pendingDelete = tx
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                        Button {
+                                            editingTransaction = tx
+                                        } label: {
+                                            Label("Edit", systemImage: "pencil")
+                                        }
+                                        .tint(PennyColors.brand)
+                                    }
+                                    .contextMenu {
+                                        Button {
+                                            editingTransaction = tx
+                                        } label: {
+                                            Label("Edit", systemImage: "pencil")
+                                        }
+                                        Button(role: .destructive) {
+                                            pendingDelete = tx
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -116,6 +140,38 @@ struct ActivityView: View {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel("Add transaction")
+                }
+            }
+            .sheet(isPresented: Binding(
+                get: { editingTransaction != nil },
+                set: { if !$0 { editingTransaction = nil } }
+            )) {
+                if let editingTransaction {
+                    AddTransactionView(transaction: editingTransaction)
+                }
+            }
+            .confirmationDialog(
+                "Delete transaction?",
+                isPresented: Binding(
+                    get: { pendingDelete != nil },
+                    set: { if !$0 { pendingDelete = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let pendingDelete {
+                        modelContext.delete(pendingDelete)
+                        try? modelContext.save()
+                        Haptics.warning()
+                    }
+                    pendingDelete = nil
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingDelete = nil
+                }
+            } message: {
+                if let pendingDelete {
+                    Text("Remove “\(pendingDelete.title)” from Activity? This can’t be undone.")
                 }
             }
         }
@@ -204,7 +260,7 @@ struct FilterChip: View {
     }
 }
 
-// MARK: - Add Transaction
+// MARK: - Add / Edit Transaction
 
 struct AddTransactionView: View {
     @Environment(\.modelContext) private var modelContext
@@ -213,6 +269,8 @@ struct AddTransactionView: View {
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
     @Query private var settingsList: [UserSettings]
 
+    var transaction: Transaction? = nil
+
     @State private var amountText = ""
     @State private var type: TransactionType = .expense
     @State private var categoryName = "Food"
@@ -220,9 +278,11 @@ struct AddTransactionView: View {
     @State private var note = ""
     @State private var date = Date.now
     @State private var showValidation = false
+    @State private var didLoadExisting = false
     @FocusState private var amountFocused: Bool
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
+    private var isEditing: Bool { transaction != nil }
 
     private var parsedAmount: Decimal? {
         Decimal.from(amountText)
@@ -249,12 +309,17 @@ struct AddTransactionView: View {
                 }
                 .padding(PennySpacing.screenPadding)
             }
+            .scrollDismissesKeyboard(.interactively)
             .background(PennyColors.background.ignoresSafeArea())
-            .navigationTitle("Add Transaction")
+            .navigationTitle(isEditing ? "Edit Transaction" : "Add Transaction")
             .navigationBarTitleDisplayMode(.inline)
+            .pennyKeyboardDone()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        Keyboard.dismiss()
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
@@ -263,17 +328,31 @@ struct AddTransactionView: View {
                 }
             }
             .onAppear {
-                if categories.contains(where: { $0.name == "Food" }) {
-                    categoryName = "Food"
-                } else if let first = categories.first {
-                    categoryName = first.name
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    amountFocused = true
+                loadExistingIfNeeded()
+                if !isEditing {
+                    if categories.contains(where: { $0.name == "Food" }) {
+                        categoryName = "Food"
+                    } else if let first = categories.first {
+                        categoryName = first.name
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        amountFocused = true
+                    }
                 }
             }
         }
         .presentationDetents([.large])
+    }
+
+    private func loadExistingIfNeeded() {
+        guard !didLoadExisting, let transaction else { return }
+        didLoadExisting = true
+        amountText = NSDecimalNumber(decimal: transaction.amount).stringValue
+        type = transaction.transactionType
+        categoryName = transaction.categoryName
+        title = transaction.title
+        note = transaction.note
+        date = transaction.date
     }
 
     private var amountField: some View {
@@ -411,6 +490,8 @@ struct AddTransactionView: View {
     }
 
     private func save() {
+        Keyboard.dismiss()
+        amountFocused = false
         guard let amount = parsedAmount, amount > 0 else {
             showValidation = true
             return
@@ -421,15 +502,25 @@ struct AddTransactionView: View {
             return
         }
 
-        let tx = Transaction(
-            title: trimmed,
-            amount: amount,
-            date: date,
-            transactionType: type,
-            categoryName: categoryName,
-            note: note.trimmingCharacters(in: .whitespacesAndNewlines)
-        )
-        modelContext.insert(tx)
+        if let transaction {
+            transaction.title = trimmed
+            transaction.amount = amount
+            transaction.date = date
+            transaction.transactionType = type
+            transaction.categoryName = categoryName
+            transaction.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            let tx = Transaction(
+                title: trimmed,
+                amount: amount,
+                date: date,
+                transactionType: type,
+                categoryName: categoryName,
+                note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+            modelContext.insert(tx)
+        }
+
         do {
             try modelContext.save()
             Haptics.success()

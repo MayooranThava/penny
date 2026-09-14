@@ -7,7 +7,6 @@ struct BudgetView: View {
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Query private var settingsList: [UserSettings]
-    @Query private var budgets: [Budget]
 
     @State private var selectedCategoryID: UUID?
 
@@ -23,8 +22,7 @@ struct BudgetView: View {
     }
 
     private var planned: Decimal {
-        budgets.first(where: { DateHelpers.isSameMonth($0.monthStart, session.selectedMonth) })?.plannedSpending
-            ?? categories.filter { $0.name != "Savings" }.reduce(0) { $0 + $1.budgetedAmount }
+        BudgetPlanning.plannedSpending(from: categories)
     }
 
     private var spent: Decimal {
@@ -245,6 +243,7 @@ struct CategoryDetailView: View {
 
     @State private var budgetText: String = ""
     @State private var isEditing = false
+    @Query(sort: \BudgetCategory.sortOrder) private var allCategories: [BudgetCategory]
 
     private var monthTx: [Transaction] {
         transactions.filter {
@@ -292,9 +291,15 @@ struct CategoryDetailView: View {
                                         .padding()
                                         .background(RoundedRectangle(cornerRadius: 12).fill(PennyColors.secondarySurface))
                                     Button("Save") {
+                                        Keyboard.dismiss()
                                         if let value = Decimal.from(budgetText), value >= 0 {
                                             category.budgetedAmount = value
                                             try? modelContext.save()
+                                            BudgetPlanning.syncMonthEnvelope(
+                                                in: modelContext,
+                                                categories: allCategories,
+                                                month: month
+                                            )
                                             isEditing = false
                                             Haptics.success()
                                         }
@@ -333,16 +338,21 @@ struct CategoryDetailView: View {
             .background(PennyColors.background.ignoresSafeArea())
             .navigationTitle(category.name)
             .navigationBarTitleDisplayMode(.inline)
+            .pennyKeyboardDone()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        Keyboard.dismiss()
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(isEditing ? "Cancel" : "Edit") {
                         if isEditing {
+                            Keyboard.dismiss()
                             isEditing = false
                         } else {
-                            budgetText = "\(category.budgetedAmount)"
+                            budgetText = NSDecimalNumber(decimal: category.budgetedAmount).stringValue
                             isEditing = true
                         }
                     }

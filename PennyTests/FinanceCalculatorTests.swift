@@ -56,6 +56,17 @@ struct FinanceCalculatorTests {
         #expect(FinanceCalculator.budgetHealth(budgeted: 100, spent: 50) == .healthy)
         #expect(FinanceCalculator.budgetHealth(budgeted: 100, spent: 90) == .nearLimit)
         #expect(FinanceCalculator.budgetHealth(budgeted: 100, spent: 120) == .overBudget)
+        #expect(FinanceCalculator.budgetHealth(budgeted: 0, spent: 10) == .overBudget)
+        #expect(FinanceCalculator.budgetHealth(budgeted: 100, spent: 10) == .healthy)
+    }
+
+    @Test("Decimal parsing accepts currency pasted values")
+    func decimalParsing() {
+        #expect(Decimal.from("100") == 100)
+        #expect(Decimal.from("$100") == 100)
+        #expect(Decimal.from("1,000.50") == Decimal(string: "1000.50"))
+        #expect(Decimal.from("  $10.00  ") == 10)
+        #expect(Decimal.from("") == nil)
     }
 
     @Test("Goal progress clamps and remaining")

@@ -82,3 +82,7 @@ python3 scripts/asc_setup_penny.py status
 
 - Do not commit `.p8` keys
 - Rotate any Admin key that was pasted into chat
+
+## Local data across builds
+
+See [data-persistence.md](./data-persistence.md). Short version: updating TestFlight/App Store builds **keeps** on-device SwiftData. Deleting the app or using Settings → Reset/Delete is what clears it.

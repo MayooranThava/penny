@@ -11,9 +11,11 @@ struct HomeView: View {
     @Query(sort: \Debt.name) private var debts: [Debt]
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
-    @Query private var budgets: [Budget]
 
     @Environment(AppSession.self) private var session
+    @State private var editingBill: RecurringBill?
+    @State private var editingDebt: Debt?
+    @State private var editingGoal: SavingsGoal?
 
     private var settings: UserSettings? { settingsList.first }
     private var currency: String { settings?.currencyCode ?? "CAD" }
@@ -65,13 +67,10 @@ struct HomeView: View {
             .reduce(Decimal(0)) { $0 + $1.amount }
     }
 
+    /// Always derived from category budgets — the monthly `Budget` row can lag
+    /// after a user edits a single category (which caused "$10 of $1" on Home).
     private var plannedSpending: Decimal {
-        if let budget = budgets.first(where: { DateHelpers.isSameMonth($0.monthStart, session.selectedMonth) }) {
-            return budget.plannedSpending
-        }
-        return categories
-            .filter { $0.name != "Savings" }
-            .reduce(Decimal(0)) { $0 + $1.budgetedAmount }
+        BudgetPlanning.plannedSpending(from: categories)
     }
 
     private struct UpcomingItem: Identifiable {
@@ -193,6 +192,30 @@ struct HomeView: View {
             .onAppear { publishWidgetSnapshot() }
             .onChange(of: breakdown.safeToSpend) { _, _ in publishWidgetSnapshot() }
             .onChange(of: upcomingItems.first?.id) { _, _ in publishWidgetSnapshot() }
+            .sheet(isPresented: Binding(
+                get: { editingBill != nil },
+                set: { if !$0 { editingBill = nil } }
+            )) {
+                if let editingBill {
+                    AddBillView(bill: editingBill)
+                }
+            }
+            .sheet(isPresented: Binding(
+                get: { editingDebt != nil },
+                set: { if !$0 { editingDebt = nil } }
+            )) {
+                if let editingDebt {
+                    AddDebtView(debt: editingDebt)
+                }
+            }
+            .sheet(isPresented: Binding(
+                get: { editingGoal != nil },
+                set: { if !$0 { editingGoal = nil } }
+            )) {
+                if let editingGoal {
+                    AddGoalView(goal: editingGoal)
+                }
+            }
         }
     }
 
@@ -336,16 +359,24 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: PennySpacing.sm) {
             SectionHeader(title: "Spending this month")
             PennyCard {
-                ProgressCard(
-                    title: DateHelpers.monthName(for: session.selectedMonth),
-                    spent: monthExpenses,
-                    budget: max(plannedSpending, 1),
-                    currencyCode: currency,
-                    health: FinanceCalculator.budgetHealth(
-                        budgeted: plannedSpending,
-                        spent: monthExpenses
+                if plannedSpending <= 0 {
+                    EmptyStateView(
+                        symbol: "chart.pie",
+                        title: "No spending budget yet",
+                        message: "Set category budgets in Budget to track how this month is going."
                     )
-                )
+                } else {
+                    ProgressCard(
+                        title: DateHelpers.monthName(for: session.selectedMonth),
+                        spent: monthExpenses,
+                        budget: plannedSpending,
+                        currencyCode: currency,
+                        health: FinanceCalculator.budgetHealth(
+                            budgeted: plannedSpending,
+                            spent: monthExpenses
+                        )
+                    )
+                }
             }
         }
     }
@@ -365,27 +396,41 @@ struct HomeView: View {
                 PennyCard {
                     VStack(spacing: PennySpacing.md) {
                         ForEach(upcomingItems) { item in
-                            HStack(spacing: PennySpacing.sm) {
-                                CategoryIcon(
-                                    icon: item.icon,
-                                    colourIdentifier: item.kind == .debt ? "debt" : "subscriptions"
-                                )
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.name)
-                                        .font(PennyTypography.bodyEmphasized)
-                                        .foregroundStyle(PennyColors.textPrimary)
-                                    Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
-                                        .font(PennyTypography.caption)
-                                        .foregroundStyle(PennyColors.textSecondary)
+                            Button {
+                                switch item.kind {
+                                case .bill:
+                                    editingBill = bills.first { "bill-\($0.id.uuidString)" == item.id }
+                                case .debt:
+                                    editingDebt = debts.first { "debt-\($0.id.uuidString)" == item.id }
                                 }
-                                Spacer()
-                                MoneyText(
-                                    amount: item.amount,
-                                    currencyCode: currency,
-                                    font: PennyTypography.smallAmount
-                                )
+                            } label: {
+                                HStack(spacing: PennySpacing.sm) {
+                                    CategoryIcon(
+                                        icon: item.icon,
+                                        colourIdentifier: item.kind == .debt ? "debt" : "subscriptions"
+                                    )
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.name)
+                                            .font(PennyTypography.bodyEmphasized)
+                                            .foregroundStyle(PennyColors.textPrimary)
+                                        Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
+                                            .font(PennyTypography.caption)
+                                            .foregroundStyle(PennyColors.textSecondary)
+                                    }
+                                    Spacer()
+                                    MoneyText(
+                                        amount: item.amount,
+                                        currencyCode: currency,
+                                        font: PennyTypography.smallAmount
+                                    )
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(PennyColors.textTertiary)
+                                }
                             }
+                            .buttonStyle(.plain)
                             .accessibilityElement(children: .combine)
+                            .accessibilityHint("Double tap to edit")
                             if item.id != upcomingItems.last?.id {
                                 Divider()
                             }
@@ -411,18 +456,23 @@ struct HomeView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: PennySpacing.sm) {
                         ForEach(goals, id: \.id) { goal in
-                            PennyCard {
-                                GoalProgressView(
-                                    name: goal.name,
-                                    current: goal.currentAmount,
-                                    target: goal.targetAmount,
-                                    currencyCode: currency,
-                                    icon: goal.icon,
-                                    colourIdentifier: goal.colourIdentifier,
-                                    estimatedCompletion: estimatedCompletion(for: goal),
-                                    compact: true
-                                )
+                            Button {
+                                editingGoal = goal
+                            } label: {
+                                PennyCard {
+                                    GoalProgressView(
+                                        name: goal.name,
+                                        current: goal.currentAmount,
+                                        target: goal.targetAmount,
+                                        currencyCode: currency,
+                                        icon: goal.icon,
+                                        colourIdentifier: goal.colourIdentifier,
+                                        estimatedCompletion: estimatedCompletion(for: goal),
+                                        compact: true
+                                    )
+                                }
                             }
+                            .buttonStyle(.plain)
                             .frame(width: 220)
                         }
                     }

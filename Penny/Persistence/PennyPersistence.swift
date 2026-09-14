@@ -34,14 +34,19 @@ enum PennyPersistence {
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            // Retry once with an in-memory store so development can continue if the
-            // on-disk store is corrupted.
-            let fallback = ModelConfiguration(isStoredInMemoryOnly: true)
-            do {
-                return try ModelContainer(for: schema, configurations: [fallback])
-            } catch {
-                throw ContainerError.unavailable(underlying: error)
+            // Never fall back to an empty in-memory store in production — that
+            // looks like a data wipe after an app update when the on-disk open fails.
+            // Previews and unit tests pass `inMemory: true` explicitly.
+            #if DEBUG
+            if inMemory == false {
+                // Development-only last resort so UI work can continue on a broken store.
+                let fallback = ModelConfiguration(isStoredInMemoryOnly: true)
+                if let container = try? ModelContainer(for: schema, configurations: [fallback]) {
+                    return container
+                }
             }
+            #endif
+            throw ContainerError.unavailable(underlying: error)
         }
     }
 

@@ -5,11 +5,14 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var settingsList: [UserSettings]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
+    @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
 
     @State private var confirmReset = false
     @State private var confirmDelete = false
     @State private var incomeText = ""
     @State private var nameText = ""
+    @State private var editingAccount: FinancialAccount?
+    @State private var accountBalanceText = ""
 
     private var settings: UserSettings? { settingsList.first }
 
@@ -19,6 +22,7 @@ struct SettingsView: View {
                 profileSection
                 currencySection
                 incomeSection
+                accountsSection
                 appearanceSection
                 notificationsSection
                 dataSection
@@ -28,6 +32,8 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .scrollContentBackground(.hidden)
             .background(PennyColors.background.ignoresSafeArea())
+            .pennyKeyboardDone()
+            .scrollDismissesKeyboard(.interactively)
             .onAppear {
                 if let income = settings?.monthlyIncome {
                     incomeText = NSDecimalNumber(decimal: income).stringValue
@@ -46,6 +52,32 @@ struct SettingsView: View {
             } message: {
                 Text("This permanently removes transactions, budgets, goals, bills, and settings on this device.")
             }
+            .alert(
+                "Update balance",
+                isPresented: Binding(
+                    get: { editingAccount != nil },
+                    set: { if !$0 { editingAccount = nil } }
+                )
+            ) {
+                TextField("Balance", text: $accountBalanceText)
+                    .keyboardType(.decimalPad)
+                Button("Save") {
+                    Keyboard.dismiss()
+                    if let editingAccount, let value = Decimal.from(accountBalanceText) {
+                        editingAccount.balance = value
+                        try? modelContext.save()
+                        Haptics.success()
+                    }
+                    editingAccount = nil
+                }
+                Button("Cancel", role: .cancel) {
+                    editingAccount = nil
+                }
+            } message: {
+                if let editingAccount {
+                    Text("Set the current balance for \(editingAccount.name).")
+                }
+            }
         }
     }
 
@@ -56,6 +88,7 @@ struct SettingsView: View {
                     .textContentType(.name)
                     .autocorrectionDisabled()
                 Button("Save") {
+                    Keyboard.dismiss()
                     let trimmed = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
                     settings?.displayName = trimmed
                     nameText = trimmed
@@ -87,6 +120,7 @@ struct SettingsView: View {
                 TextField("Income", text: $incomeText)
                     .keyboardType(.decimalPad)
                 Button("Save") {
+                    Keyboard.dismiss()
                     if let value = Decimal.from(incomeText), let settings {
                         settings.monthlyIncome = value
                         try? modelContext.save()
@@ -115,6 +149,44 @@ struct SettingsView: View {
                 )
                 .tint(PennyColors.brand)
             }
+        }
+    }
+
+    private var accountsSection: some View {
+        Section {
+            if accounts.isEmpty {
+                Text("No accounts yet. Reset demo data or start fresh to create defaults.")
+                    .font(PennyTypography.caption)
+                    .foregroundStyle(PennyColors.textSecondary)
+            } else {
+                ForEach(accounts, id: \.id) { account in
+                    Button {
+                        editingAccount = account
+                        accountBalanceText = NSDecimalNumber(decimal: account.balance).stringValue
+                    } label: {
+                        HStack {
+                            Label(account.name, systemImage: account.accountType.icon)
+                                .foregroundStyle(PennyColors.textPrimary)
+                            Spacer()
+                            Text(
+                                MoneyFormatters.compact(
+                                    from: account.balance,
+                                    currencyCode: settings?.currencyCode ?? "CAD"
+                                )
+                            )
+                            .foregroundStyle(PennyColors.textSecondary)
+                            .monospacedDigit()
+                            Image(systemName: "pencil")
+                                .font(.caption)
+                                .foregroundStyle(PennyColors.textTertiary)
+                        }
+                    }
+                }
+            }
+        } header: {
+            Text("Accounts")
+        } footer: {
+            Text("Balances stay on this device and power Forecast. Updating an app build does not erase them.")
         }
     }
 
@@ -157,7 +229,7 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section("Privacy") {
-            Text("Penny keeps your financial information on this device. This prototype does not sync to the cloud, connect to banks, or send analytics.")
+            Text("Penny keeps your financial information on this device. This prototype does not sync to the cloud, connect to banks, or send analytics. App updates keep your local data unless you choose Reset or Delete.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
         }

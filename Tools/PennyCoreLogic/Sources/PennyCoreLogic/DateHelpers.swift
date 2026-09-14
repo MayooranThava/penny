@@ -70,6 +70,16 @@ enum DateHelpers {
         }
     }
 
+    /// Personalized home greeting. Uses "Welcome back {name}" when a display name is set.
+    static func welcomeMessage(displayName: String?, date: Date = .now) -> String {
+        let trimmed = (displayName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return greeting(for: date)
+        }
+        return "Welcome back \(trimmed)"
+    }
+
+
     /// Next occurrence of a day-of-month (1–28) on or after `from`.
     static func nextDueDate(dueDay: Int, from: Date = .now) -> Date {
         let day = max(1, min(28, dueDay))
@@ -84,6 +94,48 @@ enum DateHelpers {
         }
         return nextMonth
     }
+
+    /// Next due date from a schedule starting at `startDate` with the given recurrence.
+    static func nextDueDate(
+        startDate: Date,
+        recurrence: BillRecurrence,
+        dueDay: Int,
+        from: Date = .now
+    ) -> Date {
+        let start = calendar.startOfDay(for: startDate)
+        let today = calendar.startOfDay(for: from)
+
+        switch recurrence {
+        case .monthly, .yearly:
+            // Prefer day-of-month cadence; yearly advances 12 months from start when needed.
+            if recurrence == .monthly {
+                return nextDueDate(dueDay: dueDay, from: from)
+            }
+            var candidate = start
+            while candidate < today {
+                guard let advanced = calendar.date(byAdding: .year, value: 1, to: candidate) else { break }
+                candidate = advanced
+            }
+            return candidate
+
+        case .weekly:
+            var candidate = start
+            while candidate < today {
+                guard let advanced = calendar.date(byAdding: .day, value: 7, to: candidate) else { break }
+                candidate = advanced
+            }
+            return candidate
+
+        case .biweekly:
+            var candidate = start
+            while candidate < today {
+                guard let advanced = calendar.date(byAdding: .day, value: 14, to: candidate) else { break }
+                candidate = advanced
+            }
+            return candidate
+        }
+    }
+
 
     static func monthsBetween(_ start: Date, _ end: Date) -> Int {
         let comps = calendar.dateComponents([.month], from: startOfMonth(for: start), to: startOfMonth(for: end))

@@ -253,6 +253,7 @@ struct BillRow: View {
     let currencyCode: String
     var icon: String = "doc.text.fill"
     var categoryName: String = "Other"
+    var recurrenceLabel: String? = nil
 
     var body: some View {
         HStack(spacing: PennySpacing.sm) {
@@ -261,7 +262,7 @@ struct BillRow: View {
                 Text(name)
                     .font(PennyTypography.bodyEmphasized)
                     .foregroundStyle(PennyColors.textPrimary)
-                Text(DateHelpers.shortMonthDay(for: dueDate))
+                Text(subtitle)
                     .font(PennyTypography.caption)
                     .foregroundStyle(PennyColors.textSecondary)
             }
@@ -269,6 +270,14 @@ struct BillRow: View {
             MoneyText(amount: amount, currencyCode: currencyCode, font: PennyTypography.smallAmount)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private var subtitle: String {
+        let due = DateHelpers.shortMonthDay(for: dueDate)
+        if let recurrenceLabel, !recurrenceLabel.isEmpty {
+            return "\(recurrenceLabel) · \(due)"
+        }
+        return due
     }
 }
 

@@ -1,5 +1,9 @@
 import Foundation
 
+public enum BillRecurrence: String, Codable, CaseIterable, Sendable {
+    case weekly, biweekly, monthly, yearly
+}
+
 /// Pure financial calculations. Keep out of view bodies. Uses Decimal throughout.
 enum FinanceCalculator {
 
@@ -46,6 +50,33 @@ enum FinanceCalculator {
             safeToSpend: value
         )
     }
+
+    /// Convert a bill amount into an approximate monthly commitment.
+    static func monthlyEquivalent(amount: Decimal, recurrence: BillRecurrence) -> Decimal {
+        switch recurrence {
+        case .weekly:
+            return (amount * Decimal(52) / Decimal(12)).rounded(scale: 2)
+        case .biweekly:
+            return (amount * Decimal(26) / Decimal(12)).rounded(scale: 2)
+        case .monthly:
+            return amount
+        case .yearly:
+            return (amount / Decimal(12)).rounded(scale: 2)
+        }
+    }
+
+    /// Bills (monthlyized) + planned debt payments.
+    static func totalMonthlyCommitted(
+        billAmountsAndRecurrence: [(Decimal, BillRecurrence)],
+        debtPayments: [Decimal]
+    ) -> Decimal {
+        let bills = billAmountsAndRecurrence.reduce(Decimal(0)) { partial, item in
+            partial + monthlyEquivalent(amount: item.0, recurrence: item.1)
+        }
+        let debts = debtPayments.reduce(Decimal(0), +)
+        return bills + debts
+    }
+
 
     // MARK: - Budget
 

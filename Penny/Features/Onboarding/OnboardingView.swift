@@ -7,6 +7,7 @@ struct OnboardingView: View {
 
     @State private var page = 0
     @State private var currency = SupportedCurrency.cad
+    @State private var displayName = "Mayooran"
     @State private var incomeText = "6200"
     @State private var isWorking = false
 
@@ -91,6 +92,20 @@ struct OnboardingView: View {
                     .foregroundStyle(PennyColors.textSecondary)
 
                 VStack(alignment: .leading, spacing: PennySpacing.sm) {
+                    Text("Your name")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textSecondary)
+                    TextField("Mayooran", text: $displayName)
+                        .textContentType(.name)
+                        .font(PennyTypography.sectionHeading)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: PennySpacing.radiusMd, style: .continuous)
+                                .fill(PennyColors.surface)
+                        )
+                }
+
+                VStack(alignment: .leading, spacing: PennySpacing.sm) {
                     Text("Currency")
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.textSecondary)
@@ -162,6 +177,7 @@ struct OnboardingView: View {
     private func finish(useDemo: Bool) {
         isWorking = true
         let income = Decimal.from(incomeText) ?? (useDemo ? DemoDataService.demoMonthlyIncome : 0)
+        let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             if useDemo {
                 try DemoDataService.seedDemo(
@@ -172,6 +188,7 @@ struct OnboardingView: View {
                 if let settings = try modelContext.fetch(FetchDescriptor<UserSettings>()).first {
                     settings.monthlyIncome = income > 0 ? income : DemoDataService.demoMonthlyIncome
                     settings.currencyCode = currency.rawValue
+                    settings.displayName = name.isEmpty ? "Mayooran" : name
                     settings.hasCompletedOnboarding = true
                     settings.usingDemoData = true
                 }
@@ -179,7 +196,8 @@ struct OnboardingView: View {
                 try DemoDataService.seedFresh(
                     in: modelContext,
                     currencyCode: currency.rawValue,
-                    monthlyIncome: income
+                    monthlyIncome: income,
+                    displayName: name
                 )
             }
             try modelContext.save()

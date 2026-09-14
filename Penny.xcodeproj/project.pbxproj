@@ -6,32 +6,38 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0E88980CC2084C58BD1D5B11 /* PennyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C968C1E71414231AAE8DF25 /* PennyApp.swift */; };
-		0AE773F2F41D428A87526143 /* PennyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0D0CC079264E6688A0383C /* PennyComponents.swift */; };
-		C7589F8A682144789D946681 /* PennyButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988ABBD764FB4A5FB5691F97 /* PennyButtonStyles.swift */; };
-		A283A1F2B77A429F849F431B /* PennyColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DADEF5505C476EB10FE26F /* PennyColors.swift */; };
-		92D5678EB4944DCB9B7F7324 /* PennySpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 753F5B713D2540DBB147FAA2 /* PennySpacing.swift */; };
-		C5599D2574F74F30A8A4206B /* PennyTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32F68FB6477412486E41A3B /* PennyTypography.swift */; };
-		1E9902A8AF3846D48299BED1 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C373C9C5E62476AB63AA281 /* ActivityView.swift */; };
-		9A5A2B600BDB41F2942FF26A /* BudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE58C8BCFDB84C61AB743404 /* BudgetView.swift */; };
-		D8622E476BD84D2389B7D1CC /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B308AB130E244CFA5B9BE4F /* HomeView.swift */; };
-		9C808DC000054D9FB7A6E642 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6571A45BD456493FABACDB7A /* OnboardingView.swift */; };
-		EE1687964D894D499984B2E0 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D136A0469D4434485425BCC /* PlanView.swift */; };
-		348DF04E3D894D69AD303C9B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A60824396814A62A67D9F85 /* SettingsView.swift */; };
-		39708D8E0D7E418789372D9A /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14A72B1A5224BAE8142AB6C /* Models.swift */; };
-		80CEC3A5475C49B3BAE8D42D /* PennyPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C577613BB41441F4A3E476E7 /* PennyPersistence.swift */; };
-		F843C9AC60674BA1B792A069 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B757117EF64064956AC176 /* AppSession.swift */; };
-		94BE59D96A6147F0AAA44D93 /* DemoDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D66232E56344F8B6C50C02 /* DemoDataService.swift */; };
-		258CFE4D430F473BA6688B9B /* FinanceCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26701E8E948740F4BAC4EA82 /* FinanceCalculator.swift */; };
-		8BEF6509C33542B4B65F57D2 /* InsightEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E257B89508DD46C4AE24769D /* InsightEngine.swift */; };
-		F0AAD916BF854FFEBFEC6006 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA085C7D0FD48288209EA31 /* NotificationService.swift */; };
-		208A518F1BB1492FBD7CD900 /* DateHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4482613F36E844429938D390 /* DateHelpers.swift */; };
-		F4F02E6C92F9479C9255A0C2 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC8F862EC2F94EF1BBAF790D /* Haptics.swift */; };
-		116A2819E4B5423A81B47643 /* MoneyFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8771F6FD32014C57AD4EEA90 /* MoneyFormatters.swift */; };
-		2281ADF77350445299DED144 /* PennyAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A116725320444FBDF4905C /* PennyAppInfo.swift */; };
-		C2B94CE52DD049C584B9B870 /* FinanceCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D31A56A5D2D4AB9947ED837 /* FinanceCalculatorTests.swift */; };
-		871215BB252B44B5ADB8EBEB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FC658C44A8724F9F8CF42A22 /* Assets.xcassets */; };
-		E433C6B4C7144FB2855E668B /* Penny.app in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* Penny.app */; };
+		73970C469CBA451682A068C9 /* PennyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA076D7BB8D14655897A24D3 /* PennyApp.swift */; };
+		6C63E09B78FE4583AA302497 /* PennyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17B83FC3E414699A0C04868 /* PennyComponents.swift */; };
+		5575403867D54F38BB576A77 /* PennyButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 203F4815D7A64AEAABDC3982 /* PennyButtonStyles.swift */; };
+		6E4DF474B9C54B0BAC10B093 /* PennyColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF1E125920A4693954A11C0 /* PennyColors.swift */; };
+		ACEE5F35B06C484D8E7B933B /* PennySpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07CC7DF53E324E029AA1A6BF /* PennySpacing.swift */; };
+		A8FF67BE26D2471F943329B2 /* PennyTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA87BB3945CC4A3FAE2F4DCA /* PennyTypography.swift */; };
+		88AC5BD85B4A478E982603C8 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4009D1CA7183450395557E3A /* ActivityView.swift */; };
+		10D4CF4E4C3C4959991704C8 /* BudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C31BA837BE40E787494429 /* BudgetView.swift */; };
+		E06CEA23A6FA4654872DDE3A /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64BA0D3BC194FE7BB89C749 /* HomeView.swift */; };
+		92E7C9A871284AB4A9AD0C59 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCB68BD12CE54667B67E0C80 /* OnboardingView.swift */; };
+		BD15157E83AF449F80A49206 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5334AAD91F40D2AD56816E /* PlanView.swift */; };
+		B7CD71BEEC3E46B0B0F52BC7 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B2FD7E48A0448CD9454ADB1 /* SettingsView.swift */; };
+		F4F8F8597EE5405182E136EB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68AA19288D94D89B27F6C7B /* Models.swift */; };
+		F0FA2C1D3D6045E6BCE5419E /* PennyPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA79D41A98F435C865C0ABC /* PennyPersistence.swift */; };
+		10E7326982004A9C9F4EEF45 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C6600CEF664057896F4B68 /* AppSession.swift */; };
+		67370A90A33C49828A0E4763 /* DemoDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37422CB857544389B63A3823 /* DemoDataService.swift */; };
+		291A5A5F7DB842DC86BF2F9B /* FinanceCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376B1F9BCD07414894B29403 /* FinanceCalculator.swift */; };
+		3EA760133E3240D6BD34EC8B /* InsightEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39590EBF9FE942C7B43A7700 /* InsightEngine.swift */; };
+		252FE99A1BF84768B643AF37 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE46F3F7945B4D07A200C62F /* NotificationService.swift */; };
+		54445E6542724A7C92A34D94 /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 189DA73511FF4893A80C23E4 /* WidgetSnapshotStore.swift */; };
+		962E72BE369B4901904270E4 /* DateHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D114354183E94EB9B42790F0 /* DateHelpers.swift */; };
+		08A4B130FEC6435AA906E6E8 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE4734BA6414656AE602E5C /* Haptics.swift */; };
+		BC5585ACC84048A0B92610A1 /* MoneyFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A2EDB6AE574EB7A707245F /* MoneyFormatters.swift */; };
+		33F8C41BB5E04E2796A6B670 /* PennyAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FEDC9DEB251407D8CBE7DD9 /* PennyAppInfo.swift */; };
+		D434FF5D678E47E395C14855 /* FinanceCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3B2626B78F49ACAF0C5556 /* FinanceCalculatorTests.swift */; };
+		7432695612EA4ED1B72846BF /* PennyWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 368DE4946B4647ECA026A145 /* PennyWidgetsBundle.swift */; };
+		94BA0C1D55F94446BC8DFD9B /* SafeToSpendWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8226BF03159406DBAC5ECDF /* SafeToSpendWidget.swift */; };
+		D4E7DB69AD394D76A7A36D06 /* UpcomingReminderWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F770955A0F7450698F4279F /* UpcomingReminderWidget.swift */; };
+		FED5EA77C79C4C91AB8F3146 /* WidgetSnapshotBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0224BC5E07347E38607E21A /* WidgetSnapshotBridge.swift */; };
+		21F29618C34347329AEC459A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5A006EFB669A4C1AB4B1FD49 /* Assets.xcassets */; };
+		864D08FCB5694922BD3B9109 /* Penny.app in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* Penny.app */; };
+		A10000000000000000000026 /* PennyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* PennyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,36 +48,65 @@
 			remoteGlobalIDString = A10000000000000000000006;
 			remoteInfo = Penny;
 		};
+		A10000000000000000000025 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1000000000000000000001B;
+			remoteInfo = PennyWidgets;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A10000000000000000000023 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A10000000000000000000026 /* PennyWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000008 /* Penny.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Penny.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000001C /* PennyWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PennyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000009 /* PennyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PennyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		2C968C1E71414231AAE8DF25 /* PennyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyApp.swift; sourceTree = "<group>"; };
-		CE0D0CC079264E6688A0383C /* PennyComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyComponents.swift; sourceTree = "<group>"; };
-		988ABBD764FB4A5FB5691F97 /* PennyButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyButtonStyles.swift; sourceTree = "<group>"; };
-		47DADEF5505C476EB10FE26F /* PennyColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyColors.swift; sourceTree = "<group>"; };
-		753F5B713D2540DBB147FAA2 /* PennySpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennySpacing.swift; sourceTree = "<group>"; };
-		C32F68FB6477412486E41A3B /* PennyTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyTypography.swift; sourceTree = "<group>"; };
-		4C373C9C5E62476AB63AA281 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
-		AE58C8BCFDB84C61AB743404 /* BudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetView.swift; sourceTree = "<group>"; };
-		2B308AB130E244CFA5B9BE4F /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		6571A45BD456493FABACDB7A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		7D136A0469D4434485425BCC /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
-		3A60824396814A62A67D9F85 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		E14A72B1A5224BAE8142AB6C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		C577613BB41441F4A3E476E7 /* PennyPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyPersistence.swift; sourceTree = "<group>"; };
-		D5B757117EF64064956AC176 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
-		A0D66232E56344F8B6C50C02 /* DemoDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoDataService.swift; sourceTree = "<group>"; };
-		26701E8E948740F4BAC4EA82 /* FinanceCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceCalculator.swift; sourceTree = "<group>"; };
-		E257B89508DD46C4AE24769D /* InsightEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightEngine.swift; sourceTree = "<group>"; };
-		2FA085C7D0FD48288209EA31 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
-		4482613F36E844429938D390 /* DateHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateHelpers.swift; sourceTree = "<group>"; };
-		DC8F862EC2F94EF1BBAF790D /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
-		8771F6FD32014C57AD4EEA90 /* MoneyFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatters.swift; sourceTree = "<group>"; };
-		84A116725320444FBDF4905C /* PennyAppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyAppInfo.swift; sourceTree = "<group>"; };
-		6D31A56A5D2D4AB9947ED837 /* FinanceCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceCalculatorTests.swift; sourceTree = "<group>"; };
-		FC658C44A8724F9F8CF42A22 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000027 /* Penny.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Penny.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000028 /* PennyWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PennyWidgets.entitlements; sourceTree = "<group>"; };
+		CA076D7BB8D14655897A24D3 /* PennyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyApp.swift; sourceTree = "<group>"; };
+		B17B83FC3E414699A0C04868 /* PennyComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyComponents.swift; sourceTree = "<group>"; };
+		203F4815D7A64AEAABDC3982 /* PennyButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyButtonStyles.swift; sourceTree = "<group>"; };
+		7FF1E125920A4693954A11C0 /* PennyColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyColors.swift; sourceTree = "<group>"; };
+		07CC7DF53E324E029AA1A6BF /* PennySpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennySpacing.swift; sourceTree = "<group>"; };
+		BA87BB3945CC4A3FAE2F4DCA /* PennyTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyTypography.swift; sourceTree = "<group>"; };
+		4009D1CA7183450395557E3A /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
+		04C31BA837BE40E787494429 /* BudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetView.swift; sourceTree = "<group>"; };
+		E64BA0D3BC194FE7BB89C749 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		BCB68BD12CE54667B67E0C80 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		3B5334AAD91F40D2AD56816E /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
+		7B2FD7E48A0448CD9454ADB1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C68AA19288D94D89B27F6C7B /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		7AA79D41A98F435C865C0ABC /* PennyPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyPersistence.swift; sourceTree = "<group>"; };
+		72C6600CEF664057896F4B68 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+		37422CB857544389B63A3823 /* DemoDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoDataService.swift; sourceTree = "<group>"; };
+		376B1F9BCD07414894B29403 /* FinanceCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceCalculator.swift; sourceTree = "<group>"; };
+		39590EBF9FE942C7B43A7700 /* InsightEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightEngine.swift; sourceTree = "<group>"; };
+		CE46F3F7945B4D07A200C62F /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		189DA73511FF4893A80C23E4 /* WidgetSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotStore.swift; sourceTree = "<group>"; };
+		D114354183E94EB9B42790F0 /* DateHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateHelpers.swift; sourceTree = "<group>"; };
+		5FE4734BA6414656AE602E5C /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		69A2EDB6AE574EB7A707245F /* MoneyFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatters.swift; sourceTree = "<group>"; };
+		5FEDC9DEB251407D8CBE7DD9 /* PennyAppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyAppInfo.swift; sourceTree = "<group>"; };
+		3C3B2626B78F49ACAF0C5556 /* FinanceCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceCalculatorTests.swift; sourceTree = "<group>"; };
+		368DE4946B4647ECA026A145 /* PennyWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyWidgetsBundle.swift; sourceTree = "<group>"; };
+		D8226BF03159406DBAC5ECDF /* SafeToSpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeToSpendWidget.swift; sourceTree = "<group>"; };
+		2F770955A0F7450698F4279F /* UpcomingReminderWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpcomingReminderWidget.swift; sourceTree = "<group>"; };
+		F0224BC5E07347E38607E21A /* WidgetSnapshotBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotBridge.swift; sourceTree = "<group>"; };
+		5A006EFB669A4C1AB4B1FD49 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,11 +117,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1000000000000000000001E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A1000000000000000000000E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E433C6B4C7144FB2855E668B /* Penny.app in Frameworks */,
+				864D08FCB5694922BD3B9109 /* Penny.app in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,6 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000004 /* Penny */,
+				A1000000000000000000001A /* PennyWidgets */,
 				A10000000000000000000005 /* PennyTests */,
 				A10000000000000000000003 /* Products */,
 			);
@@ -106,6 +149,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000008 /* Penny.app */,
+				A1000000000000000000001C /* PennyWidgets.appex */,
 				A10000000000000000000009 /* PennyTests.xctest */,
 			);
 			name = Products;
@@ -114,150 +158,152 @@
 		A10000000000000000000004 /* Penny */ = {
 			isa = PBXGroup;
 			children = (
-				438CFF880B6848BABDEE243E /* App */,
-				45409850E8AD4DD387F119D6 /* Components */,
-				EFB03FE57DF44BC5B6711B5D /* DesignSystem */,
-				108FB61FFC6D4E09ACC9E1CE /* Features */,
-				563F81C6F2A64ABF8388DD1F /* Models */,
-				4711E8599B4D47EEBBA8B017 /* Persistence */,
-				38ABE6B1DFE24BACB44727FF /* Resources */,
-				7FB2097D406645B8AD8D67D8 /* Services */,
-				B57376682242431084DB05F7 /* Utilities */,
+				354F0D8AEAD249A7B42C9D55 /* App */,
+				1577F10821F64AB0A0A2BDF6 /* Components */,
+				6042C371573F45AFB3BA9118 /* DesignSystem */,
+				FF9C38D2F044427590FB332C /* Features */,
+				7F1D56817C4C4BA6808E8173 /* Models */,
+				A10000000000000000000027 /* Penny.entitlements */,
+				69BD0238F9EF442BB750361E /* Persistence */,
+				CB534C20F54141539D61D5C2 /* Resources */,
+				3007530755564BBEB0FFADDB /* Services */,
+				140A69AB632F4E14A08072E2 /* Utilities */,
 			);
 			path = Penny;
 			sourceTree = "<group>";
 		};
-		438CFF880B6848BABDEE243E /* App */ = {
+		354F0D8AEAD249A7B42C9D55 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				2C968C1E71414231AAE8DF25 /* PennyApp.swift */,
+				CA076D7BB8D14655897A24D3 /* PennyApp.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
 		};
-		45409850E8AD4DD387F119D6 /* Components */ = {
+		1577F10821F64AB0A0A2BDF6 /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				CE0D0CC079264E6688A0383C /* PennyComponents.swift */,
+				B17B83FC3E414699A0C04868 /* PennyComponents.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
 		};
-		EFB03FE57DF44BC5B6711B5D /* DesignSystem */ = {
+		6042C371573F45AFB3BA9118 /* DesignSystem */ = {
 			isa = PBXGroup;
 			children = (
-				988ABBD764FB4A5FB5691F97 /* PennyButtonStyles.swift */,
-				47DADEF5505C476EB10FE26F /* PennyColors.swift */,
-				753F5B713D2540DBB147FAA2 /* PennySpacing.swift */,
-				C32F68FB6477412486E41A3B /* PennyTypography.swift */,
+				203F4815D7A64AEAABDC3982 /* PennyButtonStyles.swift */,
+				7FF1E125920A4693954A11C0 /* PennyColors.swift */,
+				07CC7DF53E324E029AA1A6BF /* PennySpacing.swift */,
+				BA87BB3945CC4A3FAE2F4DCA /* PennyTypography.swift */,
 			);
 			path = DesignSystem;
 			sourceTree = "<group>";
 		};
-		108FB61FFC6D4E09ACC9E1CE /* Features */ = {
+		FF9C38D2F044427590FB332C /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				D021CDE94B4647A68AAF52D6 /* Activity */,
-				AE570D146CB04A6999B5984C /* Budget */,
-				E666CE695D22459AA9AF957D /* Home */,
-				A6B00982A8BD45B7A242504A /* Onboarding */,
-				B849590AB1564FCD8E563B97 /* Plan */,
-				94A79FAE97F64101ABD45F1A /* Settings */,
+				D003CCD12C4847C89531812A /* Activity */,
+				0DC0E677544F422C945CC4D4 /* Budget */,
+				EB49FED787C14BD6A0B3D644 /* Home */,
+				4DED3387B7E94573A4FA40AA /* Onboarding */,
+				4F43A58BD490408192C372F2 /* Plan */,
+				03A7232A86EB4CBF92BC865A /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
 		};
-		D021CDE94B4647A68AAF52D6 /* Activity */ = {
+		D003CCD12C4847C89531812A /* Activity */ = {
 			isa = PBXGroup;
 			children = (
-				4C373C9C5E62476AB63AA281 /* ActivityView.swift */,
+				4009D1CA7183450395557E3A /* ActivityView.swift */,
 			);
 			path = Activity;
 			sourceTree = "<group>";
 		};
-		AE570D146CB04A6999B5984C /* Budget */ = {
+		0DC0E677544F422C945CC4D4 /* Budget */ = {
 			isa = PBXGroup;
 			children = (
-				AE58C8BCFDB84C61AB743404 /* BudgetView.swift */,
+				04C31BA837BE40E787494429 /* BudgetView.swift */,
 			);
 			path = Budget;
 			sourceTree = "<group>";
 		};
-		E666CE695D22459AA9AF957D /* Home */ = {
+		EB49FED787C14BD6A0B3D644 /* Home */ = {
 			isa = PBXGroup;
 			children = (
-				2B308AB130E244CFA5B9BE4F /* HomeView.swift */,
+				E64BA0D3BC194FE7BB89C749 /* HomeView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
 		};
-		A6B00982A8BD45B7A242504A /* Onboarding */ = {
+		4DED3387B7E94573A4FA40AA /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
-				6571A45BD456493FABACDB7A /* OnboardingView.swift */,
+				BCB68BD12CE54667B67E0C80 /* OnboardingView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
-		B849590AB1564FCD8E563B97 /* Plan */ = {
+		4F43A58BD490408192C372F2 /* Plan */ = {
 			isa = PBXGroup;
 			children = (
-				7D136A0469D4434485425BCC /* PlanView.swift */,
+				3B5334AAD91F40D2AD56816E /* PlanView.swift */,
 			);
 			path = Plan;
 			sourceTree = "<group>";
 		};
-		94A79FAE97F64101ABD45F1A /* Settings */ = {
+		03A7232A86EB4CBF92BC865A /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				3A60824396814A62A67D9F85 /* SettingsView.swift */,
+				7B2FD7E48A0448CD9454ADB1 /* SettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
 		};
-		563F81C6F2A64ABF8388DD1F /* Models */ = {
+		7F1D56817C4C4BA6808E8173 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				E14A72B1A5224BAE8142AB6C /* Models.swift */,
+				C68AA19288D94D89B27F6C7B /* Models.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		4711E8599B4D47EEBBA8B017 /* Persistence */ = {
+		69BD0238F9EF442BB750361E /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
-				C577613BB41441F4A3E476E7 /* PennyPersistence.swift */,
+				7AA79D41A98F435C865C0ABC /* PennyPersistence.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
 		};
-		38ABE6B1DFE24BACB44727FF /* Resources */ = {
+		CB534C20F54141539D61D5C2 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				FC658C44A8724F9F8CF42A22 /* Assets.xcassets */,
+				5A006EFB669A4C1AB4B1FD49 /* Assets.xcassets */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
 		};
-		7FB2097D406645B8AD8D67D8 /* Services */ = {
+		3007530755564BBEB0FFADDB /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				D5B757117EF64064956AC176 /* AppSession.swift */,
-				A0D66232E56344F8B6C50C02 /* DemoDataService.swift */,
-				26701E8E948740F4BAC4EA82 /* FinanceCalculator.swift */,
-				E257B89508DD46C4AE24769D /* InsightEngine.swift */,
-				2FA085C7D0FD48288209EA31 /* NotificationService.swift */,
+				72C6600CEF664057896F4B68 /* AppSession.swift */,
+				37422CB857544389B63A3823 /* DemoDataService.swift */,
+				376B1F9BCD07414894B29403 /* FinanceCalculator.swift */,
+				39590EBF9FE942C7B43A7700 /* InsightEngine.swift */,
+				CE46F3F7945B4D07A200C62F /* NotificationService.swift */,
+				189DA73511FF4893A80C23E4 /* WidgetSnapshotStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
 		};
-		B57376682242431084DB05F7 /* Utilities */ = {
+		140A69AB632F4E14A08072E2 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
-				4482613F36E844429938D390 /* DateHelpers.swift */,
-				DC8F862EC2F94EF1BBAF790D /* Haptics.swift */,
-				8771F6FD32014C57AD4EEA90 /* MoneyFormatters.swift */,
-				84A116725320444FBDF4905C /* PennyAppInfo.swift */,
+				D114354183E94EB9B42790F0 /* DateHelpers.swift */,
+				5FE4734BA6414656AE602E5C /* Haptics.swift */,
+				69A2EDB6AE574EB7A707245F /* MoneyFormatters.swift */,
+				5FEDC9DEB251407D8CBE7DD9 /* PennyAppInfo.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -265,9 +311,21 @@
 		A10000000000000000000005 /* PennyTests */ = {
 			isa = PBXGroup;
 			children = (
-				6D31A56A5D2D4AB9947ED837 /* FinanceCalculatorTests.swift */,
+				3C3B2626B78F49ACAF0C5556 /* FinanceCalculatorTests.swift */,
 			);
 			path = PennyTests;
+			sourceTree = "<group>";
+		};
+		A1000000000000000000001A /* PennyWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000028 /* PennyWidgets.entitlements */,
+				368DE4946B4647ECA026A145 /* PennyWidgetsBundle.swift */,
+				D8226BF03159406DBAC5ECDF /* SafeToSpendWidget.swift */,
+				2F770955A0F7450698F4279F /* UpcomingReminderWidget.swift */,
+				F0224BC5E07347E38607E21A /* WidgetSnapshotBridge.swift */,
+			);
+			path = PennyWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -280,15 +338,34 @@
 				A1000000000000000000000A /* Sources */,
 				A1000000000000000000000D /* Frameworks */,
 				A1000000000000000000000C /* Resources */,
+				A10000000000000000000023 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A10000000000000000000024 /* PBXTargetDependency */,
 			);
 			name = Penny;
 			productName = Penny;
 			productReference = A10000000000000000000008 /* Penny.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A1000000000000000000001B /* PennyWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000020 /* Build configuration list for PBXNativeTarget "PennyWidgets" */;
+			buildPhases = (
+				A1000000000000000000001D /* Sources */,
+				A1000000000000000000001E /* Frameworks */,
+				A1000000000000000000001F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PennyWidgets;
+			productName = PennyWidgets;
+			productReference = A1000000000000000000001C /* PennyWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		A10000000000000000000007 /* PennyTests */ = {
 			isa = PBXNativeTarget;
@@ -320,6 +397,9 @@
 					A10000000000000000000006 = {
 						CreatedOnToolsVersion = 16.0;
 					};
+					A1000000000000000000001B = {
+						CreatedOnToolsVersion = 16.0;
+					};
 					A10000000000000000000007 = {
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = A10000000000000000000006;
@@ -340,6 +420,7 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000006 /* Penny */,
+				A1000000000000000000001B /* PennyWidgets */,
 				A10000000000000000000007 /* PennyTests */,
 			);
 		};
@@ -350,7 +431,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				871215BB252B44B5ADB8EBEB /* Assets.xcassets in Resources */,
+				21F29618C34347329AEC459A /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1000000000000000000001F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -361,29 +449,41 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0E88980CC2084C58BD1D5B11 /* PennyApp.swift in Sources */,
-				0AE773F2F41D428A87526143 /* PennyComponents.swift in Sources */,
-				C7589F8A682144789D946681 /* PennyButtonStyles.swift in Sources */,
-				A283A1F2B77A429F849F431B /* PennyColors.swift in Sources */,
-				92D5678EB4944DCB9B7F7324 /* PennySpacing.swift in Sources */,
-				C5599D2574F74F30A8A4206B /* PennyTypography.swift in Sources */,
-				1E9902A8AF3846D48299BED1 /* ActivityView.swift in Sources */,
-				9A5A2B600BDB41F2942FF26A /* BudgetView.swift in Sources */,
-				D8622E476BD84D2389B7D1CC /* HomeView.swift in Sources */,
-				9C808DC000054D9FB7A6E642 /* OnboardingView.swift in Sources */,
-				EE1687964D894D499984B2E0 /* PlanView.swift in Sources */,
-				348DF04E3D894D69AD303C9B /* SettingsView.swift in Sources */,
-				39708D8E0D7E418789372D9A /* Models.swift in Sources */,
-				80CEC3A5475C49B3BAE8D42D /* PennyPersistence.swift in Sources */,
-				F843C9AC60674BA1B792A069 /* AppSession.swift in Sources */,
-				94BE59D96A6147F0AAA44D93 /* DemoDataService.swift in Sources */,
-				258CFE4D430F473BA6688B9B /* FinanceCalculator.swift in Sources */,
-				8BEF6509C33542B4B65F57D2 /* InsightEngine.swift in Sources */,
-				F0AAD916BF854FFEBFEC6006 /* NotificationService.swift in Sources */,
-				208A518F1BB1492FBD7CD900 /* DateHelpers.swift in Sources */,
-				F4F02E6C92F9479C9255A0C2 /* Haptics.swift in Sources */,
-				116A2819E4B5423A81B47643 /* MoneyFormatters.swift in Sources */,
-				2281ADF77350445299DED144 /* PennyAppInfo.swift in Sources */,
+				73970C469CBA451682A068C9 /* PennyApp.swift in Sources */,
+				6C63E09B78FE4583AA302497 /* PennyComponents.swift in Sources */,
+				5575403867D54F38BB576A77 /* PennyButtonStyles.swift in Sources */,
+				6E4DF474B9C54B0BAC10B093 /* PennyColors.swift in Sources */,
+				ACEE5F35B06C484D8E7B933B /* PennySpacing.swift in Sources */,
+				A8FF67BE26D2471F943329B2 /* PennyTypography.swift in Sources */,
+				88AC5BD85B4A478E982603C8 /* ActivityView.swift in Sources */,
+				10D4CF4E4C3C4959991704C8 /* BudgetView.swift in Sources */,
+				E06CEA23A6FA4654872DDE3A /* HomeView.swift in Sources */,
+				92E7C9A871284AB4A9AD0C59 /* OnboardingView.swift in Sources */,
+				BD15157E83AF449F80A49206 /* PlanView.swift in Sources */,
+				B7CD71BEEC3E46B0B0F52BC7 /* SettingsView.swift in Sources */,
+				F4F8F8597EE5405182E136EB /* Models.swift in Sources */,
+				F0FA2C1D3D6045E6BCE5419E /* PennyPersistence.swift in Sources */,
+				10E7326982004A9C9F4EEF45 /* AppSession.swift in Sources */,
+				67370A90A33C49828A0E4763 /* DemoDataService.swift in Sources */,
+				291A5A5F7DB842DC86BF2F9B /* FinanceCalculator.swift in Sources */,
+				3EA760133E3240D6BD34EC8B /* InsightEngine.swift in Sources */,
+				252FE99A1BF84768B643AF37 /* NotificationService.swift in Sources */,
+				54445E6542724A7C92A34D94 /* WidgetSnapshotStore.swift in Sources */,
+				962E72BE369B4901904270E4 /* DateHelpers.swift in Sources */,
+				08A4B130FEC6435AA906E6E8 /* Haptics.swift in Sources */,
+				BC5585ACC84048A0B92610A1 /* MoneyFormatters.swift in Sources */,
+				33F8C41BB5E04E2796A6B670 /* PennyAppInfo.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1000000000000000000001D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7432695612EA4ED1B72846BF /* PennyWidgetsBundle.swift in Sources */,
+				94BA0C1D55F94446BC8DFD9B /* SafeToSpendWidget.swift in Sources */,
+				D4E7DB69AD394D76A7A36D06 /* UpcomingReminderWidget.swift in Sources */,
+				FED5EA77C79C4C91AB8F3146 /* WidgetSnapshotBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -391,7 +491,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C2B94CE52DD049C584B9B870 /* FinanceCalculatorTests.swift in Sources */,
+				D434FF5D678E47E395C14855 /* FinanceCalculatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -402,6 +502,11 @@
 			isa = PBXTargetDependency;
 			target = A10000000000000000000006 /* Penny */;
 			targetProxy = A10000000000000000000010 /* PBXContainerItemProxy */;
+		};
+		A10000000000000000000024 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1000000000000000000001B /* PennyWidgets */;
+			targetProxy = A10000000000000000000025 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -459,6 +564,7 @@
 
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Penny/Penny.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2YJ478267N;
@@ -496,6 +602,7 @@
 
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Penny/Penny.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2YJ478267N;
@@ -516,6 +623,68 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+
+			};
+			name = Release;
+		};
+		A10000000000000000000021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+
+				CODE_SIGN_ENTITLEMENTS = PennyWidgets/PennyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2YJ478267N;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Penny;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.widgets;
+				PRODUCT_NAME = PennyWidgets;
+				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+
+			};
+			name = Debug;
+		};
+		A10000000000000000000022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+
+				CODE_SIGN_ENTITLEMENTS = PennyWidgets/PennyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2YJ478267N;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Penny;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.widgets;
+				PRODUCT_NAME = PennyWidgets;
+				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -584,6 +753,15 @@
 			buildConfigurations = (
 				A10000000000000000000016 /* Debug */,
 				A10000000000000000000017 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000020 /* Build configuration list for PBXNativeTarget "PennyWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000021 /* Debug */,
+				A10000000000000000000022 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

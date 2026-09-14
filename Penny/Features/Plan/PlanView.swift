@@ -219,7 +219,11 @@ struct BillsPlanView: View {
     @State private var showAdd = false
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
-    private var total: Decimal { bills.reduce(0) { $0 + $1.amount } }
+    private var monthlyTotal: Decimal {
+        bills.reduce(Decimal(0)) {
+            $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -230,8 +234,8 @@ struct BillsPlanView: View {
                             .font(PennyTypography.caption)
                             .foregroundStyle(PennyColors.textSecondary)
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            MoneyText(amount: total, currencyCode: currency, font: PennyTypography.largeAmount, color: PennyColors.brand, compact: true)
-                            Text("/ month")
+                            MoneyText(amount: monthlyTotal, currencyCode: currency, font: PennyTypography.largeAmount, color: PennyColors.brand, compact: true)
+                            Text("/ month equiv.")
                                 .font(PennyTypography.callout)
                                 .foregroundStyle(PennyColors.textSecondary)
                         }
@@ -255,7 +259,8 @@ struct BillsPlanView: View {
                                     amount: bill.amount,
                                     currencyCode: currency,
                                     icon: bill.icon,
-                                    categoryName: bill.categoryName
+                                    categoryName: bill.categoryName,
+                                    recurrenceLabel: bill.recurrence.displayName
                                 )
                                 .contextMenu {
                                     Button(role: .destructive) {
@@ -292,18 +297,39 @@ struct AddBillView: View {
 
     @State private var name = ""
     @State private var amountText = ""
-    @State private var dueDay = 15
+    @State private var recurrence: BillRecurrence = .monthly
+    @State private var startDate = Date.now
+    @State private var dueDay = Calendar.current.component(.day, from: .now)
     @State private var category = "Subscriptions"
-    @State private var icon = "doc.text.fill"
 
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Name", text: $name)
-                TextField("Amount", text: $amountText).keyboardType(.decimalPad)
-                Stepper("Due day: \(dueDay)", value: $dueDay, in: 1...28)
-                Picker("Category", selection: $category) {
-                    ForEach(CategoryCatalog.defaults.map(\.name), id: \.self) { Text($0) }
+                Section("Bill") {
+                    TextField("Name", text: $name)
+                    TextField("Amount per payment", text: $amountText)
+                        .keyboardType(.decimalPad)
+                    Picker("Category", selection: $category) {
+                        ForEach(CategoryCatalog.defaults.map(\.name), id: \.self) { Text($0) }
+                    }
+                }
+                Section("Schedule") {
+                    Picker("Frequency", selection: $recurrence) {
+                        ForEach(BillRecurrence.allCases) { item in
+                            Text(item.displayName).tag(item)
+                        }
+                    }
+                    DatePicker("Starts on", selection: $startDate, displayedComponents: .date)
+                        .onChange(of: startDate) { _, newValue in
+                            dueDay = Calendar.current.component(.day, from: newValue)
+                        }
+                    if recurrence == .monthly || recurrence == .yearly {
+                        Stepper("Due day: \(clampedDueDay)", value: $dueDay, in: 1...28)
+                    } else {
+                        Text(weekdayHint)
+                            .font(PennyTypography.caption)
+                            .foregroundStyle(PennyColors.textSecondary)
+                    }
                 }
             }
             .navigationTitle("New Bill")
@@ -317,14 +343,30 @@ struct AddBillView: View {
         }
     }
 
+    private var clampedDueDay: Int { max(1, min(28, dueDay)) }
+
+    private var weekdayHint: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return "Repeats every \(recurrence == .weekly ? "week" : "two weeks") on \(formatter.string(from: startDate))"
+    }
+
     private func save() {
         guard let amount = Decimal.from(amountText), amount > 0 else { return }
+        let day = clampedDueDay
+        let next = DateHelpers.nextDueDate(
+            startDate: startDate,
+            recurrence: recurrence,
+            dueDay: day
+        )
         let bill = RecurringBill(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             amount: amount,
-            dueDay: dueDay,
+            dueDay: day,
             categoryName: category,
-            nextDueDate: DateHelpers.nextDueDate(dueDay: dueDay),
+            recurrence: recurrence,
+            nextDueDate: next,
+            startDate: startDate,
             icon: CategoryCatalog.icon(for: category)
         )
         modelContext.insert(bill)

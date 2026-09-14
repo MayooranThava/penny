@@ -1,4 +1,4 @@
-# App Store Connect & TestFlight — Penny
+# App Store Connect & TestFlight — My Penny
 
 Same workflow pattern as **Void Runner** (`ApolloX_IOS`).
 
@@ -6,83 +6,61 @@ Same workflow pattern as **Void Runner** (`ApolloX_IOS`).
 
 | Item | Value |
 |---|---|
-| App name | Penny |
-| Bundle ID | `com.mayooran.penny` (registered in ASC: `SNH525T7U8`) |
+| App Store name | **My Penny** |
+| Home-screen name | Penny |
+| App ID | `6811749191` |
+| Bundle ID | `com.mayooran.penny` (`SNH525T7U8`) |
+| SKU | `penny-ios` |
 | Team ID | `2YJ478267N` |
-| SKU (suggested) | `penny-ios` |
-| Primary language | English (U.S.) |
+| Primary locale | English (Canada) |
+| Internal TestFlight group | **Internal Testers** (`e2003e1f-f82e-4bd0-85f9-a5dfc4f4cec5`) |
 
-## What the API can and cannot do
+## Current status (API-checked)
 
-| Action | Public ASC API |
-|---|---|
-| Register Bundle ID | Yes (`scripts/asc_setup_penny.py ensure-bundle-id`) |
-| Create App Store Connect app record | **No** — do once in the website |
-| Upload build to TestFlight | Via `xcodebuild -exportArchive` on a Mac |
-| Fill listing metadata | Partially (after the app exists) |
+- App record: **exists**
+- App Store version 1.0: **Prepare for Submission**
+- Builds uploaded: **0** (none yet)
+- Internal group: **created** (`hasAccessToAllBuilds = true`)
 
-Apple returns `403` for `POST /v1/apps` regardless of Admin role.
+## What this environment cannot do
 
-## One-time setup
+Uploading a TestFlight **build** requires archiving a signed `.ipa` with **Xcode on a Mac**. This Linux agent cannot produce or upload iOS binaries. After you upload once from your Mac, the Internal Testers group will automatically see builds.
 
-### 1. API credentials (local env — do not commit the `.p8`)
+## Upload build #1 (on your Mac)
 
 ```bash
-export ASC_ISSUER_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"   # Users and Access → Integrations
-export ASC_KEY_ID="AJ6G86WBA2"   # Admin key named "cursor"
-export ASC_PRIVATE_KEY="$(cat ~/AuthKey_AJ6G86WBA2.p8)"
-```
-
-### 2. Register the Bundle ID
-
-```bash
-python3 -m pip install PyJWT cryptography
-python3 scripts/asc_setup_penny.py status
-python3 scripts/asc_setup_penny.py ensure-bundle-id
-```
-
-### 3. Create the app record (website, once)
-
-1. [App Store Connect → My Apps → +](https://appstoreconnect.apple.com/apps)
-2. **New App**
-3. Platforms: **iOS**
-4. Name: **Penny**
-5. Primary Language: **English (U.S.)**
-6. Bundle ID: **com.mayooran.penny**
-7. SKU: **penny-ios**
-8. User Access: **Full Access**
-9. Create
-
-### 4. Xcode signing
-
-- Team: **Mayooran Thavajogarasa** / `2YJ478267N`
-- Bundle Identifier: `com.mayooran.penny`
-- Automatically manage signing: on
-
-`DEVELOPMENT_TEAM` is set in the Xcode project / archive script.
-
-## Upload a TestFlight build (on your Mac)
-
-```bash
-# From the repo root, with Xcode installed and team signed in:
-chmod +x scripts/archive-for-testflight.sh
+cd /path/to/penny
+git pull
+# Confirm signing: Team 2YJ478267N, Bundle ID com.mayooran.penny
+open Penny.xcodeproj
+# Product → Archive  (or):
 ./scripts/archive-for-testflight.sh
 ```
 
-Then open **App Store Connect → Penny → TestFlight**. Wait for processing, add internal testers to a group, and install via the TestFlight app.
+Then:
 
-Bump **Current Project Version** (`CURRENT_PROJECT_VERSION`) before each new upload.
+1. Wait for email / ASC: **Processing complete** (often 5–20 min)
+2. App Store Connect → **My Penny** → **TestFlight**
+3. Confirm build appears under iOS builds
+4. **Internal Testers** group already has access to all builds
+5. On iPhone: install **TestFlight** → accept invite if prompted → install **My Penny**
 
-## Internal testing checklist
+Internal testers must be App Store Connect users on the team (Account Holder/Admin/etc.). Your admin Apple ID `mayooranthava@outlook.com` is eligible.
 
-1. App record exists in ASC
-2. At least one processed build in TestFlight
-3. Internal group has your Apple ID
-4. Build is assigned to that group
-5. On device: TestFlight → Penny → Install
+## Bump build number each upload
+
+In Xcode, increment **Current Project Version** (`CURRENT_PROJECT_VERSION`) before every new archive. Marketing version can stay `1.0.0` for now.
+
+## API helper
+
+```bash
+export ASC_ISSUER_ID="62c11ca7-f94e-4d56-8ecd-52c8c725cc18"
+export ASC_KEY_ID="AJ6G86WBA2"
+export ASC_PRIVATE_KEY="$(cat ~/AuthKey_AJ6G86WBA2.p8)"
+python3 scripts/asc_setup_penny.py status
+```
 
 ## Security
 
-- Never commit `AuthKey_*.p8` or paste keys into the repo
-- Prefer macOS Keychain / local env exports
-- Rotate the Admin key if it was shared in chat
+- Do not commit `.p8` keys
+- Rotate the Admin key that was shared in chat when convenient

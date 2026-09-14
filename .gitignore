@@ -1,0 +1,30 @@
+# Xcode / macOS
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager / local tooling
+.build/
+.swiftpm/
+Package.resolved
+Tools/PennyCoreLogic/.build/
+
+# OS
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Cursor / IDE
+.cursor/
+*.swp
+*~
+
+# Tooling
+/tmp/
+.swift-install/

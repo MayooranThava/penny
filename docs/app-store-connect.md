@@ -7,7 +7,7 @@ Same workflow pattern as **Void Runner** (`ApolloX_IOS`).
 | Item | Value |
 |---|---|
 | App name | Penny |
-| Bundle ID | `com.penny.app` |
+| Bundle ID | `com.mayooran.penny` (registered in ASC: `SNH525T7U8`) |
 | Team ID | `2YJ478267N` |
 | SKU (suggested) | `penny-ios` |
 | Primary language | English (U.S.) |
@@ -48,7 +48,7 @@ python3 scripts/asc_setup_penny.py ensure-bundle-id
 3. Platforms: **iOS**
 4. Name: **Penny**
 5. Primary Language: **English (U.S.)**
-6. Bundle ID: **com.penny.app**
+6. Bundle ID: **com.mayooran.penny**
 7. SKU: **penny-ios**
 8. User Access: **Full Access**
 9. Create
@@ -56,7 +56,7 @@ python3 scripts/asc_setup_penny.py ensure-bundle-id
 ### 4. Xcode signing
 
 - Team: **Mayooran Thavajogarasa** / `2YJ478267N`
-- Bundle Identifier: `com.penny.app`
+- Bundle Identifier: `com.mayooran.penny`
 - Automatically manage signing: on
 
 `DEVELOPMENT_TEAM` is set in the Xcode project / archive script.

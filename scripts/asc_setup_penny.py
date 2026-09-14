@@ -36,7 +36,7 @@ except ImportError:
     raise SystemExit(1)
 
 API = "https://api.appstoreconnect.apple.com/v1"
-DEFAULT_BUNDLE_ID = "com.penny.app"
+DEFAULT_BUNDLE_ID = "com.mayooran.penny"
 DEFAULT_BUNDLE_NAME = "Penny"
 DEFAULT_APP_NAME = "Penny"
 TEAM_HINT = "2YJ478267N"

@@ -26,11 +26,9 @@ struct PennyApp: App {
 
     @ViewBuilder
     private var content: some View {
-        if let launchError {
-            StorageErrorView(message: launchError) {
-                launchError = nil
-                didStartLaunch = false
-                Task { await startIfNeeded() }
+        if let errorMessage = launchError {
+            StorageErrorView(message: errorMessage) {
+                retryLaunch()
             }
         } else if let container {
             RootView()
@@ -39,6 +37,13 @@ struct PennyApp: App {
         } else {
             LaunchSplashView()
         }
+    }
+
+    @MainActor
+    private func retryLaunch() {
+        launchError = nil
+        didStartLaunch = false
+        Task { await startIfNeeded() }
     }
 
     @MainActor

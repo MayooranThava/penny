@@ -12,6 +12,20 @@ enum PennyPersistence {
     /// Stable store name — do not rename; renaming would create a new empty database.
     static let storeName = "Penny"
 
+    /// On-disk schema. Keep model types stable across builds; additive fields are OK.
+    /// When a breaking model change is needed, introduce `PennySchemaV2` + a migration stage
+    /// in `PennyMigrationPlan` and pass that plan into `ModelContainer`.
+    static let schema = Schema([
+        Transaction.self,
+        BudgetCategory.self,
+        Budget.self,
+        RecurringBill.self,
+        SavingsGoal.self,
+        Debt.self,
+        FinancialAccount.self,
+        UserSettings.self
+    ])
+
     enum ContainerError: Error, LocalizedError {
         case unavailable(underlying: Error)
 
@@ -26,14 +40,13 @@ enum PennyPersistence {
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
         let configuration = ModelConfiguration(
             storeName,
+            schema: schema,
             isStoredInMemoryOnly: inMemory
         )
         do {
-            return try ModelContainer(
-                for: PennySchemaV1.self,
-                migrationPlan: PennyMigrationPlan.self,
-                configurations: [configuration]
-            )
+            // Use the Schema overload (not VersionedSchema.Type) for Xcode Cloud compatibility.
+            // Lightweight migration still preserves data across additive updates.
+            return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
             // Never fall back to an empty in-memory store. That would look like a
             // data wipe after an app update if the on-disk open failed.
@@ -94,17 +107,15 @@ enum PennyPersistence {
             return container
         } catch {
             let fallback = ModelConfiguration(isStoredInMemoryOnly: true)
-            return try! ModelContainer(
-                for: PennySchemaV1.self,
-                configurations: [fallback]
-            )
+            return try! ModelContainer(for: schema, configurations: [fallback])
         }
     }
 }
 
-// MARK: - Versioned schema (keeps updates from failing open / wiping)
+// MARK: - Versioned schema baseline (ready for future V2 migrations)
 
-/// Version 1 — current shipping models. Additive changes should become V2 + a migration stage.
+/// Declares the current model set for future `SchemaMigrationPlan` stages.
+/// Not passed directly into `ModelContainer(for:)` — that API expects `Schema`.
 enum PennySchemaV1: VersionedSchema {
     static var versionIdentifier = Schema.Version(1, 0, 0)
 
@@ -127,6 +138,5 @@ enum PennyMigrationPlan: SchemaMigrationPlan {
         [PennySchemaV1.self]
     }
 
-    /// No stages yet — V1 is the baseline. Future model changes get a lightweight or custom stage here.
     static var stages: [MigrationStage] { [] }
 }

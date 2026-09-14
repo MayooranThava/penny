@@ -1,8 +1,7 @@
 # App Store Connect & TestFlight — My Penny
 
-Same Apple team / API-key pattern as **Void Runner** (`ApolloX_IOS`), plus **automatic TestFlight uploads on every `main` push**.
-
-> Note: Void Runner’s GitHub Actions only ran unit tests. Archives were still uploaded from a Mac. Penny goes further: `main` → macOS CI → Archive → TestFlight.
+**Preferred path: Xcode Cloud** (same as Void Runner).  
+GitHub Actions archive upload is optional fallback only.
 
 ## Identifiers
 
@@ -18,60 +17,52 @@ Same Apple team / API-key pattern as **Void Runner** (`ApolloX_IOS`), plus **aut
 | Primary locale | English (Canada) |
 | Internal TestFlight group | **Internal Testers** (`e2003e1f-f82e-4bd0-85f9-a5dfc4f4cec5`) |
 
-## Automatic builds (every commit to `main`)
+## Recommended: Xcode Cloud (like Void Runner)
 
-Workflow: [`.github/workflows/testflight.yml`](../.github/workflows/testflight.yml)
+Void Runner (`ApolloX_IOS`) already has an Xcode Cloud product with a **TestFlight** workflow that archives on branch pushes and sends builds to TestFlight.
 
-### One-time GitHub secrets
+Penny does **not** have Xcode Cloud enabled yet (no `ciProduct` in App Store Connect). After a one-time enable, every push to `main` can archive and land in TestFlight with **no GitHub Actions secrets and no Mac uploads**.
 
-Repo → **Settings → Secrets and variables → Actions** → add:
+### One-time setup (App Store Connect or Xcode)
 
-| Secret | Value |
-|---|---|
-| `ASC_ISSUER_ID` | App Store Connect API Issuer ID (Users and Access → Integrations) |
-| `ASC_KEY_ID` | Key ID (e.g. `AJ6G86WBA2`) |
-| `ASC_PRIVATE_KEY` | Full `.p8` PEM contents (`-----BEGIN PRIVATE KEY-----` …) |
-| `TESTFLIGHT_EXTERNAL_GROUP_ID` | *(optional)* External testing group UUID |
+Do this once on your Mac (browser Apple ID login / GitHub OAuth cannot be finished from this Linux agent):
 
-Use an **App Manager** or **Admin** API key (same key type as Void Runner).
+1. Open [App Store Connect](https://appstoreconnect.apple.com) → **My Penny** → **Xcode Cloud**  
+   *(or in Xcode: Product → Xcode Cloud → Create Workflow…)*
+2. **Get Started** / create product for **My Penny**.
+3. Connect the GitHub repo **MayooranThava/penny** (approve the Xcode Cloud GitHub app if asked).
+4. Create a workflow (mirror Void Runner’s **TestFlight** workflow):
+   - **Name:** `TestFlight`
+   - **Start condition:** Branch changes → `main` (Void Runner uses `development`; for Penny use `main`)
+   - **Action:** Archive – iOS  
+     - Scheme: `Penny`  
+     - Deployment: **TestFlight and App Store** (or Internal Testing Only if you prefer)
+   - **Post-actions:** TestFlight Internal Testing → group **Internal Testers**  
+     - Optional: add an External Testing post-action later
+5. Save → start a first build (or push to `main`).
 
-### What happens on each `main` push
+After that, every commit to `main` produces a new TestFlight build. Internal Testers already have **access to all builds**.
 
-1. GitHub Actions starts on `macos-15`
-2. Picks the next `CURRENT_PROJECT_VERSION` (latest ASC build + 1)
-3. Archives **Penny** + widgets with ASC API-key signing
-4. Uploads to App Store Connect (`ExportOptions.plist` → `destination=upload`)
-5. Best-effort assign to Internal Testers (and external group if secret is set)
+### External testing
 
-### Internal vs external
+1. Create an External group under TestFlight.
+2. Add an External Testing post-action on the same Xcode Cloud workflow (or a separate release workflow).
+3. First external build of a version still needs **Beta App Review** once.
 
-| Track | Behavior |
-|---|---|
-| **Internal** | App Store Connect users in **Internal Testers**. Enable **automatic distribution** on that group so every processed build appears without manual clicks. |
-| **External** | Create an External Testing group in ASC. First build of a version needs **Beta App Review**. After approval, later builds can distribute automatically if the group is set that way. Set `TESTFLIGHT_EXTERNAL_GROUP_ID` so CI can attach builds. |
+## Optional fallback: GitHub Actions
 
-Manual re-run: Actions → **TestFlight** → **Run workflow**.
+Only if you do not want Xcode Cloud. Workflow: [`.github/workflows/testflight.yml`](../.github/workflows/testflight.yml)
 
-## Manual upload (Mac, same as Void Runner)
+GitHub secrets: `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_PRIVATE_KEY`  
+Optional: `TESTFLIGHT_EXTERNAL_GROUP_ID`
+
+Prefer Xcode Cloud when possible — it matches Void Runner and uses Apple’s signing/hosting.
+
+## Manual Mac upload (rare)
 
 ```bash
-cd /path/to/penny
-git pull
 ./scripts/archive-for-testflight.sh
 ```
-
-Or with the CI script + API key (no Xcode GUI account session required):
-
-```bash
-export ASC_ISSUER_ID="…"
-export ASC_KEY_ID="…"
-export ASC_KEY_PATH="$HOME/AuthKey_${ASC_KEY_ID}.p8"
-export PENNY_BUILD_NUMBER="$(python3 scripts/next_build_number.py --fallback 2)"
-./scripts/ci_testflight.sh
-```
-
-Or in Xcode: **Any iOS Device** → **Product → Archive** → **Distribute App → App Store Connect → Upload**.  
-Bump **Current Project Version** before each manual upload if CI is not doing it.
 
 ## Signing checklist
 
@@ -80,7 +71,7 @@ Bump **Current Project Version** before each manual upload if CI is not doing it
 - Widget Bundle ID: `com.mayooran.penny.widgets`
 - App Group: `group.com.mayooran.penny` on both targets
 - Automatically manage signing: **on**
-- Widget `Info.plist` must include `NSExtensionPointIdentifier` = `com.apple.widgetkit-extension`
+- Widget `Info.plist`: `NSExtensionPointIdentifier` = `com.apple.widgetkit-extension`
 
 ## API helper
 
@@ -89,11 +80,9 @@ export ASC_ISSUER_ID="…"
 export ASC_KEY_ID="…"
 export ASC_PRIVATE_KEY="$(cat ~/AuthKey_XXXX.p8)"
 python3 scripts/asc_setup_penny.py status
-python3 scripts/next_build_number.py
 ```
 
 ## Security
 
 - Do not commit `.p8` keys
-- Store them only in GitHub Actions secrets / your password manager
 - Rotate any Admin key that was pasted into chat

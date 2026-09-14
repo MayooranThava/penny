@@ -107,14 +107,13 @@ If signing is required for a physical device, select your Development Team on th
 
 ## TestFlight (internal + external)
 
-Every push to **`main`** archives and uploads a new build via GitHub Actions → TestFlight.
+**Preferred:** enable **Xcode Cloud** for My Penny in App Store Connect (same system Void Runner already uses). After a one-time GitHub link + workflow on `main`, every push archives to TestFlight — no GitHub Actions secrets.
 
-1. One-time: add `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_PRIVATE_KEY` as GitHub Actions secrets (see **[docs/app-store-connect.md](docs/app-store-connect.md)**).
-2. Merge to `main` (or run the **TestFlight** workflow manually).
-3. Internal testers install from TestFlight after processing.
-4. Optional: set `TESTFLIGHT_EXTERNAL_GROUP_ID` for external testers (first external build still needs Beta App Review).
+See **[docs/app-store-connect.md](docs/app-store-connect.md)** for the click path.
 
-Manual Mac upload (Void Runner style): `./scripts/archive-for-testflight.sh`
+Optional fallback: GitHub Actions workflow + `ASC_ISSUER_ID` / `ASC_KEY_ID` / `ASC_PRIVATE_KEY` secrets.
+
+Manual Mac upload: `./scripts/archive-for-testflight.sh`
 
 API helper: `python3 scripts/asc_setup_penny.py status`
 

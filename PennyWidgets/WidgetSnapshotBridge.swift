@@ -14,23 +14,24 @@ enum WidgetSnapshotBridge {
         var nextReminderDetail: String?
         var displayName: String
         var updatedAt: Date
+
+        /// Used by WidgetKit placeholder / snapshot fallbacks.
+        static var placeholder: Snapshot {
+            Snapshot(
+                safeToSpend: 3_350,
+                currencyCode: "CAD",
+                monthLabel: "September",
+                nextReminderTitle: "Rent due",
+                nextReminderDetail: "$1,500 · Sep 20",
+                displayName: "Mayooran",
+                updatedAt: .now
+            )
+        }
     }
 
     static func load() -> Snapshot? {
         guard let defaults = UserDefaults(suiteName: appGroupID),
               let data = defaults.data(forKey: snapshotKey) else { return nil }
         return try? JSONDecoder().decode(Snapshot.self, from: data)
-    }
-
-    static var placeholder: Snapshot {
-        Snapshot(
-            safeToSpend: 3_350,
-            currencyCode: "CAD",
-            monthLabel: "September",
-            nextReminderTitle: "Rent due",
-            nextReminderDetail: "$1,500 · Sep 20",
-            displayName: "Mayooran",
-            updatedAt: .now
-        )
     }
 }

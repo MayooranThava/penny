@@ -8,16 +8,16 @@ struct UpcomingReminderEntry: TimelineEntry {
 
 struct UpcomingReminderProvider: TimelineProvider {
     func placeholder(in context: Context) -> UpcomingReminderEntry {
-        UpcomingReminderEntry(date: .now, snapshot: .placeholder)
+        UpcomingReminderEntry(date: .now, snapshot: WidgetSnapshotBridge.Snapshot.placeholder)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (UpcomingReminderEntry) -> Void) {
-        let snapshot = WidgetSnapshotBridge.load() ?? .placeholder
+        let snapshot = WidgetSnapshotBridge.load() ?? WidgetSnapshotBridge.Snapshot.placeholder
         completion(UpcomingReminderEntry(date: .now, snapshot: snapshot))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UpcomingReminderEntry>) -> Void) {
-        let snapshot = WidgetSnapshotBridge.load() ?? .placeholder
+        let snapshot = WidgetSnapshotBridge.load() ?? WidgetSnapshotBridge.Snapshot.placeholder
         let entry = UpcomingReminderEntry(date: .now, snapshot: snapshot)
         let next = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now.addingTimeInterval(1_800)
         completion(Timeline(entries: [entry], policy: .after(next)))

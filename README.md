@@ -92,6 +92,8 @@ xcodebuild test -scheme Penny -destination 'platform=iOS Simulator,name=iPhone 1
 
 (Adjust simulator name to one installed on your Mac.)
 
+Core calculation logic was also validated on Linux via `Tools/PennyCoreLogic` (Swift 6.0.3 toolchain): **17/17 tests passed**.
+
 ## How to open and run
 
 1. On a Mac with **Xcode 15.4+** (Xcode 16 recommended), clone this repository.

@@ -229,7 +229,7 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section("Privacy") {
-            Text("Penny keeps your financial information on this device. This prototype does not sync to the cloud, connect to banks, or send analytics. App updates keep your local data unless you choose Reset or Delete.")
+            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. This prototype does not sync to the cloud, connect to banks, or send analytics.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
         }

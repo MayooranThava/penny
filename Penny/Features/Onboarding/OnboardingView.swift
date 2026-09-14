@@ -187,7 +187,8 @@ struct OnboardingView: View {
                 try DemoDataService.seedDemo(
                     in: modelContext,
                     currencyCode: currency.rawValue,
-                    markOnboardingComplete: true
+                    markOnboardingComplete: true,
+                    replaceExisting: true
                 )
                 if let settings = try modelContext.fetch(FetchDescriptor<UserSettings>()).first {
                     settings.monthlyIncome = income > 0 ? income : DemoDataService.demoMonthlyIncome
@@ -201,7 +202,8 @@ struct OnboardingView: View {
                     in: modelContext,
                     currencyCode: currency.rawValue,
                     monthlyIncome: income,
-                    displayName: name
+                    displayName: name,
+                    replaceExisting: true
                 )
             }
             try modelContext.save()

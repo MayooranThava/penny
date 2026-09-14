@@ -37,7 +37,7 @@ enum DemoDataService {
 
     static func resetAll(in context: ModelContext) throws {
         try deleteAll(in: context)
-        try seedDemo(in: context, markOnboardingComplete: true)
+        try seedDemo(in: context, markOnboardingComplete: true, replaceExisting: true)
     }
 
     static func deleteAll(in context: ModelContext) throws {
@@ -52,13 +52,38 @@ enum DemoDataService {
         try context.save()
     }
 
+    /// True when the store already has user-facing records (excluding a lone empty settings row).
+    static func hasPersistedUserContent(in context: ModelContext) throws -> Bool {
+        let tx = try context.fetch(FetchDescriptor<Transaction>(fetchLimit: 1))
+        if !tx.isEmpty { return true }
+        let bills = try context.fetch(FetchDescriptor<RecurringBill>(fetchLimit: 1))
+        if !bills.isEmpty { return true }
+        let debts = try context.fetch(FetchDescriptor<Debt>(fetchLimit: 1))
+        if !debts.isEmpty { return true }
+        let goals = try context.fetch(FetchDescriptor<SavingsGoal>(fetchLimit: 1))
+        if !goals.isEmpty { return true }
+        let accounts = try context.fetch(FetchDescriptor<FinancialAccount>(fetchLimit: 1))
+        if !accounts.isEmpty { return true }
+        let categories = try context.fetch(FetchDescriptor<BudgetCategory>(fetchLimit: 1))
+        if !categories.isEmpty { return true }
+        let budgets = try context.fetch(FetchDescriptor<Budget>(fetchLimit: 1))
+        return !budgets.isEmpty
+    }
+
     static func seedFresh(
         in context: ModelContext,
         currencyCode: String,
         monthlyIncome: Decimal,
         appearance: AppAppearance = .system,
-        displayName: String = ""
+        displayName: String = "",
+        replaceExisting: Bool = false
     ) throws {
+        if try hasPersistedUserContent(in: context), !replaceExisting {
+            // Protect existing installs: never wipe just because a seed was requested without opt-in.
+            try restoreSettingsIfMissing(in: context, currencyCode: currencyCode, monthlyIncome: monthlyIncome, appearance: appearance, displayName: displayName)
+            return
+        }
+
         try deleteAll(in: context)
 
         for def in CategoryCatalog.defaults {
@@ -101,8 +126,21 @@ enum DemoDataService {
     static func seedDemo(
         in context: ModelContext,
         currencyCode: String = "CAD",
-        markOnboardingComplete: Bool = true
+        markOnboardingComplete: Bool = true,
+        replaceExisting: Bool = false
     ) throws {
+        if try hasPersistedUserContent(in: context), !replaceExisting {
+            try restoreSettingsIfMissing(
+                in: context,
+                currencyCode: currencyCode,
+                monthlyIncome: nil,
+                appearance: nil,
+                displayName: nil,
+                markOnboardingComplete: markOnboardingComplete
+            )
+            return
+        }
+
         try deleteAll(in: context)
 
         let calendar = Calendar.current
@@ -311,6 +349,40 @@ enum DemoDataService {
             displayName: "Mayooran"
         )
         context.insert(settings)
+        try context.save()
+    }
+
+    /// Recreate or refresh settings without deleting transactions/bills/goals.
+    private static func restoreSettingsIfMissing(
+        in context: ModelContext,
+        currencyCode: String,
+        monthlyIncome: Decimal?,
+        appearance: AppAppearance?,
+        displayName: String?,
+        markOnboardingComplete: Bool = true
+    ) throws {
+        if let settings = try context.fetch(FetchDescriptor<UserSettings>()).first {
+            settings.currencyCode = currencyCode
+            if let monthlyIncome { settings.monthlyIncome = monthlyIncome }
+            if let appearance { settings.appearance = appearance }
+            if let displayName { settings.displayName = displayName }
+            settings.hasCompletedOnboarding = markOnboardingComplete
+            try context.save()
+            return
+        }
+
+        context.insert(
+            UserSettings(
+                currencyCode: currencyCode,
+                monthlyIncome: monthlyIncome ?? 0,
+                plannedMonthlySavings: 0,
+                hasCompletedOnboarding: markOnboardingComplete,
+                billRemindersEnabled: true,
+                appearance: appearance ?? .system,
+                usingDemoData: false,
+                displayName: displayName ?? ""
+            )
+        )
         try context.save()
     }
 

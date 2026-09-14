@@ -280,7 +280,12 @@ struct SettingsView: View {
     private func deleteAll() {
         do {
             try DemoDataService.deleteAll(in: modelContext)
-            try DemoDataService.seedFresh(in: modelContext, currencyCode: "CAD", monthlyIncome: 0)
+            try DemoDataService.seedFresh(
+                in: modelContext,
+                currencyCode: "CAD",
+                monthlyIncome: 0,
+                replaceExisting: true
+            )
             let descriptor = FetchDescriptor<UserSettings>()
             if let settings = try modelContext.fetch(descriptor).first {
                 settings.hasCompletedOnboarding = false

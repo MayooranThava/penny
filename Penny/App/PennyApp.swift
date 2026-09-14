@@ -27,7 +27,11 @@ struct PennyApp: App {
     @ViewBuilder
     private var content: some View {
         if let launchError {
-            StorageErrorView(message: launchError)
+            StorageErrorView(message: launchError) {
+                launchError = nil
+                didStartLaunch = false
+                Task { await startIfNeeded() }
+            }
         } else if let container {
             RootView()
                 .environment(session)
@@ -46,8 +50,12 @@ struct PennyApp: App {
         await Task.yield()
 
         do {
-            container = try PennyPersistence.makeContainer()
+            let opened = try PennyPersistence.makeContainer()
+            try PennyPersistence.repairIfNeeded(in: opened.mainContext)
+            container = opened
+            launchError = nil
         } catch {
+            container = nil
             launchError = error.localizedDescription
         }
     }
@@ -75,6 +83,7 @@ struct LaunchSplashView: View {
 
 struct StorageErrorView: View {
     let message: String
+    var onRetry: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: PennySpacing.md) {
@@ -88,6 +97,17 @@ struct StorageErrorView: View {
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+            Text("Your information is still on this device. Updating the app never deletes it — try again, or reinstall only as a last resort (reinstalling removes local data).")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textTertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            if let onRetry {
+                Button("Try again", action: onRetry)
+                    .buttonStyle(.pennyPrimary)
+                    .frame(maxWidth: 240)
+                    .padding(.top, PennySpacing.sm)
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -96,6 +116,7 @@ struct StorageErrorView: View {
 }
 
 struct RootView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query private var settingsList: [UserSettings]
 
     private var settings: UserSettings? { settingsList.first }
@@ -111,6 +132,10 @@ struct RootView: View {
         }
         .preferredColorScheme(settings?.appearance.colorScheme)
         .tint(PennyColors.brand)
+        .task {
+            // Belt-and-suspenders if settings were missing after an update.
+            try? PennyPersistence.repairIfNeeded(in: modelContext)
+        }
     }
 }
 

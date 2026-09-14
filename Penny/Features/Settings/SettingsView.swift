@@ -1,0 +1,236 @@
+import SwiftUI
+import SwiftData
+
+struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var settingsList: [UserSettings]
+    @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
+
+    @State private var confirmReset = false
+    @State private var confirmDelete = false
+    @State private var incomeText = ""
+
+    private var settings: UserSettings? { settingsList.first }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                currencySection
+                incomeSection
+                appearanceSection
+                notificationsSection
+                dataSection
+                aboutSection
+                privacySection
+            }
+            .navigationTitle("Settings")
+            .scrollContentBackground(.hidden)
+            .background(PennyColors.background.ignoresSafeArea())
+            .onAppear {
+                if let income = settings?.monthlyIncome {
+                    incomeText = NSDecimalNumber(decimal: income).stringValue
+                }
+            }
+            .alert("Reset demo data?", isPresented: $confirmReset) {
+                Button("Reset", role: .destructive) { resetDemo() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This replaces all local data with the sample household.")
+            }
+            .alert("Delete all data?", isPresented: $confirmDelete) {
+                Button("Delete", role: .destructive) { deleteAll() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently removes transactions, budgets, goals, bills, and settings on this device.")
+            }
+        }
+    }
+
+    private var currencySection: some View {
+        Section("Currency") {
+            Picker("Currency", selection: currencyBinding) {
+                ForEach(SupportedCurrency.allCases) { currency in
+                    Text("\(currency.flag) \(currency.rawValue) — \(currency.displayName)")
+                        .tag(currency.rawValue)
+                }
+            }
+        }
+    }
+
+    private var incomeSection: some View {
+        Section("Monthly take-home") {
+            HStack {
+                TextField("Income", text: $incomeText)
+                    .keyboardType(.decimalPad)
+                Button("Save") {
+                    if let value = Decimal.from(incomeText), let settings {
+                        settings.monthlyIncome = value
+                        try? modelContext.save()
+                        Haptics.success()
+                    }
+                }
+            }
+            if let settings {
+                HStack {
+                    Text("Planned monthly savings")
+                    Spacer()
+                    Text(MoneyFormatters.compact(from: settings.plannedMonthlySavings, currencyCode: settings.currencyCode))
+                        .foregroundStyle(PennyColors.textSecondary)
+                        .monospacedDigit()
+                }
+                Slider(
+                    value: Binding(
+                        get: { NSDecimalNumber(decimal: settings.plannedMonthlySavings).doubleValue },
+                        set: {
+                            settings.plannedMonthlySavings = Decimal($0).rounded(scale: 0)
+                            try? modelContext.save()
+                        }
+                    ),
+                    in: 0...5_000,
+                    step: 50
+                )
+                .tint(PennyColors.brand)
+            }
+        }
+    }
+
+    private var appearanceSection: some View {
+        Section("Appearance") {
+            Picker("Appearance", selection: appearanceBinding) {
+                ForEach(AppAppearance.allCases) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    private var notificationsSection: some View {
+        Section("Notifications") {
+            Toggle("Bill reminders", isOn: remindersBinding)
+        }
+    }
+
+    private var dataSection: some View {
+        Section("Data") {
+            Button("Reset demo data") { confirmReset = true }
+            Button("Delete all data", role: .destructive) { confirmDelete = true }
+        }
+    }
+
+    private var aboutSection: some View {
+        Section("About Penny") {
+            LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+            LabeledContent("Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+            Text("Beautiful personal finance without an expensive subscription.")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textSecondary)
+            NavigationLink("Penny Pro (coming soon)") {
+                PennyProInfoView()
+            }
+        }
+    }
+
+    private var privacySection: some View {
+        Section("Privacy") {
+            Text("Penny keeps your financial information on this device. This prototype does not sync to the cloud, connect to banks, or send analytics.")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textSecondary)
+        }
+    }
+
+    private var currencyBinding: Binding<String> {
+        Binding(
+            get: { settings?.currencyCode ?? "CAD" },
+            set: { newValue in
+                settings?.currencyCode = newValue
+                try? modelContext.save()
+            }
+        )
+    }
+
+    private var appearanceBinding: Binding<AppAppearance> {
+        Binding(
+            get: { settings?.appearance ?? .system },
+            set: { newValue in
+                settings?.appearance = newValue
+                try? modelContext.save()
+            }
+        )
+    }
+
+    private var remindersBinding: Binding<Bool> {
+        Binding(
+            get: { settings?.billRemindersEnabled ?? true },
+            set: { newValue in
+                settings?.billRemindersEnabled = newValue
+                try? modelContext.save()
+                Task {
+                    await NotificationService.shared.refreshBillReminders(bills: bills, enabled: newValue)
+                }
+            }
+        )
+    }
+
+    private func resetDemo() {
+        do {
+            try DemoDataService.resetAll(in: modelContext)
+            Haptics.success()
+        } catch {
+            Haptics.warning()
+        }
+    }
+
+    private func deleteAll() {
+        do {
+            try DemoDataService.deleteAll(in: modelContext)
+            try DemoDataService.seedFresh(in: modelContext, currencyCode: "CAD", monthlyIncome: 0)
+            let descriptor = FetchDescriptor<UserSettings>()
+            if let settings = try modelContext.fetch(descriptor).first {
+                settings.hasCompletedOnboarding = false
+                try modelContext.save()
+            }
+            Haptics.warning()
+        } catch {
+            Haptics.warning()
+        }
+    }
+}
+
+struct PennyProInfoView: View {
+    var body: some View {
+        List {
+            Section {
+                Text("Penny Free covers everyday budgeting. A future Penny Pro lifetime unlock may include advanced forecasts, unlimited goals, debt planner depth, CSV export, widgets, and iCloud sync — without a recurring subscription.")
+                    .font(PennyTypography.callout)
+            }
+            Section("Potential Pro features") {
+                Label("Advanced forecasts", systemImage: "chart.line.uptrend.xyaxis")
+                Label("Unlimited savings goals", systemImage: "target")
+                Label("Debt planner", systemImage: "creditcard")
+                Label("Advanced insights", systemImage: "lightbulb")
+                Label("CSV export", systemImage: "square.and.arrow.up")
+                Label("Widgets", systemImage: "rectangle.on.rectangle")
+                Label("iCloud sync", systemImage: "icloud")
+                Label("Custom themes", systemImage: "paintpalette")
+            }
+            Section {
+                Text("No paywall in this prototype. StoreKit product IDs will be configured later — pricing is never hard-coded.")
+                    .font(PennyTypography.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("Penny Pro")
+    }
+}
+
+/// Placeholder StoreKit product catalog for future monetization (no paywall yet).
+enum PennyProductCatalog {
+    static let lifetimeProductID = "com.penny.app.pro.lifetime"
+    static let freeTierGoalLimit = 3
+}
+
+#Preview {
+    SettingsView()
+        .modelContainer(PennyPersistence.previewContainer())
+}

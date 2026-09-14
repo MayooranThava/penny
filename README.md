@@ -105,13 +105,16 @@ Core calculation logic was also validated on Linux via `Tools/PennyCoreLogic` (S
 
 If signing is required for a physical device, select your Development Team on the Penny target (**Signing & Capabilities**). The project defaults to team `2YJ478267N`.
 
-## TestFlight (internal)
+## TestFlight (internal + external)
 
-Same pattern as Void Runner:
+Every push to **`main`** archives and uploads a new build via GitHub Actions → TestFlight.
 
-1. Follow **[docs/app-store-connect.md](docs/app-store-connect.md)** (Bundle ID + one-time app create in ASC).
-2. On a Mac: `./scripts/archive-for-testflight.sh`
+1. One-time: add `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_PRIVATE_KEY` as GitHub Actions secrets (see **[docs/app-store-connect.md](docs/app-store-connect.md)**).
+2. Merge to `main` (or run the **TestFlight** workflow manually).
 3. Internal testers install from TestFlight after processing.
+4. Optional: set `TESTFLIGHT_EXTERNAL_GROUP_ID` for external testers (first external build still needs Beta App Review).
+
+Manual Mac upload (Void Runner style): `./scripts/archive-for-testflight.sh`
 
 API helper: `python3 scripts/asc_setup_penny.py status`
 

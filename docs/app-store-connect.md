@@ -34,6 +34,10 @@ Void Runner (`ApolloX_IOS`) already has Xcode Cloud. Penny needs a one-time enab
    - **Post-action:** TestFlight Internal Testing → **Internal Testers**
 5. Save → start a first build (or push to `main`).
 
+### Build numbers
+
+App Store Connect already has builds **1** and **2** from Mac uploads. The project starts at build **3**, and `ci_scripts/ci_post_clone.sh` bumps `CURRENT_PROJECT_VERSION` on each Xcode Cloud run so uploads never collide.
+
 ### External testing
 
 1. Create an External group under TestFlight.

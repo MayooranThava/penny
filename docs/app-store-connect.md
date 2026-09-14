@@ -39,7 +39,7 @@ Use an **App Manager** or **Admin** API key (same key type as Void Runner).
 
 1. GitHub Actions starts on `macos-15`
 2. Picks the next `CURRENT_PROJECT_VERSION` (latest ASC build + 1)
-3. Archives **Penny** + **PennyWidgets** with ASC API-key signing
+3. Archives **Penny** + widgets with ASC API-key signing
 4. Uploads to App Store Connect (`ExportOptions.plist` → `destination=upload`)
 5. Best-effort assign to Internal Testers (and external group if secret is set)
 

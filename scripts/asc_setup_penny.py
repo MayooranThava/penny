@@ -9,11 +9,12 @@ Env (required):
 Usage:
   python3 scripts/asc_setup_penny.py status
   python3 scripts/asc_setup_penny.py ensure-bundle-id
-  python3 scripts/asc_setup_penny.py ensure-bundle-id --identifier com.mayooran.penny
+  python3 scripts/asc_setup_penny.py assign-build --build-number 12 \\
+      --internal-group-id e2003e1f-f82e-4bd0-85f9-a5dfc4f4cec5
 
 Note: Apple's public API cannot CREATE the App Store Connect app record.
 After the Bundle ID exists, create the app once in the ASC website
-(My Apps → + → New App), then uploads via scripts/archive-for-testflight.sh
+(My Apps → + → New App), then uploads via GitHub Actions / scripts/ci_testflight.sh
 appear under TestFlight.
 """
 

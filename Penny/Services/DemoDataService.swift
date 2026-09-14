@@ -54,20 +54,19 @@ enum DemoDataService {
 
     /// True when the store already has user-facing records (excluding a lone empty settings row).
     static func hasPersistedUserContent(in context: ModelContext) throws -> Bool {
-        let tx = try context.fetch(FetchDescriptor<Transaction>(fetchLimit: 1))
-        if !tx.isEmpty { return true }
-        let bills = try context.fetch(FetchDescriptor<RecurringBill>(fetchLimit: 1))
-        if !bills.isEmpty { return true }
-        let debts = try context.fetch(FetchDescriptor<Debt>(fetchLimit: 1))
-        if !debts.isEmpty { return true }
-        let goals = try context.fetch(FetchDescriptor<SavingsGoal>(fetchLimit: 1))
-        if !goals.isEmpty { return true }
-        let accounts = try context.fetch(FetchDescriptor<FinancialAccount>(fetchLimit: 1))
-        if !accounts.isEmpty { return true }
-        let categories = try context.fetch(FetchDescriptor<BudgetCategory>(fetchLimit: 1))
-        if !categories.isEmpty { return true }
-        let budgets = try context.fetch(FetchDescriptor<Budget>(fetchLimit: 1))
-        return !budgets.isEmpty
+        if try fetchExists(Transaction.self, in: context) { return true }
+        if try fetchExists(RecurringBill.self, in: context) { return true }
+        if try fetchExists(Debt.self, in: context) { return true }
+        if try fetchExists(SavingsGoal.self, in: context) { return true }
+        if try fetchExists(FinancialAccount.self, in: context) { return true }
+        if try fetchExists(BudgetCategory.self, in: context) { return true }
+        return try fetchExists(Budget.self, in: context)
+    }
+
+    private static func fetchExists<T: PersistentModel>(_ type: T.Type, in context: ModelContext) throws -> Bool {
+        var descriptor = FetchDescriptor<T>()
+        descriptor.fetchLimit = 1
+        return try !context.fetch(descriptor).isEmpty
     }
 
     static func seedFresh(

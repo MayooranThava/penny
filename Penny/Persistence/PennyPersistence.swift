@@ -12,6 +12,10 @@ enum PennyPersistence {
     /// Stable store name — do not rename; renaming would create a new empty database.
     static let storeName = "Penny"
 
+    /// Shared schema used for the on-disk store and previews.
+    /// Built from the versioned V1 models so the migration plan stays aligned.
+    static let schema = Schema(versionedSchema: PennySchemaV1.self)
+
     enum ContainerError: Error, LocalizedError {
         case unavailable(underlying: Error)
 
@@ -26,11 +30,12 @@ enum PennyPersistence {
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
         let configuration = ModelConfiguration(
             storeName,
+            schema: schema,
             isStoredInMemoryOnly: inMemory
         )
         do {
             return try ModelContainer(
-                for: PennySchemaV1.self,
+                for: schema,
                 migrationPlan: PennyMigrationPlan.self,
                 configurations: [configuration]
             )
@@ -94,15 +99,12 @@ enum PennyPersistence {
             return container
         } catch {
             let fallback = ModelConfiguration(isStoredInMemoryOnly: true)
-            return try! ModelContainer(
-                for: PennySchemaV1.self,
-                configurations: [fallback]
-            )
+            return try! ModelContainer(for: schema, configurations: [fallback])
         }
     }
 }
 
-// MARK: - Versioned schema (keeps updates from failing open / wiping)
+// MARK: - Versioned schema (baseline for future migrations)
 
 /// Version 1 — current shipping models. Additive changes should become V2 + a migration stage.
 enum PennySchemaV1: VersionedSchema {

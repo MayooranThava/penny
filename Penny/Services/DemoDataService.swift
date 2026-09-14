@@ -56,7 +56,8 @@ enum DemoDataService {
         in context: ModelContext,
         currencyCode: String,
         monthlyIncome: Decimal,
-        appearance: AppAppearance = .system
+        appearance: AppAppearance = .system,
+        displayName: String = ""
     ) throws {
         try deleteAll(in: context)
 
@@ -90,7 +91,8 @@ enum DemoDataService {
             hasCompletedOnboarding: true,
             billRemindersEnabled: true,
             appearance: appearance,
-            usingDemoData: false
+            usingDemoData: false,
+            displayName: displayName
         )
         context.insert(settings)
         try context.save()
@@ -178,43 +180,50 @@ enum DemoDataService {
             )
         )
 
-        // Debt
+        // Debt — monthly targets reduce Safe to Spend on Home
         context.insert(
             Debt(
-                name: "Visa",
-                originalBalance: 5_000,
-                currentBalance: 2_850,
-                interestRate: 19.99,
-                minimumPayment: 75,
-                plannedMonthlyPayment: 250,
-                dueDay: 22,
+                name: "BMO VIP Porter",
+                originalBalance: 6_500,
+                currentBalance: 5_800,
+                interestRate: 21.99,
+                minimumPayment: 150,
+                plannedMonthlyPayment: 800,
+                dueDay: 18,
                 icon: "creditcard.fill"
             )
         )
 
         // Bills
-        let bills: [(String, Decimal, Int, String, String)] = [
-            ("Rent", 1_900, 1, "Housing", "house.fill"),
-            ("Internet", 79.99, 15, "Subscriptions", "wifi"),
-            ("Phone", 65, 20, "Subscriptions", "iphone"),
-            ("Car Payment", 310, 17, "Transportation", "car.fill"),
-            ("Streaming", 22.99, 8, "Subscriptions", "play.tv.fill"),
-            ("Insurance", 145, 12, "Housing", "checkmark.shield.fill")
+        let bills: [(String, Decimal, Int, BillRecurrence, String, String)] = [
+            ("Rent", 1_500, 20, .monthly, "Housing", "house.fill"),
+            ("Internet", 79.99, 15, .monthly, "Subscriptions", "wifi"),
+            ("Phone", 65, 20, .monthly, "Subscriptions", "iphone"),
+            ("Car Payment", 350, 11, .monthly, "Transportation", "car.fill"),
+            ("Streaming", 22.99, 8, .monthly, "Subscriptions", "play.tv.fill"),
+            ("Gym", 45, 5, .biweekly, "Health", "figure.run")
         ]
 
         for bill in bills {
+            let start = DateHelpers.nextDueDate(dueDay: bill.2, from: now)
             context.insert(
                 RecurringBill(
                     name: bill.0,
                     amount: bill.1,
                     dueDay: bill.2,
-                    categoryName: bill.3,
-                    recurrence: .monthly,
-                    nextDueDate: DateHelpers.nextDueDate(dueDay: bill.2, from: now),
+                    categoryName: bill.4,
+                    recurrence: bill.3,
+                    nextDueDate: DateHelpers.nextDueDate(
+                        startDate: start,
+                        recurrence: bill.3,
+                        dueDay: bill.2,
+                        from: now
+                    ),
+                    startDate: start,
                     reminderEnabled: true,
                     reminderDaysBefore: 2,
                     isActive: true,
-                    icon: bill.4
+                    icon: bill.5
                 )
             )
         }
@@ -227,7 +236,7 @@ enum DemoDataService {
 
         // Expenses — tuned so totals feel realistic (~$2,615 discretionary+housing mix for demo)
         let expenseSamples: [(String, Decimal, String, Int)] = [
-            ("Rent", 1_900, "Housing", 1),
+            ("Rent", 1_500, "Housing", 1),
             ("FreshCo", 63.42, "Food", 0),
             ("Gas", 72.10, "Transportation", 0),
             ("Metro Groceries", 88.25, "Food", 2),
@@ -270,7 +279,7 @@ enum DemoDataService {
             throw DemoDataError.calendarFailure
         }
         let priorExpenses: [(String, Decimal, String, Int)] = [
-            ("Rent", 1_900, "Housing", 1),
+            ("Rent", 1_500, "Housing", 1),
             ("Groceries", 520, "Food", 5),
             ("Gas", 95, "Transportation", 8),
             ("Dining", 140, "Food", 12),
@@ -299,7 +308,7 @@ enum DemoDataService {
             billRemindersEnabled: true,
             appearance: .system,
             usingDemoData: true,
-            displayName: ""
+            displayName: "Mayooran"
         )
         context.insert(settings)
         try context.save()

@@ -6,15 +6,16 @@ Penny is a native iOS personal finance planner focused on clarity: safe-to-spend
 
 ## Current features
 
-- **Onboarding** (3 intro screens + quick setup): currency, income, sample data or start fresh
-- **Home**: greeting, Safe to Spend hero, monthly spending progress, upcoming bills, savings goals, insights
+- **Onboarding** (3 intro screens + quick setup): name, currency, income, sample data or start fresh
+- **Home**: “Welcome back {name}”, Safe to Spend hero with bills **and debt targets** deducted, spending progress, upcoming bills/debt, savings goals, insights
 - **Activity**: month selector, search, income/expense/category filters, grouped transactions, add/delete
 - **Budget**: planned vs spent ring, category progress with health states, category detail + edit + trend chart
-- **Plan**: Goals, Bills, Debt payoff estimates, multi-horizon Forecast chart (labeled as estimates)
-- **Settings**: currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance, bill reminders, reset/delete data, privacy copy, Penny Pro roadmap stub
+- **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date), Debt payoff estimates, Forecast chart
+- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance, bill reminders, reset/delete data, privacy copy, Penny Pro roadmap stub
+- **Widgets**: Safe to Spend + Upcoming reminder (App Group `group.com.mayooran.penny`)
 - **Design system**: mint/emerald warm identity, light + dark mode, reusable cards/rows/buttons
 - **Local insights**: deterministic rules (no AI APIs)
-- **Demo data**: realistic Canadian-style household seeded for previews and first-run exploration
+- **Demo data**: sample household including “BMO VIP Porter” debt and display name **Mayooran**
 
 ## Architecture
 
@@ -124,17 +125,17 @@ python3 scripts/generate_xcode_project.py
 
 - This Cloud Agent environment is Linux and cannot compile or launch the iOS Simulator; validate builds on macOS Xcode.
 - App Icon is a placeholder slot (no final artwork yet).
-- No live bank feeds, iCloud sync, widgets, CSV export, or StoreKit purchase flow yet.
+- No live bank feeds, iCloud sync, CSV export, or StoreKit purchase flow yet.
+- Home-screen widgets require the App Group `group.com.mayooran.penny` enabled for your Apple Developer team.
 - Forecasts are deterministic estimates from income/bills/average spending — not predictions.
 - Debt payoff uses monthly compounding amortization with rounded interest.
 
 ## Future roadmap (highest value next)
 
-1. Polish App Icon + launch branding
-2. Widgets (Safe to Spend / next bill)
-3. CSV import/export
-4. iCloud sync via SwiftData CloudKit
-5. StoreKit 2 lifetime Penny Pro unlock
+1. Polish launch branding extras
+2. CSV import/export
+3. iCloud sync via SwiftData CloudKit
+4. StoreKit 2 lifetime Penny Pro unlock
 
 ## Brand
 

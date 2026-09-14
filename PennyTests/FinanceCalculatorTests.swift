@@ -28,6 +28,26 @@ struct FinanceCalculatorTests {
         #expect(breakdown.isOverBudget)
     }
 
+    @Test("Monthly equivalent converts weekly and biweekly bills")
+    func monthlyEquivalent() {
+        let weekly = FinanceCalculator.monthlyEquivalent(amount: 50, recurrence: .weekly)
+        #expect(weekly == Decimal(string: "216.67"))
+
+        let biweekly = FinanceCalculator.monthlyEquivalent(amount: 45, recurrence: .biweekly)
+        #expect(biweekly == Decimal(string: "97.50"))
+
+        #expect(FinanceCalculator.monthlyEquivalent(amount: 1_500, recurrence: .monthly) == 1_500)
+
+        let yearly = FinanceCalculator.monthlyEquivalent(amount: 1_200, recurrence: .yearly)
+        #expect(yearly == 100)
+
+        let committed = FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: [(50, .weekly), (1_500, .monthly)],
+            debtPayments: [800]
+        )
+        #expect(committed == weekly + 1_500 + 800)
+    }
+
     @Test("Budget remaining and progress")
     func budgetMath() {
         #expect(FinanceCalculator.budgetRemaining(budgeted: 550, spent: 410) == 140)
@@ -202,6 +222,27 @@ struct DateHelperTests {
         #expect(DateHelpers.greeting(for: morning) == "Good morning")
         #expect(DateHelpers.greeting(for: afternoon) == "Good afternoon")
         #expect(DateHelpers.greeting(for: evening) == "Good evening")
+    }
+
+    @Test("Welcome message uses display name when set")
+    func welcomeMessage() {
+        #expect(DateHelpers.welcomeMessage(displayName: "Mayooran") == "Welcome back Mayooran")
+        #expect(DateHelpers.welcomeMessage(displayName: "  ") == DateHelpers.greeting())
+        #expect(DateHelpers.welcomeMessage(displayName: nil) == DateHelpers.greeting())
+    }
+
+    @Test("Weekly and biweekly schedules advance from start date")
+    func recurringNextDueDate() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
+        let from = calendar.date(from: DateComponents(year: 2026, month: 9, day: 10))!
+
+        let weekly = DateHelpers.nextDueDate(startDate: start, recurrence: .weekly, dueDay: 1, from: from)
+        #expect(calendar.component(.day, from: weekly) == 15)
+
+        let biweekly = DateHelpers.nextDueDate(startDate: start, recurrence: .biweekly, dueDay: 1, from: from)
+        #expect(calendar.component(.day, from: biweekly) == 15)
     }
 }
 

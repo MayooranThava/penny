@@ -9,12 +9,14 @@ struct SettingsView: View {
     @State private var confirmReset = false
     @State private var confirmDelete = false
     @State private var incomeText = ""
+    @State private var nameText = ""
 
     private var settings: UserSettings? { settingsList.first }
 
     var body: some View {
         NavigationStack {
             List {
+                profileSection
                 currencySection
                 incomeSection
                 appearanceSection
@@ -30,6 +32,7 @@ struct SettingsView: View {
                 if let income = settings?.monthlyIncome {
                     incomeText = NSDecimalNumber(decimal: income).stringValue
                 }
+                nameText = settings?.displayName ?? ""
             }
             .alert("Reset demo data?", isPresented: $confirmReset) {
                 Button("Reset", role: .destructive) { resetDemo() }
@@ -43,6 +46,27 @@ struct SettingsView: View {
             } message: {
                 Text("This permanently removes transactions, budgets, goals, bills, and settings on this device.")
             }
+        }
+    }
+
+    private var profileSection: some View {
+        Section("Profile") {
+            HStack {
+                TextField("Your name", text: $nameText)
+                    .textContentType(.name)
+                    .autocorrectionDisabled()
+                Button("Save") {
+                    let trimmed = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    settings?.displayName = trimmed
+                    nameText = trimmed
+                    try? modelContext.save()
+                    Haptics.success()
+                }
+                .disabled(settings == nil)
+            }
+            Text("Home greets you with “Welcome back” when a name is set.")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textSecondary)
         }
     }
 

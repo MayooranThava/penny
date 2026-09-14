@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -7,6 +8,7 @@ struct HomeView: View {
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }, sort: \RecurringBill.nextDueDate)
     private var bills: [RecurringBill]
+    @Query(sort: \Debt.name) private var debts: [Debt]
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
     @Query private var budgets: [Budget]
@@ -25,27 +27,28 @@ struct HomeView: View {
         return transactions.filter { DateHelpers.isSameMonth($0.date, prior) }
     }
 
-    private var monthlyIncome: Decimal {
-        settings?.monthlyIncome ?? 0
+    private var monthlyIncome: Decimal { settings?.monthlyIncome ?? 0 }
+
+    private var billMonthlyCommitted: Decimal {
+        bills.reduce(Decimal(0)) {
+            $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
+        }
     }
 
-    private var recurringCommitted: Decimal {
-        bills.reduce(0) { $0 + $1.amount }
+    private var debtMonthlyCommitted: Decimal {
+        debts.reduce(Decimal(0)) { $0 + $1.plannedMonthlyPayment }
     }
+
+    private var recurringCommitted: Decimal { billMonthlyCommitted + debtMonthlyCommitted }
 
     private var discretionarySpent: Decimal {
-        // Expenses that aren't already counted as recurring bill names this month
-        let billNames = Set(bills.map { $0.name.lowercased() })
+        let reserved = Set(bills.map { $0.name.lowercased() } + debts.map { $0.name.lowercased() })
         return monthTransactions
-            .filter { $0.transactionType == .expense && !billNames.contains($0.title.lowercased()) }
-            .reduce(0) { $0 + $1.amount }
+            .filter { $0.transactionType == .expense && !reserved.contains($0.title.lowercased()) }
+            .reduce(Decimal(0)) { $0 + $1.amount }
     }
 
-    /// Include housing rent etc. that appear as both bill and transaction carefully:
-    /// Safe-to-spend uses recurring commitments + discretionary spending (non-bill expenses).
-    private var plannedSavings: Decimal {
-        settings?.plannedMonthlySavings ?? 0
-    }
+    private var plannedSavings: Decimal { settings?.plannedMonthlySavings ?? 0 }
 
     private var breakdown: FinanceCalculator.SafeToSpendBreakdown {
         FinanceCalculator.safeToSpendBreakdown(
@@ -57,62 +60,102 @@ struct HomeView: View {
     }
 
     private var monthExpenses: Decimal {
-        monthTransactions.filter { $0.transactionType == .expense }.reduce(0) { $0 + $1.amount }
+        monthTransactions
+            .filter { $0.transactionType == .expense }
+            .reduce(Decimal(0)) { $0 + $1.amount }
     }
 
     private var plannedSpending: Decimal {
         if let budget = budgets.first(where: { DateHelpers.isSameMonth($0.monthStart, session.selectedMonth) }) {
             return budget.plannedSpending
         }
-        return categories.filter { $0.name != "Savings" }.reduce(0) { $0 + $1.budgetedAmount }
+        return categories
+            .filter { $0.name != "Savings" }
+            .reduce(Decimal(0)) { $0 + $1.budgetedAmount }
     }
 
-    private var upcomingBills: [RecurringBill] {
-        Array(bills.sorted { $0.nextDueDate < $1.nextDueDate }.prefix(4))
+    private struct UpcomingItem: Identifiable {
+        enum Kind { case bill, debt }
+        let id: String
+        let kind: Kind
+        let name: String
+        let date: Date
+        let amount: Decimal
+        let icon: String
+        let subtitle: String
+    }
+
+    private var upcomingItems: [UpcomingItem] {
+        let billItems = bills.map {
+            UpcomingItem(
+                id: "bill-\($0.id.uuidString)",
+                kind: .bill,
+                name: $0.name,
+                date: $0.nextDueDate,
+                amount: $0.amount,
+                icon: $0.icon,
+                subtitle: $0.recurrence.displayName
+            )
+        }
+        let debtItems = debts.map {
+            UpcomingItem(
+                id: "debt-\($0.id.uuidString)",
+                kind: .debt,
+                name: $0.name,
+                date: DateHelpers.nextDueDate(dueDay: $0.dueDay),
+                amount: $0.plannedMonthlyPayment,
+                icon: $0.icon,
+                subtitle: "Debt payment"
+            )
+        }
+        return (billItems + debtItems).sorted { $0.date < $1.date }.prefix(5).map { $0 }
     }
 
     private var insights: [PennyInsight] {
         let calendar = Calendar.current
-        let day = calendar.component(.day, from: Date.now)
+        let day = calendar.component(.day, from: .now)
         let daysInMonth = calendar.range(of: .day, in: .month, for: session.selectedMonth)?.count ?? 30
 
-        let categorySpends: [InsightEngine.CategorySpend] = categories.map { cat in
+        let categorySpends: [InsightEngine.CategorySpend] = categories.map { category in
             let current = monthTransactions
-                .filter { $0.transactionType == .expense && $0.categoryName == cat.name }
+                .filter { $0.transactionType == .expense && $0.categoryName == category.name }
                 .reduce(Decimal(0)) { $0 + $1.amount }
             let previous = priorMonthTransactions
-                .filter { $0.transactionType == .expense && $0.categoryName == cat.name }
+                .filter { $0.transactionType == .expense && $0.categoryName == category.name }
                 .reduce(Decimal(0)) { $0 + $1.amount }
-            return .init(name: cat.name, current: current, previous: previous, budgeted: cat.budgetedAmount)
+            return .init(name: category.name, current: current, previous: previous, budgeted: category.budgetedAmount)
         }
 
-        let billTuples = upcomingBills.map { bill -> (name: String, daysUntil: Int, amount: Decimal) in
-            let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: Date.now), to: calendar.startOfDay(for: bill.nextDueDate)).day ?? 0
-            return (bill.name, max(0, days), bill.amount)
+        let upcomingBills = upcomingItems.prefix(4).map { item -> (name: String, daysUntil: Int, amount: Decimal) in
+            let days = calendar.dateComponents(
+                [.day],
+                from: calendar.startOfDay(for: .now),
+                to: calendar.startOfDay(for: item.date)
+            ).day ?? 0
+            return (item.name, max(0, days), item.amount)
         }
 
-        let goalSnaps: [InsightEngine.GoalSnapshot] = goals.map { goal in
-            let monthly = settings?.plannedMonthlySavings ?? 0
-            return .init(
+        let goalSnapshots: [InsightEngine.GoalSnapshot] = goals.map { goal in
+            .init(
                 name: goal.name,
                 current: goal.currentAmount,
                 target: goal.targetAmount,
                 targetDate: goal.targetDate,
-                monthlyContributionEstimate: monthly / Decimal(max(goals.count, 1))
+                monthlyContributionEstimate: plannedSavings / Decimal(max(goals.count, 1))
             )
         }
 
         return InsightEngine.generate(
             from: .init(
                 categorySpends: categorySpends,
-                upcomingBillsWithinDays: billTuples,
-                goals: goalSnaps,
+                upcomingBillsWithinDays: upcomingBills,
+                goals: goalSnapshots,
                 monthlyBudget: plannedSpending,
                 spentSoFar: monthExpenses,
                 dayOfMonth: day,
                 daysInMonth: daysInMonth,
                 currencyCode: currency,
-                now: Date.now
+                now: .now
             ),
             limit: 2
         )
@@ -125,9 +168,9 @@ struct HomeView: View {
                     header
                     safeToSpendCard
                     spendingSection
-                    billsSection
+                    upcomingSection
                     goalsSection
-                    insightSection
+                    insightsSection
                 }
                 .padding(.horizontal, PennySpacing.screenPadding)
                 .padding(.bottom, PennySpacing.xxxl)
@@ -147,15 +190,19 @@ struct HomeView: View {
                     .accessibilityLabel("Add transaction")
                 }
             }
+            .onAppear { publishWidgetSnapshot() }
+            .onChange(of: breakdown.safeToSpend) { _, _ in publishWidgetSnapshot() }
+            .onChange(of: upcomingItems.first?.id) { _, _ in publishWidgetSnapshot() }
         }
     }
 
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(DateHelpers.greeting())
+                Text(DateHelpers.welcomeMessage(displayName: settings?.displayName))
                     .font(PennyTypography.largeTitle)
                     .foregroundStyle(PennyColors.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 Text(DateHelpers.monthYear(for: session.selectedMonth))
                     .font(PennyTypography.callout)
                     .foregroundStyle(PennyColors.textSecondary)
@@ -164,10 +211,10 @@ struct HomeView: View {
             Circle()
                 .fill(PennyColors.brandMuted)
                 .frame(width: 44, height: 44)
-                .overlay(
+                .overlay {
                     Image(systemName: "leaf.fill")
                         .foregroundStyle(PennyColors.brand)
-                )
+                }
                 .accessibilityHidden(true)
         }
         .padding(.top, PennySpacing.sm)
@@ -209,10 +256,44 @@ struct HomeView: View {
 
             VStack(spacing: 8) {
                 breakdownRow("Income", breakdown.income, positive: true)
-                breakdownRow("Committed", -breakdown.committed, positive: false)
+                breakdownRow("Bills", -billMonthlyCommitted, positive: false)
+                if debtMonthlyCommitted > 0 {
+                    breakdownRow("Debt payments", -debtMonthlyCommitted, positive: false)
+                }
                 breakdownRow("Spent", -breakdown.discretionarySpent, positive: false)
                 breakdownRow("Saved", -breakdown.plannedSavings, positive: false)
-                breakdownRow("Safe to Spend", breakdown.safeToSpend, positive: breakdown.safeToSpend >= 0, emphasized: true)
+                breakdownRow(
+                    "Safe to Spend",
+                    breakdown.safeToSpend,
+                    positive: breakdown.safeToSpend >= 0,
+                    emphasized: true
+                )
+            }
+
+            if !debts.isEmpty {
+                Divider().overlay(Color.white.opacity(0.2))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Includes debt targets")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textOnBrand.opacity(0.75))
+                    ForEach(debts, id: \.id) { debt in
+                        HStack {
+                            Text(debt.name)
+                                .font(PennyTypography.caption)
+                                .foregroundStyle(PennyColors.textOnBrand.opacity(0.9))
+                            Spacer()
+                            Text(
+                                MoneyFormatters.compact(
+                                    from: debt.plannedMonthlyPayment,
+                                    currencyCode: currency
+                                ) + "/mo"
+                            )
+                            .font(PennyTypography.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(PennyColors.textOnBrand)
+                        }
+                    }
+                }
             }
         }
         .padding(PennySpacing.lg)
@@ -222,19 +303,32 @@ struct HomeView: View {
                 .shadow(color: PennyColors.brand.opacity(0.25), radius: 16, y: 8)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Safe to spend \(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency))")
+        .accessibilityLabel(
+            "Safe to spend \(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency))"
+        )
     }
 
-    private func breakdownRow(_ label: String, _ amount: Decimal, positive: Bool, emphasized: Bool = false) -> some View {
+    private func breakdownRow(
+        _ label: String,
+        _ amount: Decimal,
+        positive: Bool,
+        emphasized: Bool = false
+    ) -> some View {
         HStack {
             Text(label)
                 .font(emphasized ? PennyTypography.bodyEmphasized : PennyTypography.callout)
                 .foregroundStyle(PennyColors.textOnBrand.opacity(emphasized ? 1 : 0.85))
             Spacer()
-            Text(MoneyFormatters.signed(from: amount, currencyCode: currency, showPlus: positive && amount > 0))
-                .font(emphasized ? PennyTypography.smallAmount : PennyTypography.callout)
-                .monospacedDigit()
-                .foregroundStyle(PennyColors.textOnBrand)
+            Text(
+                MoneyFormatters.signed(
+                    from: amount,
+                    currencyCode: currency,
+                    showPlus: positive && amount > 0
+                )
+            )
+            .font(emphasized ? PennyTypography.smallAmount : PennyTypography.callout)
+            .monospacedDigit()
+            .foregroundStyle(PennyColors.textOnBrand)
         }
     }
 
@@ -247,36 +341,52 @@ struct HomeView: View {
                     spent: monthExpenses,
                     budget: max(plannedSpending, 1),
                     currencyCode: currency,
-                    health: FinanceCalculator.budgetHealth(budgeted: plannedSpending, spent: monthExpenses)
+                    health: FinanceCalculator.budgetHealth(
+                        budgeted: plannedSpending,
+                        spent: monthExpenses
+                    )
                 )
             }
         }
     }
 
-    private var billsSection: some View {
+    private var upcomingSection: some View {
         VStack(alignment: .leading, spacing: PennySpacing.sm) {
-            SectionHeader(title: "Upcoming bills")
-            if upcomingBills.isEmpty {
+            SectionHeader(title: "Upcoming")
+            if upcomingItems.isEmpty {
                 PennyCard {
                     EmptyStateView(
                         symbol: "calendar",
-                        title: "No bills yet",
-                        message: "Add recurring bills in Plan to see what's coming up."
+                        title: "Nothing due soon",
+                        message: "Add bills or debt payments in Plan to see what's coming up."
                     )
                 }
             } else {
                 PennyCard {
                     VStack(spacing: PennySpacing.md) {
-                        ForEach(upcomingBills, id: \.id) { bill in
-                            BillRow(
-                                name: bill.name,
-                                dueDate: bill.nextDueDate,
-                                amount: bill.amount,
-                                currencyCode: currency,
-                                icon: bill.icon,
-                                categoryName: bill.categoryName
-                            )
-                            if bill.id != upcomingBills.last?.id {
+                        ForEach(upcomingItems) { item in
+                            HStack(spacing: PennySpacing.sm) {
+                                CategoryIcon(
+                                    icon: item.icon,
+                                    colourIdentifier: item.kind == .debt ? "debt" : "subscriptions"
+                                )
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.name)
+                                        .font(PennyTypography.bodyEmphasized)
+                                        .foregroundStyle(PennyColors.textPrimary)
+                                    Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
+                                        .font(PennyTypography.caption)
+                                        .foregroundStyle(PennyColors.textSecondary)
+                                }
+                                Spacer()
+                                MoneyText(
+                                    amount: item.amount,
+                                    currencyCode: currency,
+                                    font: PennyTypography.smallAmount
+                                )
+                            }
+                            .accessibilityElement(children: .combine)
+                            if item.id != upcomingItems.last?.id {
                                 Divider()
                             }
                         }
@@ -322,7 +432,7 @@ struct HomeView: View {
         }
     }
 
-    private var insightSection: some View {
+    private var insightsSection: some View {
         VStack(alignment: .leading, spacing: PennySpacing.sm) {
             SectionHeader(title: "Insights")
             if let insight = insights.first {
@@ -363,13 +473,30 @@ struct HomeView: View {
     }
 
     private func estimatedCompletion(for goal: SavingsGoal) -> Date? {
-        let monthly = (settings?.plannedMonthlySavings ?? 0) / Decimal(max(goals.count, 1))
         if let target = goal.targetDate { return target }
+        let monthly = plannedSavings / Decimal(max(goals.count, 1))
         return FinanceCalculator.estimatedCompletionDate(
             current: goal.currentAmount,
             target: goal.targetAmount,
             monthlyContribution: monthly
         )
+    }
+
+    private func publishWidgetSnapshot() {
+        let next = upcomingItems.first
+        let snapshot = WidgetSnapshotStore.Snapshot(
+            safeToSpend: NSDecimalNumber(decimal: breakdown.safeToSpend).doubleValue,
+            currencyCode: currency,
+            monthLabel: DateHelpers.monthName(for: session.selectedMonth),
+            nextReminderTitle: next.map { "\($0.name) due" },
+            nextReminderDetail: next.map {
+                "\(MoneyFormatters.compact(from: $0.amount, currencyCode: currency)) · \(DateHelpers.shortMonthDay(for: $0.date))"
+            },
+            displayName: settings?.displayName ?? "",
+            updatedAt: .now
+        )
+        WidgetSnapshotStore.save(snapshot)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 

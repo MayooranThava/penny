@@ -113,16 +113,18 @@ final class Budget {
 // MARK: - Recurring Bill
 
 enum BillRecurrence: String, Codable, CaseIterable, Identifiable {
-    case monthly
     case weekly
+    case biweekly
+    case monthly
     case yearly
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .monthly: return "Monthly"
         case .weekly: return "Weekly"
+        case .biweekly: return "Biweekly"
+        case .monthly: return "Monthly"
         case .yearly: return "Yearly"
         }
     }
@@ -137,6 +139,8 @@ final class RecurringBill {
     var categoryName: String
     var recurrenceRaw: String
     var nextDueDate: Date
+    /// Anchor date for weekly / biweekly schedules (and preferred first due for monthly).
+    var startDate: Date
     var reminderEnabled: Bool
     var reminderDaysBefore: Int
     var isActive: Bool
@@ -155,6 +159,7 @@ final class RecurringBill {
         categoryName: String,
         recurrence: BillRecurrence = .monthly,
         nextDueDate: Date,
+        startDate: Date? = nil,
         reminderEnabled: Bool = true,
         reminderDaysBefore: Int = 2,
         isActive: Bool = true,
@@ -167,6 +172,7 @@ final class RecurringBill {
         self.categoryName = categoryName
         self.recurrenceRaw = recurrence.rawValue
         self.nextDueDate = nextDueDate
+        self.startDate = startDate ?? nextDueDate
         self.reminderEnabled = reminderEnabled
         self.reminderDaysBefore = reminderDaysBefore
         self.isActive = isActive

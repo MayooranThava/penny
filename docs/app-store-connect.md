@@ -21,7 +21,7 @@ Same workflow pattern as **Void Runner** (`ApolloX_IOS`).
 - App Store version 1.0: **Prepare for Submission**
 - Builds uploaded: **0**
 - Internal group: **created** (access to all builds)
-- Internal tester: **mayooranthava@outlook.com** (invite activates after first build processes)
+- Internal tester added: **mayooranthava@outlook.com** (invite/state updates after the first build finishes processing)
 
 ## What this agent cannot do
 

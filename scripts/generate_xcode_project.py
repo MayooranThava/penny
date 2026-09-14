@@ -58,6 +58,7 @@ WIDGET_CONTAINER_PROXY = "A10000000000000000000025"
 WIDGET_EMBED_BF = "A10000000000000000000026"
 APP_ENTITLEMENTS_REF = "A10000000000000000000027"
 WIDGET_ENTITLEMENTS_REF = "A10000000000000000000028"
+WIDGET_INFOPLIST_REF = "A10000000000000000000029"
 
 swift_files: list[Path] = sorted(SOURCE_ROOT.rglob("*.swift"))
 test_files: list[Path] = sorted(TESTS_ROOT.rglob("*.swift"))
@@ -66,6 +67,7 @@ asset_catalogs: list[Path] = sorted(SOURCE_ROOT.rglob("*.xcassets"))
 
 app_entitlements = SOURCE_ROOT / "Penny.entitlements"
 widget_entitlements = WIDGETS_ROOT / "PennyWidgets.entitlements"
+widget_info_plist = WIDGETS_ROOT / "Info.plist"
 
 file_refs: dict[Path, str] = {}
 build_files: dict[Path, str] = {}
@@ -76,6 +78,7 @@ for path in swift_files + test_files + widget_files + asset_catalogs:
 
 file_refs[app_entitlements] = APP_ENTITLEMENTS_REF
 file_refs[widget_entitlements] = WIDGET_ENTITLEMENTS_REF
+file_refs[widget_info_plist] = WIDGET_INFOPLIST_REF
 
 # Build group tree
 # Map directory -> group id
@@ -191,8 +194,9 @@ lines.append(f'\t\t{WIDGET_PRODUCT} /* PennyWidgets.appex */ = {{isa = PBXFileRe
 lines.append(f'\t\t{TEST_PRODUCT} /* PennyTests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PennyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};')
 lines.append(f'\t\t{APP_ENTITLEMENTS_REF} /* Penny.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Penny.entitlements; sourceTree = "<group>"; }};')
 lines.append(f'\t\t{WIDGET_ENTITLEMENTS_REF} /* PennyWidgets.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PennyWidgets.entitlements; sourceTree = "<group>"; }};')
+lines.append(f'\t\t{WIDGET_INFOPLIST_REF} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; }};')
 for path, fid in file_refs.items():
-    if path in (app_entitlements, widget_entitlements):
+    if path in (app_entitlements, widget_entitlements, widget_info_plist):
         continue
     if path.suffix == ".xcassets":
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = {path.name}; sourceTree = "<group>"; }};')
@@ -516,6 +520,7 @@ widget_settings = """
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2YJ478267N;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PennyWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Penny;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

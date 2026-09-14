@@ -17,13 +17,15 @@ struct PlanView: View {
                 .padding(.horizontal, PennySpacing.screenPadding)
                 .onChange(of: segment) { _, _ in Haptics.selection() }
 
-                TabView(selection: $segment) {
-                    GoalsPlanView().tag(PlanSegment.goals)
-                    BillsPlanView().tag(PlanSegment.bills)
-                    DebtPlanView().tag(PlanSegment.debt)
-                    ForecastPlanView().tag(PlanSegment.forecast)
+                Group {
+                    switch segment {
+                    case .goals: GoalsPlanView()
+                    case .bills: BillsPlanView()
+                    case .debt: DebtPlanView()
+                    case .forecast: ForecastPlanView()
+                    }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .background(PennyColors.background.ignoresSafeArea())
             .navigationTitle("Plan")

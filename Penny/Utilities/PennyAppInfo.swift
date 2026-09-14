@@ -1,7 +1,6 @@
 import Foundation
-import UserNotifications
 
-/// Declares notification usage. Actual permission is requested in-app when reminders are enabled.
+/// Declares app metadata constants used in Settings / About.
 enum PennyAppInfo {
     static let displayName = "Penny"
     static let marketingVersion = "1.0.0"

@@ -4,33 +4,72 @@ import SwiftData
 @main
 struct PennyApp: App {
     @State private var session = AppSession()
-    private let launch: LaunchState
-
-    init() {
-        do {
-            let container = try PennyPersistence.makeContainer()
-            launch = .ready(container)
-        } catch {
-            launch = .failed(error.localizedDescription)
-        }
-    }
+    @State private var container: ModelContainer?
+    @State private var launchError: String?
+    @State private var didStartLaunch = false
 
     var body: some Scene {
         WindowGroup {
-            switch launch {
-            case .ready(let container):
-                RootView()
-                    .environment(session)
-                    .modelContainer(container)
-            case .failed(let message):
-                StorageErrorView(message: message)
+            ZStack {
+                // Never leave a pure black window while storage boots.
+                Color(red: 0.97, green: 0.96, blue: 0.94)
+                    .ignoresSafeArea()
+
+                content
+            }
+            .tint(PennyColors.brand)
+            .task {
+                await startIfNeeded()
             }
         }
     }
 
-    private enum LaunchState {
-        case ready(ModelContainer)
-        case failed(String)
+    @ViewBuilder
+    private var content: some View {
+        if let launchError {
+            StorageErrorView(message: launchError)
+        } else if let container {
+            RootView()
+                .environment(session)
+                .modelContainer(container)
+        } else {
+            LaunchSplashView()
+        }
+    }
+
+    @MainActor
+    private func startIfNeeded() async {
+        guard !didStartLaunch else { return }
+        didStartLaunch = true
+
+        // Yield one frame so the splash paints before SwiftData opens.
+        await Task.yield()
+
+        do {
+            container = try PennyPersistence.makeContainer()
+        } catch {
+            launchError = error.localizedDescription
+        }
+    }
+}
+
+struct LaunchSplashView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "leaf.circle.fill")
+                .font(.system(size: 64, weight: .medium))
+                .foregroundStyle(Color(red: 0.12, green: 0.62, blue: 0.48))
+                .symbolRenderingMode(.hierarchical)
+
+            Text("Penny")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(red: 0.12, green: 0.14, blue: 0.16))
+
+            ProgressView()
+                .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityLabel("Loading Penny")
     }
 }
 
@@ -112,4 +151,8 @@ struct MainTabView: View {
     RootView()
         .environment(AppSession())
         .modelContainer(PennyPersistence.previewContainer())
+}
+
+#Preview("Splash") {
+    LaunchSplashView()
 }

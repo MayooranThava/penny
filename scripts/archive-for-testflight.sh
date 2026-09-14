@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Archive Penny and upload to App Store Connect (TestFlight).
-# Run on a Mac with Xcode signed into the Apple Developer team 2YJ478267N.
-# Same pattern as Void Runner (ApolloX_IOS).
+# Archive Penny and upload to App Store Connect (TestFlight) from a Mac.
+# Prefer Xcode Cloud on main (same as Void Runner). This script is a rare manual fallback.
+# Same signing team as Void Runner (ApolloX_IOS).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

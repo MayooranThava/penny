@@ -9,12 +9,13 @@ Env (required):
 Usage:
   python3 scripts/asc_setup_penny.py status
   python3 scripts/asc_setup_penny.py ensure-bundle-id
-  python3 scripts/asc_setup_penny.py ensure-bundle-id --identifier com.mayooran.penny
+  python3 scripts/asc_setup_penny.py assign-build --build-number 12 \\
+      --internal-group-id e2003e1f-f82e-4bd0-85f9-a5dfc4f4cec5
 
 Note: Apple's public API cannot CREATE the App Store Connect app record.
 After the Bundle ID exists, create the app once in the ASC website
-(My Apps → + → New App), then uploads via scripts/archive-for-testflight.sh
-appear under TestFlight.
+(My Apps → + → New App). Prefer Xcode Cloud for TestFlight uploads
+(same as Void Runner); use scripts/archive-for-testflight.sh only as a rare Mac fallback.
 """
 
 from __future__ import annotations
@@ -184,6 +185,77 @@ def cmd_ensure_bundle_id(args: argparse.Namespace) -> int:
     return 0
 
 
+def find_build_by_number(app_id: str, build_number: str, wait_seconds: int) -> dict[str, Any] | None:
+    deadline = time.time() + max(0, wait_seconds)
+    while True:
+        q = urllib.parse.quote(build_number)
+        result = api_request(
+            "GET",
+            f"builds?filter[app]={app_id}&filter[version]={q}&limit=5&sort=-uploadedDate",
+        ) or {}
+        builds = list(result.get("data") or [])
+        if builds:
+            return builds[0]
+        if time.time() >= deadline:
+            return None
+        print(f"Waiting for build {build_number} to appear in ASC…", flush=True)
+        time.sleep(30)
+
+
+def add_build_to_group(build_id: str, group_id: str) -> None:
+    payload = {
+        "data": [
+            {
+                "type": "builds",
+                "id": build_id,
+            }
+        ]
+    }
+    api_request("POST", f"betaGroups/{group_id}/relationships/builds", payload)
+
+
+def cmd_assign_build(args: argparse.Namespace) -> int:
+    app = find_app_by_bundle(DEFAULT_BUNDLE_ID)
+    if not app:
+        print(f"App not found for {DEFAULT_BUNDLE_ID}", file=sys.stderr)
+        return 1
+
+    build = find_build_by_number(app["id"], str(args.build_number), args.wait_seconds)
+    if not build:
+        print(
+            f"Build {args.build_number} not visible yet. "
+            "Internal Testers still receive builds when automatic distribution is on.",
+            file=sys.stderr,
+        )
+        return 2
+
+    build_id = build["id"]
+    attrs = build.get("attributes") or {}
+    print(
+        f"Found build id={build_id} version={attrs.get('version')} "
+        f"processing={attrs.get('processingState')}"
+    )
+
+    group_ids: list[str] = []
+    if args.internal_group_id:
+        group_ids.append(args.internal_group_id)
+    if args.external_group_id:
+        group_ids.append(args.external_group_id)
+
+    if not group_ids:
+        print("No group IDs provided; nothing to assign.")
+        return 0
+
+    for group_id in group_ids:
+        try:
+            add_build_to_group(build_id, group_id)
+            print(f"Assigned build to beta group {group_id}")
+        except AscError as exc:
+            # Already assigned / still processing / external needs review.
+            print(f"Could not assign to {group_id}: {exc}", file=sys.stderr)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -195,6 +267,21 @@ def main() -> int:
     p_bundle.add_argument("--identifier", default=DEFAULT_BUNDLE_ID)
     p_bundle.add_argument("--name", default=DEFAULT_BUNDLE_NAME)
     p_bundle.set_defaults(func=cmd_ensure_bundle_id)
+
+    p_assign = sub.add_parser(
+        "assign-build",
+        help="Attach a processed build to TestFlight beta groups",
+    )
+    p_assign.add_argument("--build-number", required=True)
+    p_assign.add_argument("--internal-group-id", default="")
+    p_assign.add_argument("--external-group-id", default="")
+    p_assign.add_argument(
+        "--wait-seconds",
+        type=int,
+        default=120,
+        help="How long to poll ASC for the new build (default 120)",
+    )
+    p_assign.set_defaults(func=cmd_assign_build)
 
     args = parser.parse_args()
     try:

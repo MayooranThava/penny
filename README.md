@@ -105,13 +105,13 @@ Core calculation logic was also validated on Linux via `Tools/PennyCoreLogic` (S
 
 If signing is required for a physical device, select your Development Team on the Penny target (**Signing & Capabilities**). The project defaults to team `2YJ478267N`.
 
-## TestFlight (internal)
+## TestFlight (internal + external)
 
-Same pattern as Void Runner:
+Use **Xcode Cloud** for My Penny in App Store Connect (same system as Void Runner). After a one-time GitHub link + workflow on `main`, every push archives to TestFlight.
 
-1. Follow **[docs/app-store-connect.md](docs/app-store-connect.md)** (Bundle ID + one-time app create in ASC).
-2. On a Mac: `./scripts/archive-for-testflight.sh`
-3. Internal testers install from TestFlight after processing.
+See **[docs/app-store-connect.md](docs/app-store-connect.md)** for the click path and the export-compliance answer.
+
+Manual Mac upload (rare): `./scripts/archive-for-testflight.sh`
 
 API helper: `python3 scripts/asc_setup_penny.py status`
 

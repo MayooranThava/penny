@@ -1,6 +1,6 @@
 # App Store Connect & TestFlight — My Penny
 
-Same workflow pattern as **Void Runner** (`ApolloX_IOS`).
+**Pipeline: Xcode Cloud only** (same as Void Runner). No GitHub Actions upload path.
 
 ## Identifiers
 
@@ -10,46 +10,60 @@ Same workflow pattern as **Void Runner** (`ApolloX_IOS`).
 | Home-screen name | Penny |
 | App ID | `6811749191` |
 | Bundle ID | `com.mayooran.penny` |
+| Widget Bundle ID | `com.mayooran.penny.widgets` |
 | SKU | `penny-ios` |
 | Team ID | `2YJ478267N` |
 | Primary locale | English (Canada) |
 | Internal TestFlight group | **Internal Testers** (`e2003e1f-f82e-4bd0-85f9-a5dfc4f4cec5`) |
 
-## Current status (API-checked)
+## Xcode Cloud (required for auto TestFlight)
 
-- App record: **exists**
-- App Store version 1.0: **Prepare for Submission**
-- Builds uploaded: **0**
-- Internal group: **created** (access to all builds)
-- Internal tester: **mayooranthava@outlook.com** (invite activates after first build processes)
+Void Runner (`ApolloX_IOS`) already has Xcode Cloud. Penny needs a one-time enable, then every push to `main` archives to TestFlight.
 
-## What this agent cannot do
+### One-time setup (App Store Connect or Xcode)
 
-Uploading a TestFlight **build** requires archiving a signed `.ipa` with **Xcode on a Mac**. This Linux environment cannot produce iOS binaries. After you upload once from your Mac, **Internal Testers** will see the build automatically.
+1. Open [App Store Connect](https://appstoreconnect.apple.com) → **My Penny** → **Xcode Cloud**  
+   *(or Xcode: Product → Xcode Cloud → Create Workflow…)*
+2. Get Started / create the product for **My Penny**.
+3. Connect GitHub repo **MayooranThava/penny** (approve the Xcode Cloud GitHub app if asked).
+4. Create a workflow:
+   - **Name:** `TestFlight`
+   - **Start condition:** Branch changes → `main`
+   - **Action:** Archive – iOS, scheme `Penny`  
+     Deployment: **TestFlight and App Store** (or Internal Testing Only)
+   - **Post-action:** TestFlight Internal Testing → **Internal Testers**
+5. Save → start a first build (or push to `main`).
 
-## Upload build #1 (on your Mac)
+### External testing
+
+1. Create an External group under TestFlight.
+2. Add an External Testing post-action (or a separate release workflow).
+3. First external build of a version still needs **Beta App Review**.
+
+## Export compliance (encryption question)
+
+Penny does **not** implement its own crypto (no CryptoKit / custom AES). It only uses encryption already in Apple’s OS (e.g. HTTPS if networking is used).
+
+**In the App Store Connect dialog, choose:**
+
+> **None of the algorithms mentioned above**
+
+The project sets `ITSAppUsesNonExemptEncryption = NO` so future uploads can skip this prompt.
+
+## Manual Mac upload (rare)
 
 ```bash
-cd /path/to/penny
-git pull
 ./scripts/archive-for-testflight.sh
 ```
 
-Or in Xcode: select **Any iOS Device** → **Product → Archive** → **Distribute App → App Store Connect → Upload**.
-
-Then:
-
-1. Wait for processing (often 5–20 minutes)
-2. App Store Connect → **My Penny** → **TestFlight**
-3. Confirm the build is **Ready to Test**
-4. On iPhone: open **TestFlight** → install **My Penny**
-
-## Signing checklist in Xcode
+## Signing checklist
 
 - Team: `2YJ478267N`
-- Bundle Identifier: `com.mayooran.penny`
+- App Bundle ID: `com.mayooran.penny`
+- Widget Bundle ID: `com.mayooran.penny.widgets`
+- App Group: `group.com.mayooran.penny` on both targets
 - Automatically manage signing: **on**
-- Increment **Current Project Version** before each upload
+- Widget `Info.plist`: `NSExtensionPointIdentifier` = `com.apple.widgetkit-extension`
 
 ## API helper
 
@@ -63,4 +77,4 @@ python3 scripts/asc_setup_penny.py status
 ## Security
 
 - Do not commit `.p8` keys
-- Rotate the Admin key that was shared in chat when convenient
+- Rotate any Admin key that was pasted into chat

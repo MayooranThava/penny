@@ -28,3 +28,5 @@ Thumbs.db
 # Tooling
 /tmp/
 .swift-install/
+**/__pycache__/
+*.py[cod]

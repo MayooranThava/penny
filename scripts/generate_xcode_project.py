@@ -493,6 +493,7 @@ app_settings = """
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Penny;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Penny can remind you before bills are due.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

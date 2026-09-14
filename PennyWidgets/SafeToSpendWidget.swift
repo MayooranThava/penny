@@ -8,16 +8,16 @@ struct SafeToSpendEntry: TimelineEntry {
 
 struct SafeToSpendProvider: TimelineProvider {
     func placeholder(in context: Context) -> SafeToSpendEntry {
-        SafeToSpendEntry(date: .now, snapshot: .placeholder)
+        SafeToSpendEntry(date: .now, snapshot: WidgetSnapshotBridge.Snapshot.placeholder)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SafeToSpendEntry) -> Void) {
-        let snapshot = WidgetSnapshotBridge.load() ?? .placeholder
+        let snapshot = WidgetSnapshotBridge.load() ?? WidgetSnapshotBridge.Snapshot.placeholder
         completion(SafeToSpendEntry(date: .now, snapshot: snapshot))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SafeToSpendEntry>) -> Void) {
-        let snapshot = WidgetSnapshotBridge.load() ?? .placeholder
+        let snapshot = WidgetSnapshotBridge.load() ?? WidgetSnapshotBridge.Snapshot.placeholder
         let entry = SafeToSpendEntry(date: .now, snapshot: snapshot)
         let next = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now.addingTimeInterval(1_800)
         completion(Timeline(entries: [entry], policy: .after(next)))

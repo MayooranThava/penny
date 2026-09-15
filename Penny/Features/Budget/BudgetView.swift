@@ -289,6 +289,7 @@ struct CategoryDetailView: View {
                                 HStack {
                                     TextField("Budget amount", text: $budgetText)
                                         .keyboardType(.decimalPad)
+                                        .pennyNoAutoFill()
                                         .padding()
                                         .background(RoundedRectangle(cornerRadius: 12).fill(PennyColors.secondarySurface))
                                     Button("Save") {

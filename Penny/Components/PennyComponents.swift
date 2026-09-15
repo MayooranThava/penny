@@ -1,4 +1,19 @@
 import SwiftUI
+import UIKit
+
+extension View {
+    /// Suppresses iOS AutoFill (contacts, credit cards, passwords) and predictive
+    /// suggestions in the keyboard accessory bar for a text field.
+    ///
+    /// Those suggestions are drawn from the *device owner's* saved data (their
+    /// contact name, Wallet/Safari cards, etc.), so they must never be offered as
+    /// input for Penny's local money values and user-defined labels. Setting an
+    /// empty `UITextContentType` opts the field out of AutoFill heuristics.
+    func pennyNoAutoFill() -> some View {
+        textContentType(UITextContentType(rawValue: ""))
+            .autocorrectionDisabled(true)
+    }
+}
 
 struct PennyCard<Content: View>: View {
     var padding: CGFloat = PennySpacing.cardPadding

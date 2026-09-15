@@ -7,7 +7,7 @@ struct OnboardingView: View {
 
     @State private var page = 0
     @State private var currency = SupportedCurrency.cad
-    @State private var incomeText = "6200"
+    @State private var incomeText = ""
     @State private var isWorking = false
 
     var body: some View {
@@ -103,11 +103,12 @@ struct OnboardingView: View {
                 }
 
                 VStack(alignment: .leading, spacing: PennySpacing.sm) {
-                    Text("Monthly take-home income")
+                    Text("Monthly take-home income (optional)")
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.textSecondary)
-                    TextField("6200", text: $incomeText)
+                    TextField("0", text: $incomeText)
                         .keyboardType(.decimalPad)
+                        .pennyNoAutoFill()
                         .font(PennyTypography.largeAmount)
                         .monospacedDigit()
                         .padding()
@@ -115,6 +116,9 @@ struct OnboardingView: View {
                             RoundedRectangle(cornerRadius: PennySpacing.radiusMd, style: .continuous)
                                 .fill(PennyColors.surface)
                         )
+                    Text("You can add or change this anytime in Settings.")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textSecondary)
                 }
 
                 Spacer(minLength: 40)
@@ -151,10 +155,16 @@ struct OnboardingView: View {
                 Button {
                     finish(useDemo: false)
                 } label: {
-                    Text("Start fresh")
+                    Text("Start empty")
                 }
                 .buttonStyle(.pennySecondary)
                 .disabled(isWorking)
+
+                Text("Sample data fills the app with an example household you can delete anytime. Start empty gives you a clean slate.")
+                    .font(PennyTypography.caption)
+                    .foregroundStyle(PennyColors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, PennySpacing.xs)
             }
         }
     }

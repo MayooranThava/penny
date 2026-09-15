@@ -169,10 +169,13 @@ struct AddGoalView: View {
                         }
                     }
                     TextField("Name", text: $name)
+                        .pennyNoAutoFill()
                     TextField("Target amount", text: $targetText)
                         .keyboardType(.decimalPad)
+                        .pennyNoAutoFill()
                     TextField("Current amount", text: $currentText)
                         .keyboardType(.decimalPad)
+                        .pennyNoAutoFill()
                 }
                 Section("Target date") {
                     Toggle("Set target date", isOn: $hasTargetDate)
@@ -300,7 +303,10 @@ struct AddBillView: View {
         NavigationStack {
             Form {
                 TextField("Name", text: $name)
-                TextField("Amount", text: $amountText).keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
+                TextField("Amount", text: $amountText)
+                    .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
                 Stepper("Due day: \(dueDay)", value: $dueDay, in: 1...28)
                 Picker("Category", selection: $category) {
                     ForEach(CategoryCatalog.defaults.map(\.name), id: \.self) { Text($0) }
@@ -458,10 +464,19 @@ struct AddDebtView: View {
         NavigationStack {
             Form {
                 TextField("Name", text: $name)
-                TextField("Current balance", text: $balanceText).keyboardType(.decimalPad)
-                TextField("Interest rate (%)", text: $rateText).keyboardType(.decimalPad)
-                TextField("Minimum payment", text: $minimumText).keyboardType(.decimalPad)
-                TextField("Planned monthly payment", text: $paymentText).keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
+                TextField("Current balance", text: $balanceText)
+                    .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
+                TextField("Interest rate (%)", text: $rateText)
+                    .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
+                TextField("Minimum payment", text: $minimumText)
+                    .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
+                TextField("Planned monthly payment", text: $paymentText)
+                    .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
             }
             .navigationTitle("New Debt")
             .toolbar {

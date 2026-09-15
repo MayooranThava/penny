@@ -62,6 +62,7 @@ struct SettingsView: View {
             HStack {
                 TextField("Income", text: $incomeText)
                     .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
                 Button("Save") {
                     if let value = Decimal.from(incomeText), let settings {
                         settings.monthlyIncome = value

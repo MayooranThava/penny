@@ -76,12 +76,10 @@ enum DemoDataService {
         let monthStart = DateHelpers.startOfMonth()
         context.insert(Budget(monthStart: monthStart, plannedSpending: 0))
 
-        context.insert(
-            FinancialAccount(name: "Everyday Chequing", accountType: .chequing, balance: 0, sortOrder: 0)
-        )
-        context.insert(
-            FinancialAccount(name: "Savings", accountType: .savings, balance: 0, sortOrder: 1)
-        )
+        // Intentionally no accounts, transactions, goals, bills, or debts: a
+        // "Start empty" first run should be a genuinely clean slate. The default
+        // categories above are kept only as empty (zero-budget) scaffolding so the
+        // Budget screen is usable.
 
         let settings = UserSettings(
             currencyCode: currencyCode,

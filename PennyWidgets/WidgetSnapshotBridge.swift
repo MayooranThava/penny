@@ -22,8 +22,8 @@ enum WidgetSnapshotBridge {
                 currencyCode: "CAD",
                 monthLabel: "September",
                 nextReminderTitle: "Rent due",
-                nextReminderDetail: "$1,500 · Sep 20",
-                displayName: "Mayooran",
+                nextReminderDetail: "$1,750 · Sep 1",
+                displayName: "Alex",
                 updatedAt: .now
             )
         }

@@ -150,7 +150,7 @@ struct FinanceCalculatorTests {
             monthlyPayment: 250
         )
         guard case .paidOff(_, let months, let interest) = result else {
-            Issue.record("Expected paidOff for Visa demo debt")
+            Issue.record("Expected paidOff for demo debt")
             return
         }
         #expect(months > 0)
@@ -237,7 +237,7 @@ struct DateHelperTests {
 
     @Test("Welcome message uses display name when set")
     func welcomeMessage() {
-        #expect(DateHelpers.welcomeMessage(displayName: "Mayooran") == "Welcome back Mayooran")
+        #expect(DateHelpers.welcomeMessage(displayName: "Alex") == "Welcome back Alex")
         #expect(DateHelpers.welcomeMessage(displayName: "  ") == DateHelpers.greeting())
         #expect(DateHelpers.welcomeMessage(displayName: nil) == DateHelpers.greeting())
     }

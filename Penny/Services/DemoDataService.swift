@@ -32,8 +32,8 @@ enum CategoryCatalog {
 
 @MainActor
 enum DemoDataService {
-    static let demoMonthlyIncome: Decimal = 6_200
-    static let demoPlannedSavings: Decimal = 1_000
+    static let demoMonthlyIncome: Decimal = 4_600
+    static let demoPlannedSavings: Decimal = 500
 
     static func resetAll(in context: ModelContext) throws {
         try deleteAll(in: context)
@@ -144,17 +144,17 @@ enum DemoDataService {
         let now = Date.now
         let monthStart = DateHelpers.startOfMonth(for: now)
 
-        // Categories with budgets matching product brief
+        // Category budgets tuned to an average single Toronto renter.
         let budgets: [(String, Decimal)] = [
             ("Housing", 1_900),
-            ("Food", 550),
-            ("Transportation", 450),
-            ("Shopping", 300),
-            ("Entertainment", 250),
-            ("Health", 120),
-            ("Subscriptions", 95),
-            ("Travel", 150),
-            ("Savings", 1_000),
+            ("Food", 500),
+            ("Transportation", 220),
+            ("Shopping", 200),
+            ("Entertainment", 150),
+            ("Health", 100),
+            ("Subscriptions", 160),
+            ("Travel", 120),
+            ("Savings", 500),
             ("Other", 100)
         ]
 
@@ -171,72 +171,68 @@ enum DemoDataService {
             )
         }
 
-        let planned = budgets.map(\.1).filter { $0 != 1_000 }.reduce(Decimal(0), +) // exclude savings envelope from "planned spending" hero optionally
-        // Product brief: planned spending $3,400
-        context.insert(Budget(monthStart: monthStart, plannedSpending: 3_400))
-        _ = planned
+        context.insert(Budget(monthStart: monthStart, plannedSpending: 3_150))
 
-        // Accounts
-        context.insert(FinancialAccount(name: "Everyday Chequing", accountType: .chequing, balance: 4_280, sortOrder: 0))
-        context.insert(FinancialAccount(name: "High-Interest Savings", accountType: .savings, balance: 12_450, sortOrder: 1))
-        context.insert(FinancialAccount(name: "Investment Account", accountType: .investment, balance: 8_200, sortOrder: 2))
-        context.insert(FinancialAccount(name: "Visa", accountType: .creditCard, balance: -2_850, sortOrder: 3))
+        // Accounts — typical mix for an average Toronto resident.
+        context.insert(FinancialAccount(name: "Everyday Chequing", accountType: .chequing, balance: 2_140, sortOrder: 0))
+        context.insert(FinancialAccount(name: "TFSA Savings", accountType: .savings, balance: 6_800, sortOrder: 1))
+        context.insert(FinancialAccount(name: "Credit Card", accountType: .creditCard, balance: -3_200, sortOrder: 2))
 
-        // Goals
-        let houseTarget = calendar.date(byAdding: .month, value: 20, to: now)
-        context.insert(
-            SavingsGoal(
-                name: "House",
-                targetAmount: 30_000,
-                currentAmount: 18_400,
-                targetDate: houseTarget,
-                icon: "house.fill",
-                colourIdentifier: "housing"
-            )
-        )
+        // Goals — common priorities for an average Toronto saver.
         context.insert(
             SavingsGoal(
                 name: "Emergency Fund",
-                targetAmount: 10_000,
-                currentAmount: 8_100,
-                targetDate: calendar.date(byAdding: .month, value: 4, to: now),
+                targetAmount: 12_000,
+                currentAmount: 3_400,
+                targetDate: calendar.date(byAdding: .month, value: 12, to: now),
                 icon: "shield.fill",
                 colourIdentifier: "savings"
             )
         )
         context.insert(
             SavingsGoal(
+                name: "Condo Down Payment",
+                targetAmount: 60_000,
+                currentAmount: 8_200,
+                targetDate: calendar.date(byAdding: .month, value: 36, to: now),
+                icon: "house.fill",
+                colourIdentifier: "housing"
+            )
+        )
+        context.insert(
+            SavingsGoal(
                 name: "Vacation",
-                targetAmount: 4_000,
-                currentAmount: 2_100,
-                targetDate: calendar.date(byAdding: .month, value: 8, to: now),
+                targetAmount: 3_500,
+                currentAmount: 900,
+                targetDate: calendar.date(byAdding: .month, value: 7, to: now),
                 icon: "airplane",
                 colourIdentifier: "travel"
             )
         )
 
-        // Debt — monthly targets reduce Safe to Spend on Home
+        // Debt — a generic credit-card balance. Monthly targets reduce Safe to Spend on Home.
         context.insert(
             Debt(
-                name: "BMO VIP Porter",
-                originalBalance: 6_500,
-                currentBalance: 5_800,
-                interestRate: 21.99,
-                minimumPayment: 150,
-                plannedMonthlyPayment: 800,
-                dueDay: 18,
+                name: "Credit Card",
+                originalBalance: 4_000,
+                currentBalance: 3_200,
+                interestRate: 19.99,
+                minimumPayment: 90,
+                plannedMonthlyPayment: 250,
+                dueDay: 15,
                 icon: "creditcard.fill"
             )
         )
 
-        // Bills
+        // Bills — typical recurring costs for a single Toronto renter.
         let bills: [(String, Decimal, Int, BillRecurrence, String, String)] = [
-            ("Rent", 1_500, 20, .monthly, "Housing", "house.fill"),
-            ("Internet", 79.99, 15, .monthly, "Subscriptions", "wifi"),
-            ("Phone", 65, 20, .monthly, "Subscriptions", "iphone"),
-            ("Car Payment", 350, 11, .monthly, "Transportation", "car.fill"),
-            ("Streaming", 22.99, 8, .monthly, "Subscriptions", "play.tv.fill"),
-            ("Gym", 45, 5, .biweekly, "Health", "figure.run")
+            ("Rent", 1_750, 1, .monthly, "Housing", "house.fill"),
+            ("Hydro", 85, 12, .monthly, "Housing", "bolt.fill"),
+            ("Internet", 75, 15, .monthly, "Subscriptions", "wifi"),
+            ("Phone", 55, 20, .monthly, "Subscriptions", "iphone"),
+            ("TTC Pass", 156, 1, .monthly, "Transportation", "tram.fill"),
+            ("Streaming", 27.99, 8, .monthly, "Subscriptions", "play.tv.fill"),
+            ("Gym", 45, 5, .monthly, "Health", "figure.run")
         ]
 
         for bill in bills {
@@ -266,31 +262,28 @@ enum DemoDataService {
         // Income this month
         let payday1 = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: monthStart.addingTimeInterval(86400 * 1)) ?? monthStart
         let payday2 = calendar.date(byAdding: .day, value: 14, to: payday1) ?? now
-        context.insert(Transaction(title: "Salary", amount: 3_100, date: payday1, transactionType: .income, categoryName: "Income", note: "Bi-weekly pay"))
-        context.insert(Transaction(title: "Salary", amount: 3_100, date: min(payday2, now), transactionType: .income, categoryName: "Income", note: "Bi-weekly pay"))
+        context.insert(Transaction(title: "Salary", amount: 2_300, date: payday1, transactionType: .income, categoryName: "Income", note: "Bi-weekly pay"))
+        context.insert(Transaction(title: "Salary", amount: 2_300, date: min(payday2, now), transactionType: .income, categoryName: "Income", note: "Bi-weekly pay"))
 
-        // Expenses — tuned so totals feel realistic (~$2,615 discretionary+housing mix for demo)
+        // Expenses — everyday spending for an average Toronto resident.
         let expenseSamples: [(String, Decimal, String, Int)] = [
-            ("Rent", 1_500, "Housing", 1),
-            ("FreshCo", 63.42, "Food", 0),
-            ("Gas", 72.10, "Transportation", 0),
-            ("Metro Groceries", 88.25, "Food", 2),
-            ("Coffee Bar", 6.75, "Food", 0),
-            ("Uber", 18.40, "Transportation", 1),
-            ("Indie Cinema", 32.00, "Entertainment", 3),
-            ("Spotify", 12.99, "Subscriptions", 5),
-            ("Netflix", 22.99, "Subscriptions", 8),
-            ("Uniqlo", 84.50, "Shopping", 4),
-            ("Pharmacy", 28.60, "Health", 6),
-            ("Dinner Out", 64.20, "Food", 7),
-            ("Transit Pass", 120.00, "Transportation", 2),
-            ("Bookstore", 27.80, "Shopping", 9),
-            ("Farmers Market", 41.15, "Food", 10),
-            ("Concert Tickets", 95.00, "Entertainment", 11),
-            ("Internet", 79.99, "Subscriptions", 15),
-            ("Climbing Gym", 48.00, "Health", 12),
-            ("HomeSense", 62.40, "Shopping", 13),
-            ("Lunch", 14.80, "Food", 14)
+            ("Rent", 1_750, "Housing", 1),
+            ("Loblaws", 92.40, "Food", 2),
+            ("TTC Presto", 156.00, "Transportation", 1),
+            ("Tim Hortons", 5.85, "Food", 0),
+            ("No Frills", 68.20, "Food", 4),
+            ("Uber", 21.30, "Transportation", 3),
+            ("Cineplex", 28.50, "Entertainment", 6),
+            ("Spotify", 11.99, "Subscriptions", 5),
+            ("Netflix", 20.99, "Subscriptions", 8),
+            ("Winners", 74.30, "Shopping", 7),
+            ("Shoppers Drug Mart", 32.60, "Health", 9),
+            ("Dinner - King St", 58.40, "Food", 10),
+            ("Indigo", 24.75, "Shopping", 11),
+            ("St. Lawrence Market", 46.15, "Food", 12),
+            ("Raptors Game", 89.00, "Entertainment", 13),
+            ("Internet", 75.00, "Subscriptions", 15),
+            ("Lunch - PATH", 15.20, "Food", 14)
         ]
 
         for sample in expenseSamples {
@@ -314,13 +307,13 @@ enum DemoDataService {
             throw DemoDataError.calendarFailure
         }
         let priorExpenses: [(String, Decimal, String, Int)] = [
-            ("Rent", 1_500, "Housing", 1),
-            ("Groceries", 520, "Food", 5),
-            ("Gas", 95, "Transportation", 8),
-            ("Dining", 140, "Food", 12),
-            ("Shopping Haul", 210, "Shopping", 15),
-            ("Movies", 55, "Entertainment", 18),
-            ("Subscriptions Bundle", 90, "Subscriptions", 4)
+            ("Rent", 1_750, "Housing", 1),
+            ("Groceries", 480, "Food", 5),
+            ("Transit", 156, "Transportation", 3),
+            ("Dining", 165, "Food", 12),
+            ("Shopping", 190, "Shopping", 15),
+            ("Movies", 42, "Entertainment", 18),
+            ("Subscriptions", 108, "Subscriptions", 4)
         ]
         for sample in priorExpenses {
             let date = calendar.date(byAdding: .day, value: sample.3, to: priorMonth) ?? priorMonth
@@ -343,7 +336,7 @@ enum DemoDataService {
             billRemindersEnabled: true,
             appearance: .system,
             usingDemoData: true,
-            displayName: ""
+            displayName: "Alex"
         )
         context.insert(settings)
         try context.save()

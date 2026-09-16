@@ -1,0 +1,67 @@
+{
+  "identifier" : "B1F0A6C2-9E4D-4F2A-9C1E-3A7D2E5B8F10",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "24.99",
+      "familyShareable" : false,
+      "internalID" : "8A1C2D34-0001-4E5F-9A11-000000000001",
+      "localizations" : [
+        {
+          "description" : "Unlock every Penny Pro feature forever with a single purchase.",
+          "displayName" : "Penny Pro — Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.penny.app.pro.lifetime",
+      "referenceName" : "Penny Pro Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0000000000",
+    "_developerTeamID" : "0000000000",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "CAN",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "9C2E4A11-0002-4B33-8D77-000000000002",
+      "localizations" : [],
+      "name" : "Penny Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "39.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "7D3B5F62-0003-4A88-9E22-000000000003",
+          "introductoryOffer" : {
+            "internalID" : "6E2A4C51-0004-4C99-8F33-000000000004",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "All Penny Pro features. 7-day free trial, then billed yearly. Cancel anytime.",
+              "displayName" : "Penny Pro — Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.penny.app.pro.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Penny Pro Annual",
+          "subscriptionGroupID" : "9C2E4A11-0002-4B33-8D77-000000000002",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

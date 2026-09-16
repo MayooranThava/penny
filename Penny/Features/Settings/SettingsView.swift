@@ -61,6 +61,7 @@ struct SettingsView: View {
             ) {
                 TextField("Balance", text: $accountBalanceText)
                     .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
                 Button("Save") {
                     Keyboard.dismiss()
                     if let editingAccount, let value = Decimal.from(accountBalanceText) {
@@ -85,8 +86,7 @@ struct SettingsView: View {
         Section("Profile") {
             HStack {
                 TextField("Your name", text: $nameText)
-                    .textContentType(.name)
-                    .autocorrectionDisabled()
+                    .pennyNoAutoFill()
                 Button("Save") {
                     Keyboard.dismiss()
                     let trimmed = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -119,6 +119,7 @@ struct SettingsView: View {
             HStack {
                 TextField("Income", text: $incomeText)
                     .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
                 Button("Save") {
                     Keyboard.dismiss()
                     if let value = Decimal.from(incomeText), let settings {

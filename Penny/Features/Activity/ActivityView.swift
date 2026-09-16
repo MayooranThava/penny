@@ -368,6 +368,7 @@ struct AddTransactionView: View {
                     .font(PennyTypography.heroAmount)
                     .monospacedDigit()
                     .keyboardType(.decimalPad)
+                    .pennyNoAutoFill()
                     .focused($amountFocused)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(type == .income ? PennyColors.income : PennyColors.textPrimary)
@@ -467,6 +468,7 @@ struct AddTransactionView: View {
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             TextField("What was this for?", text: $title)
+                .pennyNoAutoFill()
                 .padding()
                 .background(RoundedRectangle(cornerRadius: PennySpacing.radiusMd).fill(PennyColors.surface))
             if showValidation, title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -483,6 +485,7 @@ struct AddTransactionView: View {
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             TextField("Add a note", text: $note, axis: .vertical)
+                .pennyNoAutoFill()
                 .lineLimit(3...5)
                 .padding()
                 .background(RoundedRectangle(cornerRadius: PennySpacing.radiusMd).fill(PennyColors.surface))

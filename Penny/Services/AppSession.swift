@@ -36,7 +36,7 @@ final class StoreManager {
         // Listen for transactions that arrive outside an explicit purchase:
         // renewals, Ask-to-Buy approvals, and purchases made on other devices.
         Task { [weak self] in
-            for await update in Transaction.updates {
+            for await update in StoreKit.Transaction.updates {
                 await self?.handle(update)
             }
         }
@@ -73,7 +73,7 @@ final class StoreManager {
     /// Recompute `isPro` from the user's current, non-revoked entitlements.
     func refreshEntitlements() async {
         var entitled = false
-        for await result in Transaction.currentEntitlements {
+        for await result in StoreKit.Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
             if PennyProductCatalog.allProductIDs.contains(transaction.productID),
                transaction.revocationDate == nil {
@@ -122,7 +122,7 @@ final class StoreManager {
         await refreshEntitlements()
     }
 
-    private func handle(_ result: VerificationResult<Transaction>) async {
+    private func handle(_ result: VerificationResult<StoreKit.Transaction>) async {
         guard case .verified(let transaction) = result else { return }
         await transaction.finish()
         await refreshEntitlements()

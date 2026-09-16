@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct PennyApp: App {
     @State private var session = AppSession()
+    @State private var store = StoreManager()
     @State private var container: ModelContainer?
     @State private var launchError: String?
     @State private var didStartLaunch = false
@@ -21,6 +22,10 @@ struct PennyApp: App {
             .task {
                 await startIfNeeded()
             }
+            .task {
+                // Load products / entitlement in the background; never blocks launch.
+                await store.start()
+            }
         }
     }
 
@@ -33,6 +38,7 @@ struct PennyApp: App {
         } else if let container {
             RootView()
                 .environment(session)
+                .environment(store)
                 .modelContainer(container)
         } else {
             LaunchSplashView()
@@ -180,6 +186,7 @@ struct MainTabView: View {
 #Preview("Root Demo") {
     RootView()
         .environment(AppSession())
+        .environment(StoreManager())
         .modelContainer(PennyPersistence.previewContainer())
 }
 

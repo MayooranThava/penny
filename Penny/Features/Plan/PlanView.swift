@@ -50,11 +50,27 @@ enum PlanSegment: String, CaseIterable, Identifiable {
 
 struct GoalsPlanView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(StoreManager.self) private var store
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
     @State private var showAdd = false
     @State private var editingGoal: SavingsGoal?
     @State private var pendingDelete: SavingsGoal?
+    @State private var showPaywall = false
+
+    /// Free users can keep up to the free-tier limit of goals; beyond that needs Pro.
+    private var canAddGoal: Bool {
+        store.isPro || goals.count < PennyProductCatalog.freeTierGoalLimit
+    }
+
+    private func startAddGoal() {
+        if canAddGoal {
+            showAdd = true
+        } else {
+            Haptics.light()
+            showPaywall = true
+        }
+    }
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
 
@@ -67,7 +83,7 @@ struct GoalsPlanView: View {
                         title: "No savings goals",
                         message: "Create a goal to track progress toward something that matters.",
                         actionTitle: "Add goal"
-                    ) { showAdd = true }
+                    ) { startAddGoal() }
                 } else {
                     ForEach(goals, id: \.id) { goal in
                         Button {
@@ -118,9 +134,9 @@ struct GoalsPlanView: View {
                 }
 
                 Button {
-                    showAdd = true
+                    startAddGoal()
                 } label: {
-                    Label("Add savings goal", systemImage: "plus")
+                    Label(canAddGoal ? "Add savings goal" : "Add savings goal (Pro)", systemImage: canAddGoal ? "plus" : "sparkles")
                 }
                 .buttonStyle(.pennySecondary)
             }
@@ -129,6 +145,9 @@ struct GoalsPlanView: View {
         }
         .sheet(isPresented: $showAdd) {
             AddGoalView()
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
         }
         .sheet(isPresented: Binding(
             get: { editingGoal != nil },
@@ -913,5 +932,6 @@ struct ForecastPlanView: View {
 #Preview("Plan") {
     PlanView()
         .environment(AppSession())
+        .environment(StoreManager())
         .modelContainer(PennyPersistence.previewContainer())
 }

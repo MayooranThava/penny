@@ -334,8 +334,7 @@ struct PaywallView: View {
         ("chart.line.uptrend.xyaxis", "Advanced multi-month forecasts"),
         ("square.and.arrow.up", "CSV export of your transactions"),
         ("icloud.fill", "iCloud sync across your devices"),
-        ("paintpalette.fill", "Custom themes & app icons"),
-        ("lock.shield.fill", "Always private — no ads, no tracking")
+        ("paintpalette.fill", "Custom themes & app icons")
     ]
 
     var body: some View {

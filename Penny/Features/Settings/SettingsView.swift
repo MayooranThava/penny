@@ -258,6 +258,8 @@ struct SettingsView: View {
             Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. This prototype does not sync to the cloud, connect to banks, or send analytics.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
+            Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
+            Link("Support", destination: PennyAppInfo.supportURL)
         }
     }
 

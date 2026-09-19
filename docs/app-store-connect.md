@@ -241,11 +241,12 @@ Penny is 100% on-device: no bank connections, no analytics, no ads, no accounts.
 
 ## 10. Screenshots (required — capture on your Mac via Simulator)
 
-The app is **universal (iPhone + iPad)**, so App Store Connect requires **both** sets:
-- iPhone **6.9"** (e.g., iPhone 16 Pro Max) — required
-- iPad **13"** — required (or set the target to iPhone-only to skip iPad)
+The app is **iPhone-only** (`TARGETED_DEVICE_FAMILY = 1`), so App Store Connect does **not** require iPad screenshots.
+- iPhone **6.5"** / **6.9"** (e.g., iPhone 16 Pro Max) — required
 
-Capture ~5 each: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Forecast)**, and **Paywall or Settings**. Use "Explore with sample data" so screens look populated. In Simulator: `Device → Trigger Screenshot` (⌘S).
+Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Forecast)**, and **Paywall or Settings**. Use "Explore with sample data" so screens look populated. In Simulator: `Device → Trigger Screenshot` (⌘S).
+
+> After merging this change, upload a **new build** (Xcode Cloud / archive). The old universal build still declares iPad support, so ASC will keep asking for 13" iPad screenshots until you attach an iPhone-only build.
 
 ---
 

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Penny</title>
+  <style>
+    :root {
+      --bg: #f7f5f0;
+      --surface: #ffffff;
+      --text: #1f2429;
+      --muted: #6b737a;
+      --brand: #1f9e7a;
+      --brand-soft: rgba(31, 158, 122, 0.12);
+      --border: rgba(31, 36, 41, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 32px 20px;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, var(--brand-soft), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(46, 122, 184, 0.08), transparent 50%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+    main { max-width: 720px; margin: 0 auto; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 10px 30px rgba(31, 36, 41, 0.04);
+    }
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--brand);
+      margin-bottom: 0.6rem;
+    }
+    h1 { font-size: 2rem; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+    .muted { color: var(--muted); margin-top: 0; }
+    a { color: var(--brand); font-weight: 600; }
+    ul { padding-left: 1.15rem; margin: 1rem 0 0; }
+    li { margin: 0.45rem 0; }
+    code {
+      background: var(--brand-soft);
+      color: var(--text);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.92em;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card">
+      <div class="eyebrow">Personal finance</div>
+      <h1>My Penny</h1>
+      <p class="muted">Calm budgeting for iPhone · <code>com.mayooran.penny</code></p>
+      <p>Legal pages for App Store Connect and in-app Settings links:</p>
+      <ul>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+        <li><a href="support.html">Support</a></li>
+      </ul>
+    </div>
+  </main>
+</body>
+</html>

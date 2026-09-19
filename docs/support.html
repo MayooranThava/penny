@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Penny — Support</title>
+  <style>
+    :root {
+      --bg: #f7f5f0;
+      --surface: #ffffff;
+      --text: #1f2429;
+      --muted: #6b737a;
+      --brand: #1f9e7a;
+      --brand-soft: rgba(31, 158, 122, 0.12);
+      --border: rgba(31, 36, 41, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 32px 20px;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+    main { max-width: 720px; margin: 0 auto; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 10px 30px rgba(31, 36, 41, 0.04);
+    }
+    h1 { font-size: 1.85rem; margin: 0 0 0.25rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.1rem; margin-top: 1.55rem; margin-bottom: 0.4rem; }
+    .muted { color: var(--muted); }
+    a { color: var(--brand); font-weight: 600; }
+    ul { padding-left: 1.15rem; }
+    li { margin: 0.45rem 0; }
+    code {
+      background: var(--brand-soft);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.92em;
+    }
+    .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card">
+      <h1>My Penny Support</h1>
+      <p class="muted">Private budgeting for iPhone · <code>com.mayooran.penny</code></p>
+
+      <h2>Quick help</h2>
+      <ul>
+        <li><strong>First launch:</strong> Choose “Explore with sample data” to try a populated household, or start fresh with your own numbers.</li>
+        <li><strong>Safe to Spend:</strong> Set monthly take-home income in Settings, add bills and spending, then check Home for what’s left.</li>
+        <li><strong>Currency:</strong> Settings → Currency (CAD, USD, GBP, EUR, AUD).</li>
+        <li><strong>Bill reminders:</strong> Settings → Notifications (optional; permission stays on-device).</li>
+        <li><strong>Widgets:</strong> Long-press Home Screen → Add Widget → Penny (Safe to Spend / upcoming reminder).</li>
+        <li><strong>Penny Pro:</strong> Settings → Unlock Penny Pro. Restore purchases from the same screen if you reinstall.</li>
+        <li><strong>Reset / delete data:</strong> Settings → Data. Deleting the app also clears local data permanently.</li>
+      </ul>
+
+      <h2>Privacy</h2>
+      <p>Penny stores your financial information on your device only. Read the full <a href="privacy-policy.html">Privacy Policy</a>.</p>
+
+      <h2>Contact</h2>
+      <p>Email the developer address shown on the App Store listing for My Penny, or open an issue on <a href="https://github.com/MayooranThava/penny">the project repository</a> if you have access.</p>
+
+      <p class="muted footer"><a href="index.html">Home</a> · <a href="privacy-policy.html">Privacy Policy</a></p>
+    </div>
+  </main>
+</body>
+</html>

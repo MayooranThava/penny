@@ -157,33 +157,27 @@ Penny supports CAD, USD, GBP, EUR, and AUD.
 
 ---
 Penny Pro (Annual) is an auto-renewing subscription. Payment is charged to your Apple Account at purchase confirmation. It renews automatically unless canceled at least 24 hours before the end of the period. Manage or cancel anytime in your Apple Account settings.
-Privacy Policy: <YOUR_PRIVACY_POLICY_URL>
+Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 **What's New (1.0.0):** `First release of Penny — safe-to-spend budgeting, bills, savings goals, forecasts, and widgets. All on-device.`
 
-**Support URL (required):** host a simple page — e.g. GitHub Pages, or a Notion/Carrd page — and put a contact email on it. Placeholder acceptable for review: `https://github.com/MayooranThava/penny`
+**Support URL (required):** `https://mayooranthava.github.io/penny/support.html`
 
-**Marketing URL (optional):** same page is fine.
+**Marketing URL (optional):** `https://mayooranthava.github.io/penny/`
 
-## 3. Privacy Policy (required — host this text at a public URL)
+## 3. Privacy Policy (GitHub Pages)
 
-```
-Privacy Policy — My Penny
-Last updated: 2026-09-16
+Hosted like Void Runner. After Pages is enabled (see checklist), paste:
 
-My Penny ("the app") is built to keep your financial information private.
+| App Store Connect field | URL |
+|---|---|
+| Privacy Policy | `https://mayooranthava.github.io/penny/privacy-policy.html` |
+| Support URL | `https://mayooranthava.github.io/penny/support.html` |
+| Marketing URL (optional) | `https://mayooranthava.github.io/penny/` |
 
-- All information you enter (income, bills, budgets, goals, transactions) is stored locally on your device. It is not uploaded to us or any third party.
-- We do not collect, transmit, sell, or share your personal or financial data.
-- The app does not connect to your bank, does not use analytics or advertising, and does not require an account.
-- Optional bill reminders are scheduled locally on your device using notifications.
-- If you purchase Penny Pro, the transaction is handled entirely by Apple. We never receive your payment details.
-- Because data lives only on your device, deleting the app deletes your data, and we cannot recover it.
-
-Contact: <YOUR_SUPPORT_EMAIL>
-```
+Source files: `docs/index.html`, `docs/privacy-policy.html`, `docs/support.html`. Workflow: `.github/workflows/pages.yml`.
 
 ## 4. App Privacy (App Store Connect → App Privacy)
 
@@ -259,7 +253,8 @@ Capture ~5 each: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goa
 
 1. **Revoke the App Store Connect API key `R3H7Z9G9R8`** that was pasted in chat, and generate a new one. (Users and Access → Integrations.)
 2. **Agreements, Tax, and Banking** → accept the **Paid Applications** agreement and complete banking + tax (required for IAP).
-3. **Host** the Privacy Policy (section 3) and a **Support URL** (section 2); paste both URLs into ASC and into the description's subscription block.
+3. **Enable GitHub Pages** (one-time, like Void Runner): repo **Settings → Pages → Build and deployment → Source: GitHub Actions**, then run **Actions → GitHub Pages → Run workflow** on `main`. Paste the Privacy / Support URLs from section 3 into ASC and into the description’s subscription block.  
+   *(Penny is a private repo — GitHub Pages for private repos needs GitHub Pro/Team. If Pages won’t enable, make the repo public or host the three HTML files elsewhere.)*
 4. **Create the two IAPs** (section 5) — decide the product-ID convention first.
 5. **Paste** App Information, keywords, promo text, description, What's New (sections 1–2).
 6. **Upload screenshots** (section 10).

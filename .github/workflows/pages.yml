@@ -1,0 +1,51 @@
+# Deploys legal HTML from docs/ to https://mayooranthava.github.io/penny/
+# One-time: repo Settings → Pages → Source: GitHub Actions.
+# Creating the Pages site needs repo admin; GITHUB_TOKEN often cannot do it alone.
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "docs/index.html"
+      - "docs/privacy-policy.html"
+      - "docs/support.html"
+      - "docs/.nojekyll"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy docs to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Publish only the public legal pages — keep internal markdown out of Pages.
+      - name: Stage legal pages
+        run: |
+          mkdir -p _site
+          cp docs/index.html docs/privacy-policy.html docs/support.html docs/.nojekyll _site/
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

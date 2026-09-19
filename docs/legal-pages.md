@@ -2,13 +2,19 @@
 
 Same pattern as Void Runner (`ApolloX_IOS`). Host these HTML files over HTTPS and paste the URLs into App Store Connect.
 
-## Recommended: GitHub Pages
+## Enable GitHub Pages (required once)
 
-The Pages workflow deploys only the public legal HTML from `docs/` (internal markdown stays out of the site).
+The Actions token **cannot** create a Pages site. That is why the first run failed on `configure-pages` with `Resource not accessible by integration`.
 
-1. Repo **Settings → Pages** → **Build and deployment → Source: GitHub Actions**
-2. Run **Actions → GitHub Pages → Run workflow** on `main`
-3. After it publishes, use:
+Do this in a browser (on phone: request **Desktop site**):
+
+1. **Visibility:** Penny is currently **private**. GitHub Pages on a free plan only works for **public** repos (or any visibility with GitHub Pro).  
+   → **Settings → General → Danger Zone → Change visibility → Public**  
+   *(or upgrade to Pro and leave it private)*
+2. **Pages source:** **Settings → Pages → Build and deployment → Source: GitHub Actions**
+3. Re-run **Actions → GitHub Pages → Run workflow** on `main`
+
+After it goes green, use:
 
 | App Store Connect field | URL |
 |---|---|
@@ -18,4 +24,7 @@ The Pages workflow deploys only the public legal HTML from `docs/` (internal mar
 
 Those match `PennyAppInfo.privacyPolicyURL` / `supportURL` in the app.
 
-> **Private repo note:** GitHub Pages for private repositories requires GitHub Pro/Team (Void Runner works because `ApolloX_IOS` is public). If Pages won’t enable, either upgrade, make the repo public, or host these three HTML files elsewhere and update the URLs above + `PennyAppInfo`.
+## Files
+
+- `docs/index.html`, `docs/privacy-policy.html`, `docs/support.html`, `docs/.nojekyll`
+- Workflow: `.github/workflows/pages.yml` (publishes only those HTML files)

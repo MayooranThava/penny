@@ -1,6 +1,14 @@
 # Deploys legal HTML from docs/ to https://mayooranthava.github.io/penny/
-# One-time: repo Settings → Pages → Source: GitHub Actions.
-# Creating the Pages site needs repo admin; GITHUB_TOKEN often cannot do it alone.
+#
+# IMPORTANT — one-time manual setup (GITHUB_TOKEN cannot do this):
+# 1. If the repo is private on a free GitHub plan, make it Public
+#    (Settings → General → Change visibility) OR use GitHub Pro.
+# 2. Settings → Pages → Build and deployment → Source: GitHub Actions
+# 3. Re-run this workflow (Actions → GitHub Pages → Run workflow)
+#
+# Same pattern as Void Runner (ApolloX_IOS). Do NOT set enablement: true —
+# that always fails with "Resource not accessible by integration" because
+# Actions tokens cannot create a Pages site.
 name: GitHub Pages
 
 on:
@@ -39,9 +47,28 @@ jobs:
           mkdir -p _site
           cp docs/index.html docs/privacy-policy.html docs/support.html docs/.nojekyll _site/
 
+      # Fails with a clear message if Pages is not enabled yet (see header comment).
+      - name: Check Pages is enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          code=$(gh api "repos/${{ github.repository }}/pages" -i 2>&1 | awk 'NR==1 {print $2}')
+          body=$(gh api "repos/${{ github.repository }}/pages" 2>&1)
+          set -e
+          if [ "$code" = "200" ]; then
+            echo "Pages site is configured."
+            echo "$body" | head -c 400
+            exit 0
+          fi
+          cat <<'EOF'
+          ::error title=GitHub Pages is not enabled::Actions cannot create the Pages site. Do this once in the browser (desktop site if on phone): 1) If the repo is private on a free plan, make it Public (Settings → General → Change visibility) or use GitHub Pro. 2) Settings → Pages → Build and deployment → Source: GitHub Actions. 3) Re-run this workflow. Privacy URL will be https://mayooranthava.github.io/penny/privacy-policy.html
+          EOF
+          echo "API status: $code"
+          echo "$body"
+          exit 1
+
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:

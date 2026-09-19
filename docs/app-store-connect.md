@@ -253,8 +253,11 @@ Capture ~5 each: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goa
 
 1. **Revoke the App Store Connect API key `R3H7Z9G9R8`** that was pasted in chat, and generate a new one. (Users and Access → Integrations.)
 2. **Agreements, Tax, and Banking** → accept the **Paid Applications** agreement and complete banking + tax (required for IAP).
-3. **Enable GitHub Pages** (one-time, like Void Runner): repo **Settings → Pages → Build and deployment → Source: GitHub Actions**, then run **Actions → GitHub Pages → Run workflow** on `main`. Paste the Privacy / Support URLs from section 3 into ASC and into the description’s subscription block.  
-   *(Penny is a private repo — GitHub Pages for private repos needs GitHub Pro/Team. If Pages won’t enable, make the repo public or host the three HTML files elsewhere.)*
+3. **Enable GitHub Pages** (one-time — Actions cannot do this for you; see `docs/legal-pages.md`):  
+   - If the repo is private on a free plan → **Settings → General → Change visibility → Public** (or use GitHub Pro).  
+   - **Settings → Pages → Build and deployment → Source: GitHub Actions**  
+   - **Actions → GitHub Pages → Run workflow** on `main`  
+   - Paste the Privacy / Support URLs from section 3 into ASC.
 4. **Create the two IAPs** (section 5) — decide the product-ID convention first.
 5. **Paste** App Information, keywords, promo text, description, What's New (sections 1–2).
 6. **Upload screenshots** (section 10).

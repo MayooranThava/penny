@@ -5,7 +5,7 @@ import UIKit
 
 /// Copyable Shortcuts setup content shared by the guided UI.
 enum ApplePayShortcutsGuide {
-    static let actionName = "Log Apple Pay Purchase"
+    static let actionName = "Log Wallet Purchase"
     static let searchTerm = "Penny"
 
     struct FieldMap: Identifiable, Equatable {
@@ -94,7 +94,7 @@ struct ApplePayCaptureSetupView: View {
         ("open", "Open the automation builder", "Penny jumps you into Shortcuts → New Automation."),
         ("trigger", "Pick Transaction / Wallet", "When I tap · choose the cards you pay with."),
         ("run", "Run Immediately", "Turn off Ask Before Running so taps stay quiet."),
-        ("action", "Add Log Apple Pay Purchase", "Search Penny, then paste or pick the action name."),
+        ("action", "Add Log Wallet Purchase", "Search Penny, then paste or pick the action name."),
         ("map", "Map the four fields", "Use the copy chips below — tap each into Shortcut Input.")
     ]
 

@@ -7,9 +7,10 @@ import SwiftData
 /// Apple does not allow apps to create that automation for the user. Penny exposes
 /// this intent; Settings walks the user through approving it in Shortcuts.
 struct LogApplePayPurchaseIntent: AppIntent {
-    static var title: LocalizedStringResource = "Log Apple Pay Purchase"
+    // App Store rejects App Intent title/description/phrases that include the brand name.
+    static var title: LocalizedStringResource = "Log Wallet Purchase"
     static var description = IntentDescription(
-        "Saves an Apple Wallet tap as an expense in Penny. Use this from a Shortcuts automation with the Wallet / Transaction trigger."
+        "Saves a Wallet tap as an expense in Penny. Use this from a Shortcuts automation with the Wallet / Transaction trigger."
     )
     static var openAppWhenRun = false
     static var isDiscoverable = true
@@ -95,11 +96,11 @@ struct PennyShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: LogApplePayPurchaseIntent(),
             phrases: [
-                "Log Apple Pay in \(.applicationName)",
-                "Capture Apple Pay with \(.applicationName)",
+                "Log Wallet purchase in \(.applicationName)",
+                "Capture Wallet tap with \(.applicationName)",
                 "Add Wallet purchase to \(.applicationName)"
             ],
-            shortTitle: "Log Apple Pay",
+            shortTitle: "Log Wallet Tap",
             systemImageName: "wallet.pass.fill"
         )
     }

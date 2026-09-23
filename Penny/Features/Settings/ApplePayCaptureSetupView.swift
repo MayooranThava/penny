@@ -118,7 +118,7 @@ struct ApplePayCaptureSetupView: View {
 
                 bottomBar
             }
-            .navigationTitle("Apple Pay capture")
+            .navigationTitle("Wallet capture")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -166,11 +166,11 @@ struct ApplePayCaptureSetupView: View {
                     .offset(y: appearHero ? 0 : 6)
             }
 
-            Text("Set up once. Capture forever.")
+            Text("Optional Wallet capture")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
 
-            Text("Apple requires this in Shortcuts — Penny makes it copy-and-paste simple. Keep this screen open beside Shortcuts.")
+            Text("You don’t need this for Penny to work. If you want taps logged automatically, follow the steps below in Shortcuts whenever you’re ready.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -409,25 +409,36 @@ struct ApplePayCaptureSetupView: View {
     private var bottomBar: some View {
         VStack(spacing: PennySpacing.sm) {
             Button {
-                openShortcutsAutomationBuilder()
-                markStep("open")
+                dismiss()
             } label: {
-                Label(
-                    didOpenShortcuts ? "Reopen Shortcuts" : "Open Shortcuts",
-                    systemImage: "arrow.up.forward.app.fill"
-                )
-                .frame(maxWidth: .infinity)
+                Text(alreadyConfigured ? "Done" : "Close — maybe later")
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.pennyPrimary)
 
             Button {
-                finishSetup()
+                openShortcutsAutomationBuilder()
+                markStep("open")
             } label: {
-                Text(alreadyConfigured ? "Keep capture on" : "I’m done — turn capture on")
-                    .frame(maxWidth: .infinity)
+                Label(
+                    didOpenShortcuts ? "Reopen Shortcuts" : "Open Shortcuts (optional)",
+                    systemImage: "arrow.up.forward.app.fill"
+                )
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(.pennySecondary)
-            .disabled(settings == nil)
+
+            if !alreadyConfigured {
+                Button {
+                    markConfiguredAndClose()
+                } label: {
+                    Text("I’ve finished the Shortcuts steps")
+                        .font(PennyTypography.callout)
+                        .frame(maxWidth: .infinity)
+                }
+                .foregroundStyle(PennyColors.brand)
+                .disabled(settings == nil)
+            }
         }
         .padding(.horizontal, PennySpacing.screenPadding)
         .padding(.top, PennySpacing.sm)
@@ -519,7 +530,7 @@ struct ApplePayCaptureSetupView: View {
         }
     }
 
-    private func finishSetup() {
+    private func markConfiguredAndClose() {
         settings?.applePayCaptureConfigured = true
         try? modelContext.save()
         Haptics.success()

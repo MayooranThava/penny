@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var editingAccount: FinancialAccount?
     @State private var accountBalanceText = ""
     @State private var showPaywall = false
+    @State private var showApplePaySetup = false
 
     private var settings: UserSettings? { settingsList.first }
 
@@ -26,6 +27,7 @@ struct SettingsView: View {
                 currencySection
                 incomeSection
                 accountsSection
+                applePaySection
                 appearanceSection
                 notificationsSection
                 proSection
@@ -37,6 +39,7 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(PennyColors.background.ignoresSafeArea())
             .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $showApplePaySetup) { ApplePayCaptureSetupView() }
             .pennyKeyboardDone()
             .scrollDismissesKeyboard(.interactively)
             .onAppear {
@@ -196,6 +199,52 @@ struct SettingsView: View {
         }
     }
 
+    private var applePaySection: some View {
+        Section {
+            Button {
+                Haptics.light()
+                showApplePaySetup = true
+            } label: {
+                HStack(spacing: PennySpacing.sm) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(PennyColors.brandMuted)
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "wallet.pass.fill")
+                            .foregroundStyle(PennyColors.brand)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Capture Apple Pay taps")
+                            .font(PennyTypography.bodyEmphasized)
+                            .foregroundStyle(PennyColors.textPrimary)
+                        Text(
+                            settings?.applePayCaptureConfigured == true
+                                ? "Automation on · reopen guide anytime"
+                                : "Guided setup with copy-paste mapping"
+                        )
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textSecondary)
+                    }
+                    Spacer(minLength: 0)
+                    Text(settings?.applePayCaptureConfigured == true ? "On" : "Set up")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(
+                            settings?.applePayCaptureConfigured == true
+                                ? PennyColors.brand
+                                : PennyColors.textSecondary
+                        )
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(PennyColors.textTertiary)
+                }
+            }
+        } header: {
+            Text("Apple Pay")
+        } footer: {
+            Text("One-time Shortcuts setup. Penny opens the builder and gives you copyable field names — Apple still requires you to approve the automation.")
+        }
+    }
+
     private var appearanceSection: some View {
         Section("Appearance") {
             Picker("Appearance", selection: appearanceBinding) {
@@ -255,7 +304,7 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section("Privacy") {
-            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. This prototype does not sync to the cloud, connect to banks, or send analytics.")
+            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. Optional Apple Pay capture uses Shortcuts on your iPhone — amounts stay local and are never sent to Penny servers. This prototype does not sync to the cloud, connect to banks, or send analytics.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)

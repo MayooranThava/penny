@@ -11,7 +11,7 @@ Penny is a native iOS personal finance planner focused on clarity: safe-to-spend
 - **Activity**: month selector, search, income/expense/category filters, grouped transactions, add/delete
 - **Budget**: planned vs spent ring, category progress with health states, category detail + edit + trend chart
 - **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date), Debt payoff estimates, Forecast chart
-- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance, bill reminders, reset/delete data, privacy copy, Penny Pro roadmap stub
+- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance, bill reminders, **Apple Pay tap capture via Shortcuts**, reset/delete data, privacy copy, Penny Pro roadmap stub
 - **Widgets**: Safe to Spend + Upcoming reminder (App Group `group.com.mayooran.penny`)
 - **Design system**: mint/emerald warm identity, light + dark mode, reusable cards/rows/buttons
 - **Local insights**: deterministic rules (no AI APIs)
@@ -65,6 +65,7 @@ Chosen because it is the baseline for SwiftData + Observation while remaining a 
 
 - All prototype data stays **on-device** via SwiftData
 - No bank connectivity, Plaid, analytics, ads, or remote databases
+- Optional **Apple Pay tap capture** uses a Shortcuts personal automation the user creates once; amounts never leave the device
 - Reset demo data / delete all data available in Settings
 - Notification permission is only used for optional bill reminders
 

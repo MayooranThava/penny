@@ -205,10 +205,27 @@ struct SettingsView: View {
                 Haptics.light()
                 showApplePaySetup = true
             } label: {
-                HStack {
-                    Label("Capture Apple Pay taps", systemImage: "wallet.pass.fill")
-                        .foregroundStyle(PennyColors.textPrimary)
-                    Spacer()
+                HStack(spacing: PennySpacing.sm) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(PennyColors.brandMuted)
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "wallet.pass.fill")
+                            .foregroundStyle(PennyColors.brand)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Capture Apple Pay taps")
+                            .font(PennyTypography.bodyEmphasized)
+                            .foregroundStyle(PennyColors.textPrimary)
+                        Text(
+                            settings?.applePayCaptureConfigured == true
+                                ? "Automation on · reopen guide anytime"
+                                : "Guided setup with copy-paste mapping"
+                        )
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textSecondary)
+                    }
+                    Spacer(minLength: 0)
                     Text(settings?.applePayCaptureConfigured == true ? "On" : "Set up")
                         .font(PennyTypography.caption)
                         .foregroundStyle(
@@ -224,7 +241,7 @@ struct SettingsView: View {
         } header: {
             Text("Apple Pay")
         } footer: {
-            Text("Uses a Shortcuts automation you approve once. Penny can’t create Wallet automations by itself — Apple requires that step in Shortcuts.")
+            Text("One-time Shortcuts setup. Penny opens the builder and gives you copyable field names — Apple still requires you to approve the automation.")
         }
     }
 

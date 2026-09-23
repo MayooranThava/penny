@@ -89,7 +89,9 @@ See [data-persistence.md](./data-persistence.md). Short version: updating TestFl
 
 ---
 
-# App Store submission prep (v1.0.0)
+# App Store submission prep
+
+> **Version note (2026-09-23):** App Store Connect closed the `1.0.0` train (`Invalid Pre-Release Train` / `CFBundleShortVersionString` must be higher than the previously approved `1.0.0`). The project marketing version is now **`1.0.1`**. Create an **iOS App Version 1.0.1** in ASC and attach the new build there — do not keep uploading to 1.0.0.
 
 Everything below is ready to paste into App Store Connect. Prices are suggestions — you choose the final tiers. Nothing here is a substitute for the manual steps in the checklist at the end.
 
@@ -104,7 +106,7 @@ Everything below is ready to paste into App Store Connect. Prices are suggestion
 | Content rights | Does **not** contain, show, or access third-party content |
 | Age rating | 4+ (answer every questionnaire item **None/No**) |
 
-## 2. Version metadata — English (Canada) (Version → 1.0.0)
+## 2. Version metadata — English (Canada) (Version → 1.0.1)
 
 **Promotional text (≤170):**
 ```
@@ -161,7 +163,7 @@ Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
-**What's New (1.0.0):** `First release of Penny — safe-to-spend budgeting, bills, savings goals, forecasts, and widgets. All on-device.`
+**What's New (1.0.1):** `iPhone-only update, privacy & support links, and polish for App Store review. Safe-to-spend budgeting, bills, savings goals, forecasts, and widgets — all on-device.`
 
 **Support URL (required):** `https://mayooranthava.github.io/penny/support.html`
 

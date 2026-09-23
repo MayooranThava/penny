@@ -27,9 +27,9 @@ struct SettingsView: View {
                 currencySection
                 incomeSection
                 accountsSection
-                applePaySection
                 appearanceSection
                 notificationsSection
+                applePaySection
                 proSection
                 dataSection
                 aboutSection
@@ -214,19 +214,19 @@ struct SettingsView: View {
                             .foregroundStyle(PennyColors.brand)
                     }
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Capture Apple Pay taps")
+                        Text("Wallet tap capture")
                             .font(PennyTypography.bodyEmphasized)
                             .foregroundStyle(PennyColors.textPrimary)
                         Text(
                             settings?.applePayCaptureConfigured == true
-                                ? "Automation on · reopen guide anytime"
-                                : "Guided setup with copy-paste mapping"
+                                ? "Instructions saved · reopen anytime"
+                                : "Optional · view Shortcuts instructions"
                         )
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.textSecondary)
                     }
                     Spacer(minLength: 0)
-                    Text(settings?.applePayCaptureConfigured == true ? "On" : "Set up")
+                    Text(settings?.applePayCaptureConfigured == true ? "On" : "Optional")
                         .font(PennyTypography.caption)
                         .foregroundStyle(
                             settings?.applePayCaptureConfigured == true
@@ -239,9 +239,9 @@ struct SettingsView: View {
                 }
             }
         } header: {
-            Text("Apple Pay")
+            Text("Optional")
         } footer: {
-            Text("One-time Shortcuts setup. Penny opens the builder and gives you copyable field names — Apple still requires you to approve the automation.")
+            Text("Penny works fully without this. If you want Wallet taps logged automatically, open the instructions here — you never have to set it up.")
         }
     }
 
@@ -304,7 +304,7 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section("Privacy") {
-            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. Optional Apple Pay capture uses Shortcuts on your iPhone — amounts stay local and are never sent to Penny servers. This prototype does not sync to the cloud, connect to banks, or send analytics.")
+            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. Optional Wallet tap capture (Settings) uses Shortcuts on your iPhone — amounts stay local. This prototype does not sync to the cloud, connect to banks, or send analytics.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)

@@ -7,12 +7,14 @@ import SwiftData
 /// Apple does not allow apps to create that automation for the user. Penny exposes
 /// this intent; Settings walks the user through approving it in Shortcuts.
 struct LogApplePayPurchaseIntent: AppIntent {
-    static var title: LocalizedStringResource = "Log Apple Pay Purchase"
+    // App Store rejects App Intent title/description/phrases that include the brand name.
+    static var title: LocalizedStringResource = "Log Wallet Purchase"
     static var description = IntentDescription(
-        "Saves an Apple Wallet tap as an expense in Penny. Use this from a Shortcuts automation with the Wallet / Transaction trigger."
+        "Saves a Wallet tap as an expense in Penny. Use this from a Shortcuts automation with the Wallet / Transaction trigger."
     )
     static var openAppWhenRun = false
-    static var isDiscoverable = true
+    /// Keep out of Siri Suggestions — setup stays opt-in via Settings → instructions.
+    static var isDiscoverable = false
 
     @Parameter(
         title: "Amount",
@@ -89,18 +91,6 @@ struct LogApplePayPurchaseIntent: AppIntent {
     }
 }
 
-/// Surfaces the capture action in Shortcuts search / App Shortcuts.
-struct PennyShortcuts: AppShortcutsProvider {
-    static var appShortcuts: [AppShortcut] {
-        AppShortcut(
-            intent: LogApplePayPurchaseIntent(),
-            phrases: [
-                "Log Apple Pay in \(.applicationName)",
-                "Capture Apple Pay with \(.applicationName)",
-                "Add Wallet purchase to \(.applicationName)"
-            ],
-            shortTitle: "Log Apple Pay",
-            systemImageName: "wallet.pass.fill"
-        )
-    }
-}
+// App Shortcuts / Siri suggestion phrases are intentionally omitted.
+// Wallet capture stays opt-in: users find "Log Wallet Purchase" from Settings
+// instructions when building a Shortcuts automation — not via proactive Siri prompts.

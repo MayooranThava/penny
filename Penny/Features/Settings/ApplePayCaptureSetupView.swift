@@ -54,7 +54,9 @@ enum ApplePayShortcutsGuide {
     /// Plain text the user can paste into Notes or keep beside Shortcuts.
     static var cheatSheetText: String {
         var lines: [String] = [
-            "Penny · Apple Pay capture",
+            "Penny · optional Wallet capture",
+            "",
+            "Skip this entirely if you prefer logging expenses by hand.",
             "",
             "1. Shortcuts → Automation → New Automation",
             "2. Choose Transaction (or Wallet) → When I tap → your cards",
@@ -91,7 +93,7 @@ struct ApplePayCaptureSetupView: View {
     private var alreadyConfigured: Bool { settings?.applePayCaptureConfigured == true }
 
     private let checklist: [(id: String, title: String, detail: String)] = [
-        ("open", "Open the automation builder", "Penny jumps you into Shortcuts → New Automation."),
+        ("open", "Open the automation builder", "Optional — use Open Shortcuts below, or open Shortcuts yourself."),
         ("trigger", "Pick Transaction / Wallet", "When I tap · choose the cards you pay with."),
         ("run", "Run Immediately", "Turn off Ask Before Running so taps stay quiet."),
         ("action", "Add Log Wallet Purchase", "Search Penny, then paste or pick the action name."),

@@ -14,6 +14,8 @@ Penny stores everything on-device with **SwiftData**. TestFlight and App Store *
 
 The database uses a **stable store name** (`Penny`) and a **versioned schema** (`PennySchemaV1` + `PennyMigrationPlan`). Future model changes should add a new schema version and a migration stage — never rename the store or change the bundle ID.
 
+Additive fields (for example Apple Pay import metadata on `Transaction`, or `applePayCaptureConfigured` on `UserSettings`) rely on SwiftData lightweight migration and keep existing rows.
+
 ## Protections in code
 
 1. **No empty in-memory fallback** if the on-disk store fails to open (that looked like a wipe).

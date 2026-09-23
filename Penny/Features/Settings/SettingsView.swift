@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var editingAccount: FinancialAccount?
     @State private var accountBalanceText = ""
     @State private var showPaywall = false
+    @State private var showApplePaySetup = false
 
     private var settings: UserSettings? { settingsList.first }
 
@@ -26,6 +27,7 @@ struct SettingsView: View {
                 currencySection
                 incomeSection
                 accountsSection
+                applePaySection
                 appearanceSection
                 notificationsSection
                 proSection
@@ -37,6 +39,7 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(PennyColors.background.ignoresSafeArea())
             .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $showApplePaySetup) { ApplePayCaptureSetupView() }
             .pennyKeyboardDone()
             .scrollDismissesKeyboard(.interactively)
             .onAppear {
@@ -196,6 +199,35 @@ struct SettingsView: View {
         }
     }
 
+    private var applePaySection: some View {
+        Section {
+            Button {
+                Haptics.light()
+                showApplePaySetup = true
+            } label: {
+                HStack {
+                    Label("Capture Apple Pay taps", systemImage: "wallet.pass.fill")
+                        .foregroundStyle(PennyColors.textPrimary)
+                    Spacer()
+                    Text(settings?.applePayCaptureConfigured == true ? "On" : "Set up")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(
+                            settings?.applePayCaptureConfigured == true
+                                ? PennyColors.brand
+                                : PennyColors.textSecondary
+                        )
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(PennyColors.textTertiary)
+                }
+            }
+        } header: {
+            Text("Apple Pay")
+        } footer: {
+            Text("Uses a Shortcuts automation you approve once. Penny can’t create Wallet automations by itself — Apple requires that step in Shortcuts.")
+        }
+    }
+
     private var appearanceSection: some View {
         Section("Appearance") {
             Picker("Appearance", selection: appearanceBinding) {
@@ -255,7 +287,7 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section("Privacy") {
-            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. This prototype does not sync to the cloud, connect to banks, or send analytics.")
+            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. Optional Apple Pay capture uses Shortcuts on your iPhone — amounts stay local and are never sent to Penny servers. This prototype does not sync to the cloud, connect to banks, or send analytics.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)

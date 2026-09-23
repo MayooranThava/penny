@@ -18,6 +18,20 @@ enum TransactionType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum TransactionImportSource: String, Codable, CaseIterable, Identifiable {
+    case manual
+    case applePayShortcut
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .manual: return "Manual"
+        case .applePayShortcut: return "Apple Pay"
+        }
+    }
+}
+
 @Model
 final class Transaction {
     @Attribute(.unique) var id: UUID
@@ -28,10 +42,21 @@ final class Transaction {
     var categoryName: String
     var note: String
     var createdAt: Date
+    /// Where the row came from (`manual`, `applePayShortcut`). Additive for Shortcuts capture.
+    var importSourceRaw: String = TransactionImportSource.manual.rawValue
+    /// Stable key used to avoid double-logging the same Wallet tap.
+    var externalIdentifier: String = ""
+    var merchantName: String = ""
+    var cardName: String = ""
 
     var transactionType: TransactionType {
         get { TransactionType(rawValue: transactionTypeRaw) ?? .expense }
         set { transactionTypeRaw = newValue.rawValue }
+    }
+
+    var importSource: TransactionImportSource {
+        get { TransactionImportSource(rawValue: importSourceRaw) ?? .manual }
+        set { importSourceRaw = newValue.rawValue }
     }
 
     /// Signed amount: income positive, expense negative for net calculations.
@@ -47,7 +72,11 @@ final class Transaction {
         transactionType: TransactionType,
         categoryName: String,
         note: String = "",
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        importSource: TransactionImportSource = .manual,
+        externalIdentifier: String = "",
+        merchantName: String = "",
+        cardName: String = ""
     ) {
         self.id = id
         self.title = title
@@ -57,6 +86,10 @@ final class Transaction {
         self.categoryName = categoryName
         self.note = note
         self.createdAt = createdAt
+        self.importSourceRaw = importSource.rawValue
+        self.externalIdentifier = externalIdentifier
+        self.merchantName = merchantName
+        self.cardName = cardName
     }
 }
 
@@ -333,6 +366,8 @@ final class UserSettings {
     var appearanceRaw: String
     var usingDemoData: Bool
     var displayName: String
+    /// User marked the Shortcuts Wallet automation as finished (Apple still requires that setup).
+    var applePayCaptureConfigured: Bool = false
 
     var appearance: AppAppearance {
         get { AppAppearance(rawValue: appearanceRaw) ?? .system }
@@ -348,7 +383,8 @@ final class UserSettings {
         billRemindersEnabled: Bool = true,
         appearance: AppAppearance = .system,
         usingDemoData: Bool = false,
-        displayName: String = ""
+        displayName: String = "",
+        applePayCaptureConfigured: Bool = false
     ) {
         self.id = id
         self.currencyCode = currencyCode
@@ -359,6 +395,7 @@ final class UserSettings {
         self.appearanceRaw = appearance.rawValue
         self.usingDemoData = usingDemoData
         self.displayName = displayName
+        self.applePayCaptureConfigured = applePayCaptureConfigured
     }
 }
 

@@ -6,5 +6,8 @@ struct PennyWidgetsBundle: WidgetBundle {
     var body: some Widget {
         SafeToSpendWidget()
         UpcomingReminderWidget()
+        UpcomingBillsWidget()
+        MonthlyBudgetWidget()
+        SavingsGoalWidget()
     }
 }

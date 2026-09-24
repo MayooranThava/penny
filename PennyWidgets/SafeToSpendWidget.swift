@@ -25,6 +25,7 @@ struct SafeToSpendProvider: TimelineProvider {
 }
 
 struct SafeToSpendWidgetView: View {
+    @Environment(\.widgetFamily) private var family
     var entry: SafeToSpendEntry
 
     private var amountText: String {
@@ -37,6 +38,39 @@ struct SafeToSpendWidgetView: View {
     }
 
     var body: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                VStack(spacing: 1) {
+                    Text("Safe")
+                        .font(.caption2)
+                    Text(amountText)
+                        .font(.caption.weight(.bold))
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                }
+            }
+            .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+        case .accessoryRectangular:
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Safe to spend")
+                    .font(.caption2)
+                Text(amountText)
+                    .font(.headline)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                Text(entry.snapshot.monthLabel)
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+        default:
+            homeScreenBody
+        }
+    }
+
+    private var homeScreenBody: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("SAFE TO SPEND")
                 .font(.caption2.weight(.semibold))
@@ -79,6 +113,6 @@ struct SafeToSpendWidget: Widget {
         }
         .configurationDisplayName("Safe to Spend")
         .description("See how much you can spend for the rest of the month.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryCircular])
     }
 }

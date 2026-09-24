@@ -534,6 +534,32 @@ struct HomeView: View {
 
     private func publishWidgetSnapshot() {
         let next = upcomingItems.first
+        let upcomingLines: [WidgetSnapshotStore.UpcomingLine] = upcomingItems.prefix(5).map { item in
+            .init(
+                title: item.name,
+                detail: "\(MoneyFormatters.compact(from: item.amount, currencyCode: currency)) · \(DateHelpers.shortMonthDay(for: item.date))",
+                kind: item.kind == .debt ? "debt" : "bill"
+            )
+        }
+
+        let spent = NSDecimalNumber(decimal: monthExpenses).doubleValue
+        let planned = NSDecimalNumber(decimal: plannedSpending).doubleValue
+        let health: String = {
+            switch FinanceCalculator.budgetHealth(budgeted: plannedSpending, spent: monthExpenses) {
+            case .overBudget: return "over"
+            case .nearLimit: return "near"
+            case .healthy, .unset: return "healthy"
+            }
+        }()
+
+        let topGoal = goals.first
+        let topProgress = topGoal.map {
+            FinanceCalculator.goalProgressClamped(current: $0.currentAmount, target: $0.targetAmount)
+        }
+        let topDetail = topGoal.map {
+            "\(MoneyFormatters.compact(from: $0.currentAmount, currencyCode: currency)) of \(MoneyFormatters.compact(from: $0.targetAmount, currencyCode: currency))"
+        }
+
         let snapshot = WidgetSnapshotStore.Snapshot(
             safeToSpend: NSDecimalNumber(decimal: breakdown.safeToSpend).doubleValue,
             currencyCode: currency,
@@ -543,7 +569,14 @@ struct HomeView: View {
                 "\(MoneyFormatters.compact(from: $0.amount, currencyCode: currency)) · \(DateHelpers.shortMonthDay(for: $0.date))"
             },
             displayName: settings?.displayName ?? "",
-            updatedAt: .now
+            updatedAt: .now,
+            upcomingItems: Array(upcomingLines),
+            spentThisMonth: spent,
+            plannedSpending: planned,
+            budgetHealth: health,
+            topGoalName: topGoal?.name,
+            topGoalProgress: topProgress,
+            topGoalDetail: topDetail
         )
         WidgetSnapshotStore.save(snapshot)
         WidgetCenter.shared.reloadAllTimelines()

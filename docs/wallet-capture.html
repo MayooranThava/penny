@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Penny — Wallet capture setup</title>
+  <style>
+    :root {
+      --bg: #f7f5f0;
+      --surface: #ffffff;
+      --text: #1f2429;
+      --muted: #6b737a;
+      --brand: #1f9e7a;
+      --brand-soft: rgba(31, 158, 122, 0.12);
+      --border: rgba(31, 36, 41, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 32px 20px;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+    main { max-width: 720px; margin: 0 auto; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 10px 30px rgba(31, 36, 41, 0.04);
+    }
+    h1 { font-size: 1.85rem; margin: 0 0 0.25rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.1rem; margin-top: 1.55rem; margin-bottom: 0.4rem; }
+    .muted { color: var(--muted); font-size: 0.95rem; }
+    a { color: var(--brand); font-weight: 600; }
+    pre {
+      white-space: pre-wrap;
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      overflow-x: auto;
+    }
+    .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card">
+      <h1>Wallet capture setup</h1>
+      <p class="muted">Optional · My Penny · <code>com.mayooran.penny</code></p>
+
+      <p>Penny cannot install a Wallet tap automation for you — Apple requires each person to approve that Personal Automation once. The fastest help is pasting the prompt below into ChatGPT, Claude, or Apple Intelligence.</p>
+
+      <h2>AI / Siri prompt (copy)</h2>
+      <pre id="prompt">Create an iPhone Shortcuts Personal Automation for me:
+
+1. Trigger: Transaction / Wallet → When I tap → include my cards
+2. Run Immediately, Ask Before Running OFF, Show When Run OFF
+3. Receive transaction as input
+4. Add action from the Penny app: “Log Wallet Purchase”
+   (Add Action → Apps → Penny — open Penny once first if it’s missing)
+5. Map:
+   - Amount → Shortcut Input → Currency Amount (or Amount)
+   - Merchant → Shortcut Input → Name (or Merchant)
+   - Currency Code → type CAD (do not leave as Ask Each Time)
+   - Card Name → Shortcut Input → Card or Pass (optional)
+6. Save the automation
+
+Goal: every Wallet tap quietly logs an expense in Penny.</pre>
+
+      <h2>Why not a share link?</h2>
+      <p>Shared Shortcuts links work for normal shortcuts, but <strong>Wallet / Transaction Personal Automations are not something apps (or links) can install for someone else</strong>. Each iPhone owner must create or approve that trigger.</p>
+
+      <p class="muted footer"><a href="index.html">Home</a> · <a href="support.html">Support</a> · <a href="privacy-policy.html">Privacy Policy</a></p>
+    </div>
+  </main>
+</body>
+</html>

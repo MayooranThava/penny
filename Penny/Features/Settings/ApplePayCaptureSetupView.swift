@@ -38,9 +38,9 @@ enum ApplePayShortcutsGuide {
         .init(
             id: "currency",
             pennyParameter: "Currency Code",
-            shortcutInput: "Currency Code",
-            hint: "Usually CAD, USD, etc.",
-            isOptional: false
+            shortcutInput: "Type CAD (or your currency)",
+            hint: "Wallet often has no currency variable — typing CAD is fine",
+            isOptional: true
         ),
         .init(
             id: "card",
@@ -51,6 +51,28 @@ enum ApplePayShortcutsGuide {
         )
     ]
 
+    /// Paste into ChatGPT, Claude, Apple Intelligence, or Notes → ask Siri/Shortcuts to build it.
+    /// Apple does not let Penny install Wallet automations for you — a prompt is the fastest assist.
+    static var aiSetupPrompt: String {
+        """
+        Create an iPhone Shortcuts Personal Automation for me:
+
+        1. Trigger: Transaction / Wallet → When I tap → include my cards
+        2. Run Immediately, Ask Before Running OFF, Show When Run OFF
+        3. Receive transaction as input
+        4. Add action from the Penny app: “\(actionName)”
+           (Add Action → Apps → Penny — open Penny once first if it’s missing)
+        5. Map:
+           - Amount → Shortcut Input → Currency Amount (or Amount)
+           - Merchant → Shortcut Input → Name (or Merchant)
+           - Currency Code → type CAD (do not leave as Ask Each Time)
+           - Card Name → Shortcut Input → Card or Pass (optional)
+        6. Save the automation
+
+        Goal: every Wallet tap quietly logs an expense in Penny.
+        """
+    }
+
     /// Plain text the user can paste into Notes or keep beside Shortcuts.
     static var cheatSheetText: String {
         var lines: [String] = [
@@ -58,13 +80,17 @@ enum ApplePayShortcutsGuide {
             "",
             "Skip this entirely if you prefer logging expenses by hand.",
             "",
+            "Easiest assist: copy the AI prompt from Penny Settings and paste it into ChatGPT / Apple Intelligence / Claude, then follow what it builds in Shortcuts.",
+            "",
+            "Note: Apple does not allow apps (or shared links) to install Wallet tap automations for you — you still approve the automation once.",
+            "",
             "Before Shortcuts: open Penny once (so iOS registers its actions).",
             "",
             "1. Shortcuts → Automation → New Automation",
             "2. Choose Transaction (or Wallet) → When I tap → your cards",
-            "3. Run Immediately · turn off Ask Before Running",
+            "3. Run Immediately · turn off Ask Before Running · Show When Run off",
             "4. New Blank Automation → Add Action",
-            "5. Tap Apps (or search “\(actionName)”) → Penny → \(actionName)",
+            "5. Tap Apps → Penny → \(actionName)",
             "6. Map Shortcut Input:",
             ""
         ]
@@ -108,6 +134,7 @@ struct ApplePayCaptureSetupView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: PennySpacing.xl) {
                         hero
+                        easyAIPromptCard
                         progressStrip
                         cheatSheetCard
                         actionNameCard
@@ -174,7 +201,7 @@ struct ApplePayCaptureSetupView: View {
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
 
-            Text("You don’t need this for Penny to work. If you want taps logged automatically: open Penny once, then in Shortcuts go Add Action → Apps → Penny → Log Wallet Purchase.")
+            Text("You don’t need this for Penny to work. Apple won’t let any app install a Wallet automation for you — the fastest path is copying the AI prompt below, or following the short checklist.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -210,6 +237,37 @@ struct ApplePayCaptureSetupView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Checklist progress, \(done) of \(total) complete")
+    }
+
+    // MARK: - Easiest path
+
+    private var easyAIPromptCard: some View {
+        VStack(alignment: .leading, spacing: PennySpacing.sm) {
+            Text("Easiest for you & friends")
+                .font(PennyTypography.overline)
+                .foregroundStyle(PennyColors.textTertiary)
+                .textCase(.uppercase)
+
+            Text("Copy AI prompt")
+                .font(PennyTypography.bodyEmphasized)
+                .foregroundStyle(PennyColors.textPrimary)
+
+            Text("Paste into ChatGPT, Claude, or Apple Intelligence and ask it to walk you through Shortcuts. Shared shortcut links can’t install Wallet tap automations — Apple requires each person to approve that trigger once.")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                copy(ApplePayShortcutsGuide.aiSetupPrompt, token: "AI prompt copied")
+            } label: {
+                Label("Copy AI prompt", systemImage: "sparkles")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.pennyPrimary)
+        }
+        .padding(PennySpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(panelBackground)
     }
 
     // MARK: - Cheat sheet

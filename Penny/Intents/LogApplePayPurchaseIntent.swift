@@ -13,8 +13,10 @@ struct LogApplePayPurchaseIntent: AppIntent {
         "Saves a Wallet tap as an expense in Penny. Use this from a Shortcuts automation with the Wallet / Transaction trigger."
     )
     static var openAppWhenRun = false
-    /// Keep out of Siri Suggestions — setup stays opt-in via Settings → instructions.
-    static var isDiscoverable = false
+    /// Must be true or Shortcuts will not list Penny actions at all.
+    /// In-app setup stays optional (Settings only) — this only makes the action findable
+    /// when the user is already building an automation.
+    static var isDiscoverable = true
 
     @Parameter(
         title: "Amount",
@@ -91,6 +93,19 @@ struct LogApplePayPurchaseIntent: AppIntent {
     }
 }
 
-// App Shortcuts / Siri suggestion phrases are intentionally omitted.
-// Wallet capture stays opt-in: users find "Log Wallet Purchase" from Settings
-// instructions when building a Shortcuts automation — not via proactive Siri prompts.
+/// Registers Penny under Shortcuts → Apps so “Log Wallet Purchase” can be found.
+/// Phrases avoid the banned brand word. This does not force setup inside Penny —
+/// it only makes the action discoverable when the user is already in Shortcuts.
+struct PennyShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: LogApplePayPurchaseIntent(),
+            phrases: [
+                "Log Wallet purchase in \(.applicationName)",
+                "Add Wallet purchase to \(.applicationName)"
+            ],
+            shortTitle: "Log Wallet Tap",
+            systemImageName: "wallet.pass.fill"
+        )
+    }
+}

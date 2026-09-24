@@ -58,11 +58,13 @@ enum ApplePayShortcutsGuide {
             "",
             "Skip this entirely if you prefer logging expenses by hand.",
             "",
+            "Before Shortcuts: open Penny once (so iOS registers its actions).",
+            "",
             "1. Shortcuts → Automation → New Automation",
             "2. Choose Transaction (or Wallet) → When I tap → your cards",
             "3. Run Immediately · turn off Ask Before Running",
-            "4. New Blank Automation → Add Action → search \(searchTerm)",
-            "5. Choose \(actionName)",
+            "4. New Blank Automation → Add Action",
+            "5. Tap Apps (or search “\(actionName)”) → Penny → \(actionName)",
             "6. Map Shortcut Input:",
             ""
         ]
@@ -71,7 +73,7 @@ enum ApplePayShortcutsGuide {
             lines.append("   \(map.copyLine)\(optionalTag)")
         }
         lines.append("")
-        lines.append("Then return to Penny and tap “I’m done”.")
+        lines.append("Then return to Penny Settings and tap “I’ve finished the Shortcuts steps” if you want.")
         return lines.joined(separator: "\n")
     }
 }
@@ -93,10 +95,10 @@ struct ApplePayCaptureSetupView: View {
     private var alreadyConfigured: Bool { settings?.applePayCaptureConfigured == true }
 
     private let checklist: [(id: String, title: String, detail: String)] = [
-        ("open", "Open the automation builder", "Optional — use Open Shortcuts below, or open Shortcuts yourself."),
+        ("open", "Open Penny once first", "iOS only lists Penny in Shortcuts after the app has launched."),
         ("trigger", "Pick Transaction / Wallet", "When I tap · choose the cards you pay with."),
         ("run", "Run Immediately", "Turn off Ask Before Running so taps stay quiet."),
-        ("action", "Add Log Wallet Purchase", "Search Penny, then paste or pick the action name."),
+        ("action", "Add Log Wallet Purchase", "Add Action → Apps → Penny (or search the action name)."),
         ("map", "Map the four fields", "Use the copy chips below — tap each into Shortcut Input.")
     ]
 
@@ -172,7 +174,7 @@ struct ApplePayCaptureSetupView: View {
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
 
-            Text("You don’t need this for Penny to work. If you want taps logged automatically, follow the steps below in Shortcuts whenever you’re ready.")
+            Text("You don’t need this for Penny to work. If you want taps logged automatically: open Penny once, then in Shortcuts go Add Action → Apps → Penny → Log Wallet Purchase.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -250,7 +252,7 @@ struct ApplePayCaptureSetupView: View {
 
             copyRow(
                 title: ApplePayShortcutsGuide.actionName,
-                subtitle: "In Shortcuts search “\(ApplePayShortcutsGuide.searchTerm)”, then pick this — or paste the name.",
+                subtitle: "In Shortcuts: Add Action → Apps → Penny → this action. Searching only “Penny” often fails — use Apps.",
                 copyValue: ApplePayShortcutsGuide.actionName,
                 token: "Action name copied"
             )

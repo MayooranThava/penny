@@ -241,7 +241,7 @@ struct SettingsView: View {
         } header: {
             Text("Optional")
         } footer: {
-            Text("Penny works fully without this. If you want Wallet taps logged automatically, open the instructions here — you never have to set it up.")
+            Text("Penny works fully without this. To enable: open Penny once, then Shortcuts → Add Action → Apps → Penny → Log Wallet Purchase. Instructions stay here whenever you want them.")
         }
     }
 

@@ -5,6 +5,12 @@ enum WidgetSnapshotStore {
     static let appGroupID = "group.com.mayooran.penny"
     static let snapshotKey = "penny.widget.snapshot"
 
+    struct UpcomingLine: Codable, Equatable {
+        var title: String
+        var detail: String
+        var kind: String
+    }
+
     struct Snapshot: Codable, Equatable {
         var safeToSpend: Double
         var currencyCode: String
@@ -13,6 +19,16 @@ enum WidgetSnapshotStore {
         var nextReminderDetail: String?
         var displayName: String
         var updatedAt: Date
+
+        /// Next bills / debt payments (newest schema — optional for older snapshots).
+        var upcomingItems: [UpcomingLine]?
+        var spentThisMonth: Double?
+        var plannedSpending: Double?
+        /// `healthy` | `near` | `over`
+        var budgetHealth: String?
+        var topGoalName: String?
+        var topGoalProgress: Double?
+        var topGoalDetail: String?
     }
 
     static func save(_ snapshot: Snapshot) {

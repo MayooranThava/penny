@@ -18,6 +18,7 @@ on:
       - "docs/index.html"
       - "docs/privacy-policy.html"
       - "docs/support.html"
+      - "docs/wallet-capture.html"
       - "docs/.nojekyll"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -45,7 +46,7 @@ jobs:
       - name: Stage legal pages
         run: |
           mkdir -p _site
-          cp docs/index.html docs/privacy-policy.html docs/support.html docs/.nojekyll _site/
+          cp docs/index.html docs/privacy-policy.html docs/support.html docs/wallet-capture.html docs/.nojekyll _site/
 
       # Fails with a clear message if Pages is not enabled yet (see header comment).
       - name: Check Pages is enabled

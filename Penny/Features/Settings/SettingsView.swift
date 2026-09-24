@@ -241,7 +241,7 @@ struct SettingsView: View {
         } header: {
             Text("Optional")
         } footer: {
-            Text("Penny works fully without this. To enable: open Penny once, then Shortcuts → Add Action → Apps → Penny → Log Wallet Purchase. Instructions stay here whenever you want them.")
+            Text("Penny works fully without this. Friends can use the AI prompt in Settings (or mayooranthava.github.io/penny/wallet-capture.html). Apple still requires each person to approve a Wallet automation once.")
         }
     }
 

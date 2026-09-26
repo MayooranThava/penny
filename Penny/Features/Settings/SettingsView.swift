@@ -425,7 +425,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("Everything in Penny, supercharged — pay once for life or start with a free trial.")
+            Text("Everything in Penny, supercharged — start with a free trial or unlock for life.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -471,11 +471,11 @@ struct PaywallView: View {
             }
         } else {
             VStack(spacing: PennySpacing.sm) {
-                if let lifetime = store.lifetimeProduct {
-                    productButton(lifetime, primary: true)
+                if let monthly = store.monthlyProduct {
+                    productButton(monthly, primary: true)
                 }
-                if let annual = store.annualProduct {
-                    productButton(annual, primary: store.lifetimeProduct == nil)
+                if let lifetime = store.lifetimeProduct {
+                    productButton(lifetime, primary: store.monthlyProduct == nil)
                 }
             }
         }
@@ -500,7 +500,7 @@ struct PaywallView: View {
     }
 
     private func defaultTitle(for product: Product) -> String {
-        product.id == PennyProductCatalog.lifetimeProductID ? "Penny Pro — Lifetime" : "Penny Pro — Annual"
+        product.id == PennyProductCatalog.lifetimeProductID ? "Penny Pro — Lifetime" : "Penny Pro — Monthly"
     }
 
     private func priceLine(for product: Product) -> String {
@@ -508,9 +508,9 @@ struct PaywallView: View {
             return "\(product.displayPrice) once · yours forever"
         }
         if product.subscription?.introductoryOffer?.paymentMode == .freeTrial {
-            return "Free trial, then \(product.displayPrice)/year"
+            return "Free trial, then \(product.displayPrice)/month"
         }
-        return "\(product.displayPrice)/year"
+        return "\(product.displayPrice)/month"
     }
 
     private var footer: some View {

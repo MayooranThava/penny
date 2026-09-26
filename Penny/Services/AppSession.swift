@@ -8,12 +8,12 @@ import StoreKit
 /// for local testing. Pricing/localized names always come from StoreKit —
 /// never hard-code prices.
 enum PennyProductCatalog {
-    /// Auto-renewing annual subscription (with an introductory free trial).
-    static let annualProductID = "com.penny.app.pro.annual"
+    /// Auto-renewing monthly subscription (with an introductory free trial).
+    static let monthlyProductID = "com.penny.app.pro.month"
     /// One-time, non-consumable lifetime unlock.
     static let lifetimeProductID = "com.penny.app.pro.lifetime"
 
-    static let allProductIDs: Set<String> = [annualProductID, lifetimeProductID]
+    static let allProductIDs: Set<String> = [monthlyProductID, lifetimeProductID]
 
     /// Free users can keep this many savings goals; adding more prompts Pro.
     static let freeTierGoalLimit = 3
@@ -42,7 +42,7 @@ final class StoreManager {
         }
     }
 
-    var annualProduct: Product? { products.first { $0.id == PennyProductCatalog.annualProductID } }
+    var monthlyProduct: Product? { products.first { $0.id == PennyProductCatalog.monthlyProductID } }
     var lifetimeProduct: Product? { products.first { $0.id == PennyProductCatalog.lifetimeProductID } }
 
     /// Load products and compute the current entitlement. Safe to call repeatedly.
@@ -64,7 +64,7 @@ final class StoreManager {
 
     private func sortRank(_ id: String) -> Int {
         switch id {
-        case PennyProductCatalog.annualProductID: return 0
+        case PennyProductCatalog.monthlyProductID: return 0
         case PennyProductCatalog.lifetimeProductID: return 1
         default: return 2
         }

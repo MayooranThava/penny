@@ -35,7 +35,7 @@
         {
           "adHocOffers" : [],
           "codeOffers" : [],
-          "displayPrice" : "39.99",
+          "displayPrice" : "4.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "7D3B5F62-0003-4A88-9E22-000000000003",
@@ -46,14 +46,14 @@
           },
           "localizations" : [
             {
-              "description" : "All Penny Pro features. 7-day free trial, then billed yearly. Cancel anytime.",
-              "displayName" : "Penny Pro — Annual",
+              "description" : "All Penny Pro features. 7-day free trial, then billed monthly. Cancel anytime.",
+              "displayName" : "Penny Pro — Monthly",
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.penny.app.pro.annual",
-          "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "Penny Pro Annual",
+          "productID" : "com.penny.app.pro.month",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Penny Pro Monthly",
           "subscriptionGroupID" : "9C2E4A11-0002-4B33-8D77-000000000002",
           "type" : "RecurringSubscription"
         }

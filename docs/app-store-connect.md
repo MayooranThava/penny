@@ -153,12 +153,12 @@ PRIVATE BY DESIGN
 - No bank logins, no analytics, no ads, no accounts
 
 PENNY PRO (optional)
-Unlock unlimited savings goals, advanced forecasts, CSV export, iCloud sync, and custom themes. Available as an annual subscription with a free trial, or a one-time lifetime purchase. Penny is fully usable for free.
+Unlock unlimited savings goals, advanced forecasts, CSV export, iCloud sync, and custom themes. Available as a monthly subscription with a free trial, or a one-time lifetime purchase. Penny is fully usable for free.
 
 Penny supports CAD, USD, GBP, EUR, and AUD.
 
 ---
-Penny Pro (Annual) is an auto-renewing subscription. Payment is charged to your Apple Account at purchase confirmation. It renews automatically unless canceled at least 24 hours before the end of the period. Manage or cancel anytime in your Apple Account settings.
+Penny Pro (Monthly) is an auto-renewing subscription. Payment is charged to your Apple Account at purchase confirmation. It renews automatically unless canceled at least 24 hours before the end of the period. Manage or cancel anytime in your Apple Account settings.
 Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
@@ -187,25 +187,25 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 
 ## 5. In-App Purchases (Monetization → In-App Purchases & Subscriptions)
 
-> ⚠️ Decide product-ID convention first. The app currently uses `com.penny.app.pro.annual` and `com.penny.app.pro.lifetime` (see `PennyProductCatalog` in `Penny/Services/AppSession.swift`). Your bundle ID is `com.mayooran.penny`. **Product IDs are permanent once created.** Either:
-> - **(A) Keep** the existing IDs — no code change. Create the IAPs with exactly those IDs, or
-> - **(B) Rename** to `com.mayooran.penny.pro.annual` / `.lifetime` for consistency — requires a one-line-each code change in `PennyProductCatalog` and `Penny.storekit`. Ask and I'll make it.
+> Product IDs must match the app exactly (`PennyProductCatalog` in `Penny/Services/AppSession.swift`). Your bundle ID is `com.mayooran.penny`. **Product IDs are permanent once created.**
+>
+> ⚠️ Monthly billing must be an **Auto-Renewable Subscription**, not a Non-Consumable. Create it under **Monetization → Subscriptions** (subscription group), not via “Create an In-App Purchase” → Non-Consumable. If you already created `com.penny.app.pro.monthly` as a Non-Consumable, delete/remove it and recreate it as a subscription — you cannot change type after creation, and the Product ID cannot be reused if the Non-Consumable stays.
 
 **Subscription group:** `Penny Pro`
 
-**Auto-renewable subscription — Penny Pro (Annual)**
+**Auto-renewable subscription — Penny Pro (Monthly)**
 | Field | Value |
 |---|---|
-| Reference Name | `Penny Pro Annual` |
-| Product ID | `com.penny.app.pro.annual` |
-| Duration | 1 Year |
-| Price | your choice (suggest CAD $39.99/yr) |
+| Reference Name | `Penny Pro Monthly` |
+| Product ID | `com.penny.app.pro.monthly` |
+| Duration | **1 Month** |
+| Price | your choice (suggest CAD $4.99/mo) |
 | Introductory Offer | Free trial, 1 week |
-| Display Name | `Penny Pro (Annual)` |
-| Description | `Unlock every Penny Pro feature. 7-day free trial, then billed yearly. Cancel anytime.` |
+| Display Name | `Penny Pro (Monthly)` |
+| Description | `Unlock every Penny Pro feature. 7-day free trial, then billed monthly. Cancel anytime.` |
 | Review screenshot | screenshot of the in-app paywall (required) |
 
-**Non-consumable — Penny Pro (Lifetime)**
+**Non-consumable — Penny Pro (Lifetime)** *(optional second option)*
 | Field | Value |
 |---|---|
 | Reference Name | `Penny Pro Lifetime` |
@@ -215,7 +215,7 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 | Description | `Unlock every Penny Pro feature forever with a single purchase.` |
 | Review screenshot | screenshot of the in-app paywall (required) |
 
-> First-time IAPs must be **submitted together with the app version** (attach them to the 1.0.0 submission), and **Agreements, Tax, and Banking → Paid Applications** must be active or products won't load.
+> First-time IAPs must be **submitted together with a new app version**, and **Agreements, Tax, and Banking → Paid Applications** must be active or products won't load.
 
 ## 6. Pricing and Availability
 
@@ -261,7 +261,7 @@ Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Fo
    - **Settings → Pages → Build and deployment → Source: GitHub Actions**  
    - **Actions → GitHub Pages → Run workflow** on `main`  
    - Paste the Privacy / Support URLs from section 3 into ASC.
-4. **Create the two IAPs** (section 5) — decide the product-ID convention first.
+4. **Create the monthly subscription** (section 5) under Monetization → Subscriptions — not as a Non-Consumable.
 5. **Paste** App Information, keywords, promo text, description, What's New (sections 1–2).
 6. **Upload screenshots** (section 10).
 7. **Answer App Privacy** = Data not collected (section 4) and **Age rating** = 4+ (section 7).

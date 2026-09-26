@@ -9,7 +9,7 @@ import StoreKit
 /// never hard-code prices.
 enum PennyProductCatalog {
     /// Auto-renewing monthly subscription (with an introductory free trial).
-    static let monthlyProductID = "com.penny.app.pro.monthly"
+    static let monthlyProductID = "com.penny.app.pro.month"
     /// One-time, non-consumable lifetime unlock.
     static let lifetimeProductID = "com.penny.app.pro.lifetime"
 

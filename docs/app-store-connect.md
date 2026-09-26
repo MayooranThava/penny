@@ -189,7 +189,7 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 
 > Product IDs must match the app exactly (`PennyProductCatalog` in `Penny/Services/AppSession.swift`). Your bundle ID is `com.mayooran.penny`. **Product IDs are permanent once created.**
 >
-> ⚠️ Monthly billing must be an **Auto-Renewable Subscription**, not a Non-Consumable. Create it under **Monetization → Subscriptions** (subscription group), not via “Create an In-App Purchase” → Non-Consumable. If you already created `com.penny.app.pro.monthly` as a Non-Consumable, delete/remove it and recreate it as a subscription — you cannot change type after creation, and the Product ID cannot be reused if the Non-Consumable stays.
+> ⚠️ Monthly billing must be an **Auto-Renewable Subscription**, not a Non-Consumable. Create it under **Monetization → Subscriptions** (subscription group), not via “Create an In-App Purchase” → Non-Consumable. Product IDs are permanent — the live ID in App Store Connect is `com.penny.app.pro.month`.
 
 **Subscription group:** `Penny Pro`
 
@@ -197,7 +197,7 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 | Field | Value |
 |---|---|
 | Reference Name | `Penny Pro Monthly` |
-| Product ID | `com.penny.app.pro.monthly` |
+| Product ID | `com.penny.app.pro.month` |
 | Duration | **1 Month** |
 | Price | your choice (suggest CAD $4.99/mo) |
 | Introductory Offer | Free trial, 1 week |

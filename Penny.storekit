@@ -51,7 +51,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.penny.app.pro.monthly",
+          "productID" : "com.penny.app.pro.month",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Penny Pro Monthly",
           "subscriptionGroupID" : "9C2E4A11-0002-4B33-8D77-000000000002",

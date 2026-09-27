@@ -1,0 +1,73 @@
+# Pre-release sanity — product IDs + PennyCoreLogic tests (Linux).
+# View results under Actions → Pre-release Sanity.
+# Full iOS / SwiftData tests still need a Mac: ./scripts/pre-release-sanity.sh --xcode
+name: Pre-release Sanity
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: pre-release-sanity-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sanity:
+    name: Product IDs + core logic
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Swift version
+        id: swift-version
+        run: |
+          # Keep CI on the Package.swift tools version floor (5.10+).
+          echo "version=6.0.3" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: ${{ steps.swift-version.outputs.version }}
+
+      - name: Show Swift
+        run: swift --version
+
+      - name: Run pre-release sanity
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          ./scripts/pre-release-sanity.sh 2>&1 | tee artifacts/pre-release-sanity.log
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Pre-release Sanity"
+            echo ""
+            if [[ -f artifacts/pre-release-sanity.log ]]; then
+              echo '```'
+              tail -n 40 artifacts/pre-release-sanity.log
+              echo '```'
+            else
+              echo "_No log produced._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload sanity log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-release-sanity-log
+          path: artifacts/pre-release-sanity.log
+          if-no-files-found: ignore
+          retention-days: 14

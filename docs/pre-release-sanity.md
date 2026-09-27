@@ -12,6 +12,16 @@ Use this before every App Store / TestFlight release. Automated checks catch cal
 ./scripts/pre-release-sanity.sh --xcode
 ```
 
+### GitHub Actions
+
+Every push and pull request runs **Pre-release Sanity** on Ubuntu (product IDs + `PennyCoreLogic` Release Sanity + full core suite).
+
+- Open the repo → **Actions** → **Pre-release Sanity**
+- PR checks show the same job on the pull request
+- Re-run anytime via **Actions** → **Pre-release Sanity** → **Run workflow**
+
+Mac-only checks (SwiftData soft-delete, demo seed, `PennyTests`) are **not** in Actions (no iOS Simulator on `ubuntu-latest`). Run those with `--xcode` or **⌘U** before App Store submission.
+
 Override the simulator if needed:
 
 ```bash

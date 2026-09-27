@@ -425,7 +425,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("Everything in Penny, supercharged — start with a free trial or unlock for life.")
+            Text("Everything in Penny, supercharged — start with a monthly plan.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -465,6 +465,16 @@ struct PaywallView: View {
                     Text("Purchases are unavailable right now.")
                         .font(PennyTypography.callout)
                         .foregroundStyle(PennyColors.textSecondary)
+                    if let detail = store.lastErrorMessage, !detail.isEmpty {
+                        Text(detail)
+                            .font(PennyTypography.caption)
+                            .foregroundStyle(PennyColors.textTertiary)
+                            .multilineTextAlignment(.center)
+                    }
+                    Text("Products only load after the Paid Applications agreement is active, the subscription has a price, and you’re testing via TestFlight (or the IAP is approved on the App Store).")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textTertiary)
+                        .multilineTextAlignment(.center)
                     Button("Try again") { Task { await store.loadProducts() } }
                         .buttonStyle(.pennySecondary)
                 }
@@ -518,7 +528,7 @@ struct PaywallView: View {
             Button("Restore purchases") { Task { await store.restore() } }
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.brand)
-            Text("Subscriptions renew automatically until cancelled in Settings. The lifetime unlock is a one-time purchase. Payment is charged to your Apple Account.")
+            Text("Subscriptions renew automatically until cancelled in Settings. Payment is charged to your Apple Account.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textTertiary)
                 .multilineTextAlignment(.center)

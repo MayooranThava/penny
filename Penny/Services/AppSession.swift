@@ -57,7 +57,13 @@ final class StoreManager {
         do {
             let loaded = try await Product.products(for: PennyProductCatalog.allProductIDs)
             products = loaded.sorted { sortRank($0.id) < sortRank($1.id) }
+            if products.isEmpty {
+                lastErrorMessage = "No products returned from the App Store. Check Paid Applications agreement, product pricing, and that you’re on a build that includes these product IDs."
+            } else {
+                lastErrorMessage = nil
+            }
         } catch {
+            products = []
             lastErrorMessage = error.localizedDescription
         }
     }

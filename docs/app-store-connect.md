@@ -216,6 +216,14 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 | Review screenshot | screenshot of the in-app paywall (required) |
 
 > First-time IAPs must be **submitted together with a new app version**, and **Agreements, Tax, and Banking → Paid Applications** must be active or products won't load.
+>
+> **“Purchases are unavailable right now” in the app** means StoreKit returned no products. Checklist:
+> 1. Paid Applications agreement is **Active** (Agreements, Tax, and Banking).
+> 2. Monthly subscription has a **price** set and localization complete (status not Missing Metadata).
+> 3. Product ID is exactly `com.penny.app.pro.month`.
+> 4. Test via **TestFlight** (or Xcode + StoreKit config). App Store production builds usually won’t show an IAP until that IAP is approved with a version.
+> 5. After creating/editing products, wait a few minutes (sometimes up to a couple of hours) and tap Try again.
+> 6. Lifetime (`com.penny.app.pro.lifetime`) is optional — only monthly is required for the paywall buttons to appear.
 
 ## 6. Pricing and Availability
 

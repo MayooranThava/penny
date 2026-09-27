@@ -251,7 +251,7 @@ struct HomeView: View {
                 .textCase(.uppercase)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(MoneyFormatters.compact(from: breakdown.safeToSpend, currencyCode: currency))
+                Text(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency))
                     .font(PennyTypography.heroAmount)
                     .monospacedDigit()
                     .foregroundStyle(PennyColors.textOnBrand)
@@ -306,7 +306,7 @@ struct HomeView: View {
                                 .foregroundStyle(PennyColors.textOnBrand.opacity(0.9))
                             Spacer()
                             Text(
-                                MoneyFormatters.compact(
+                                MoneyFormatters.string(
                                     from: debt.plannedMonthlyPayment,
                                     currencyCode: currency
                                 ) + "/mo"

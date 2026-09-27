@@ -26,14 +26,15 @@ enum MoneyFormatters {
         return formatter(currencyCode: currencyCode, locale: locale).string(from: ns) ?? "\(amount)"
     }
 
-    /// Compact whole-dollar display for large heroes when cents aren't useful.
+    /// Compact display for large heroes: whole dollars omit cents; fractional amounts always show two places (e.g. `$235.40`, never `$235.4`).
     static func compact(from amount: Decimal, currencyCode: String, locale: Locale = .current) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = currencyCode
         formatter.locale = locale
-        formatter.maximumFractionDigits = amount == amount.rounded(scale: 0) ? 0 : 2
-        formatter.minimumFractionDigits = 0
+        let isWholeDollars = amount == amount.rounded(scale: 0)
+        formatter.maximumFractionDigits = isWholeDollars ? 0 : 2
+        formatter.minimumFractionDigits = isWholeDollars ? 0 : 2
         return formatter.string(from: NSDecimalNumber(decimal: amount)) ?? string(from: amount, currencyCode: currencyCode, locale: locale)
     }
 

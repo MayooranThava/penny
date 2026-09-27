@@ -180,7 +180,7 @@ struct ProgressCard: View {
                 Text("of")
                     .font(PennyTypography.callout)
                     .foregroundStyle(PennyColors.textSecondary)
-                MoneyText(amount: budget, currencyCode: currencyCode, font: PennyTypography.smallAmount, color: PennyColors.textSecondary, compact: true)
+                MoneyText(amount: budget, currencyCode: currencyCode, font: PennyTypography.smallAmount, color: PennyColors.textSecondary)
             }
 
             GeometryReader { geo in
@@ -236,7 +236,7 @@ struct GoalProgressView: View {
             }
 
             MoneyText(amount: current, currencyCode: currencyCode, font: compact ? PennyTypography.smallAmount : PennyTypography.mediumAmount)
-            Text("of \(MoneyFormatters.compact(from: target, currencyCode: currencyCode))")
+            Text("of \(MoneyFormatters.string(from: target, currencyCode: currencyCode))")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
 

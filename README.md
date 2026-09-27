@@ -75,18 +75,24 @@ Chosen because it is the baseline for SwiftData + Observation while remaining a 
 
 ## Tests
 
-Business-logic coverage in `PennyTests/FinanceCalculatorTests.swift`:
+Business-logic coverage in `PennyTests/` plus a mirrored Linux package:
 
-- Safe to spend
-- Budget remaining / progress / health
-- Goal progress & required monthly savings
-- Debt amortization / payment-too-low
-- Balance projections
-- Currency formatting helpers
-- Date helpers
-- Insight rules
+- **Release Sanity** (`ReleaseSanityTests`) — pre-ship smoke for safe-to-spend, budgets, goals, debt, money formatting, bill schedule, Apple Pay drafts, demo seed, soft-delete, product IDs
+- Safe to spend, budget health, goals, debt amortization, forecasts
+- Currency formatting helpers (always two decimals on Home)
+- Date helpers and insight rules
+- Apple Pay capture logic + SwiftData insert/dedupe
 
-Run in Xcode with **⌘U**, or:
+**Before every release:**
+
+```bash
+./scripts/pre-release-sanity.sh          # product IDs + Linux core suite
+./scripts/pre-release-sanity.sh --xcode  # Mac: also runs PennyTests
+```
+
+See **[docs/pre-release-sanity.md](./docs/pre-release-sanity.md)** for the full automated + manual checklist.
+
+In Xcode: **⌘U**, or:
 
 ```bash
 xcodebuild test -scheme Penny -destination 'platform=iOS Simulator,name=iPhone 16'
@@ -94,7 +100,7 @@ xcodebuild test -scheme Penny -destination 'platform=iOS Simulator,name=iPhone 1
 
 (Adjust simulator name to one installed on your Mac.)
 
-Core calculation logic was also validated on Linux via `Tools/PennyCoreLogic` (Swift 6.0.3 toolchain): **17/17 tests passed**.
+Core calculation logic also validates on Linux via `Tools/PennyCoreLogic`.
 
 ## How to open and run
 

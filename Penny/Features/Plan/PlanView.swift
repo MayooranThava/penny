@@ -75,49 +75,66 @@ struct GoalsPlanView: View {
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: PennySpacing.md) {
-                if goals.isEmpty {
+        List {
+            if goals.isEmpty {
+                Section {
                     EmptyStateView(
                         symbol: "target",
                         title: "No savings goals",
                         message: "Create a goal to track progress toward something that matters.",
                         actionTitle: "Add goal"
                     ) { startAddGoal() }
-                } else {
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                }
+            } else {
+                Section {
                     ForEach(goals, id: \.id) { goal in
                         Button {
                             editingGoal = goal
                         } label: {
-                            PennyCard {
-                                VStack(alignment: .leading, spacing: PennySpacing.sm) {
-                                    GoalProgressView(
-                                        name: goal.name,
+                            VStack(alignment: .leading, spacing: PennySpacing.sm) {
+                                GoalProgressView(
+                                    name: goal.name,
+                                    current: goal.currentAmount,
+                                    target: goal.targetAmount,
+                                    currencyCode: currency,
+                                    icon: goal.icon,
+                                    colourIdentifier: goal.colourIdentifier,
+                                    estimatedCompletion: goal.targetDate ?? FinanceCalculator.estimatedCompletionDate(
                                         current: goal.currentAmount,
                                         target: goal.targetAmount,
-                                        currencyCode: currency,
-                                        icon: goal.icon,
-                                        colourIdentifier: goal.colourIdentifier,
-                                        estimatedCompletion: goal.targetDate ?? FinanceCalculator.estimatedCompletionDate(
-                                            current: goal.currentAmount,
-                                            target: goal.targetAmount,
-                                            monthlyContribution: (settingsList.first?.plannedMonthlySavings ?? 500) / Decimal(max(goals.count, 1))
-                                        )
+                                        monthlyContribution: (settingsList.first?.plannedMonthlySavings ?? 500) / Decimal(max(goals.count, 1))
                                     )
-                                    if let target = goal.targetDate,
-                                       let required = FinanceCalculator.requiredMonthlySavings(
-                                        current: goal.currentAmount,
-                                        target: goal.targetAmount,
-                                        targetDate: target
-                                       ), required > 0 {
-                                        Text("To reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target)), save about \(MoneyFormatters.compact(from: required, currencyCode: currency))/month.")
-                                            .font(PennyTypography.caption)
-                                            .foregroundStyle(PennyColors.textSecondary)
-                                    }
+                                )
+                                if let target = goal.targetDate,
+                                   let required = FinanceCalculator.requiredMonthlySavings(
+                                    current: goal.currentAmount,
+                                    target: goal.targetAmount,
+                                    targetDate: target
+                                   ), required > 0 {
+                                    Text("To reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target)), save about \(MoneyFormatters.compact(from: required, currencyCode: currency))/month.")
+                                        .font(PennyTypography.caption)
+                                        .foregroundStyle(PennyColors.textSecondary)
                                 }
                             }
+                            .padding(.vertical, PennySpacing.xs)
                         }
                         .buttonStyle(.plain)
+                        .listRowBackground(PennyColors.surface)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                pendingDelete = goal
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button {
+                                editingGoal = goal
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(PennyColors.brand)
+                        }
                         .contextMenu {
                             Button {
                                 editingGoal = goal
@@ -132,17 +149,22 @@ struct GoalsPlanView: View {
                         }
                     }
                 }
+            }
 
+            Section {
                 Button {
                     startAddGoal()
                 } label: {
                     Label(canAddGoal ? "Add savings goal" : "Add savings goal (Pro)", systemImage: canAddGoal ? "plus" : "sparkles")
                 }
                 .buttonStyle(.pennySecondary)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: PennySpacing.sm, leading: PennySpacing.screenPadding, bottom: PennySpacing.sm, trailing: PennySpacing.screenPadding))
             }
-            .padding(.horizontal, PennySpacing.screenPadding)
-            .padding(.bottom, PennySpacing.xxxl)
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(PennyColors.background.ignoresSafeArea())
         .sheet(isPresented: $showAdd) {
             AddGoalView()
         }
@@ -196,6 +218,7 @@ struct AddGoalView: View {
     @State private var icon = "target"
     @State private var selectedPreset: String?
     @State private var didLoadExisting = false
+    @State private var showDeleteConfirm = false
 
     private let presets: [(String, String)] = [
         ("Emergency Fund", "shield.fill"),
@@ -249,6 +272,13 @@ struct AddGoalView: View {
                         DatePicker("Reach by", selection: $targetDate, in: Date.now..., displayedComponents: .date)
                     }
                 }
+                if isEditing {
+                    Section {
+                        Button("Delete Goal", role: .destructive) {
+                            showDeleteConfirm = true
+                        }
+                    }
+                }
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(isEditing ? "Edit Goal" : "New Goal")
@@ -266,6 +296,16 @@ struct AddGoalView: View {
                 }
             }
             .onAppear { loadExistingIfNeeded() }
+            .confirmationDialog(
+                "Delete goal?",
+                isPresented: $showDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) { deleteGoal() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Remove “\(name)”? This can’t be undone.")
+            }
         }
     }
 
@@ -307,6 +347,15 @@ struct AddGoalView: View {
         Haptics.success()
         dismiss()
     }
+
+    private func deleteGoal() {
+        guard let goal else { return }
+        Keyboard.dismiss()
+        modelContext.delete(goal)
+        try? modelContext.save()
+        Haptics.warning()
+        dismiss()
+    }
 }
 
 // MARK: - Bills
@@ -328,22 +377,25 @@ struct BillsPlanView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: PennySpacing.md) {
-                PennyCard(fill: PennyColors.brandMuted) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Recurring bills")
-                            .font(PennyTypography.caption)
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Recurring bills")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textSecondary)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        MoneyText(amount: monthlyTotal, currencyCode: currency, font: PennyTypography.largeAmount, color: PennyColors.brand, compact: true)
+                        Text("/ month equiv.")
+                            .font(PennyTypography.callout)
                             .foregroundStyle(PennyColors.textSecondary)
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            MoneyText(amount: monthlyTotal, currencyCode: currency, font: PennyTypography.largeAmount, color: PennyColors.brand, compact: true)
-                            Text("/ month equiv.")
-                                .font(PennyTypography.callout)
-                                .foregroundStyle(PennyColors.textSecondary)
-                        }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, PennySpacing.xs)
+                .listRowBackground(PennyColors.brandMuted)
+            }
 
+            Section {
                 if bills.isEmpty {
                     EmptyStateView(
                         symbol: "calendar",
@@ -351,52 +403,68 @@ struct BillsPlanView: View {
                         message: "Add rent, utilities, and subscriptions to plan upcoming payments.",
                         actionTitle: "Add bill"
                     ) { showAdd = true }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
                 } else {
-                    PennyCard {
-                        VStack(spacing: PennySpacing.md) {
-                            ForEach(bills, id: \.id) { bill in
-                                Button {
-                                    editingBill = bill
-                                } label: {
-                                    BillRow(
-                                        name: bill.name,
-                                        dueDate: bill.nextDueDate,
-                                        amount: bill.amount,
-                                        currencyCode: currency,
-                                        icon: bill.icon,
-                                        categoryName: bill.categoryName,
-                                        recurrenceLabel: bill.recurrence.displayName
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    Button {
-                                        editingBill = bill
-                                    } label: {
-                                        Label("Edit", systemImage: "pencil")
-                                    }
-                                    Button(role: .destructive) {
-                                        pendingDelete = bill
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                                if bill.id != bills.last?.id { Divider() }
+                    ForEach(bills, id: \.id) { bill in
+                        Button {
+                            editingBill = bill
+                        } label: {
+                            BillRow(
+                                name: bill.name,
+                                dueDate: bill.nextDueDate,
+                                amount: bill.amount,
+                                currencyCode: currency,
+                                icon: bill.icon,
+                                categoryName: bill.categoryName,
+                                recurrenceLabel: bill.recurrence.displayName
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(PennyColors.surface)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                pendingDelete = bill
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button {
+                                editingBill = bill
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(PennyColors.brand)
+                        }
+                        .contextMenu {
+                            Button {
+                                editingBill = bill
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                pendingDelete = bill
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                     }
                 }
+            }
 
+            Section {
                 Button {
                     showAdd = true
                 } label: {
                     Label("Add bill", systemImage: "plus")
                 }
                 .buttonStyle(.pennySecondary)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: PennySpacing.sm, leading: PennySpacing.screenPadding, bottom: PennySpacing.sm, trailing: PennySpacing.screenPadding))
             }
-            .padding(.horizontal, PennySpacing.screenPadding)
-            .padding(.bottom, PennySpacing.xxxl)
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(PennyColors.background.ignoresSafeArea())
         .sheet(isPresented: $showAdd) {
             AddBillView()
         }
@@ -446,6 +514,7 @@ struct AddBillView: View {
     @State private var dueDay = Calendar.current.component(.day, from: .now)
     @State private var category = "Subscriptions"
     @State private var didLoadExisting = false
+    @State private var showDeleteConfirm = false
 
     private var isEditing: Bool { bill != nil }
 
@@ -480,6 +549,13 @@ struct AddBillView: View {
                             .foregroundStyle(PennyColors.textSecondary)
                     }
                 }
+                if isEditing {
+                    Section {
+                        Button("Delete Bill", role: .destructive) {
+                            showDeleteConfirm = true
+                        }
+                    }
+                }
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(isEditing ? "Edit Bill" : "New Bill")
@@ -497,6 +573,16 @@ struct AddBillView: View {
                 }
             }
             .onAppear { loadExistingIfNeeded() }
+            .confirmationDialog(
+                "Delete bill?",
+                isPresented: $showDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) { deleteBill() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Remove “\(name)” from your recurring bills?")
+            }
         }
     }
 
@@ -557,6 +643,15 @@ struct AddBillView: View {
         Haptics.success()
         dismiss()
     }
+
+    private func deleteBill() {
+        guard let bill else { return }
+        Keyboard.dismiss()
+        bill.isActive = false
+        try? modelContext.save()
+        Haptics.warning()
+        dismiss()
+    }
 }
 
 // MARK: - Debt
@@ -572,16 +667,20 @@ struct DebtPlanView: View {
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: PennySpacing.md) {
-                if debts.isEmpty {
+        List {
+            if debts.isEmpty {
+                Section {
                     EmptyStateView(
                         symbol: "creditcard.fill",
                         title: "No debt tracked",
                         message: "Add a loan or card balance to see payoff estimates.",
                         actionTitle: "Add debt"
                     ) { showAdd = true }
-                } else {
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                }
+            } else {
+                Section {
                     ForEach(debts, id: \.id) { debt in
                         Button {
                             editingDebt = debt
@@ -589,6 +688,21 @@ struct DebtPlanView: View {
                             DebtCard(debt: debt, currencyCode: currency)
                         }
                         .buttonStyle(.plain)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: PennySpacing.sm, leading: PennySpacing.screenPadding, bottom: PennySpacing.sm, trailing: PennySpacing.screenPadding))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                pendingDelete = debt
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button {
+                                editingDebt = debt
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(PennyColors.brand)
+                        }
                         .contextMenu {
                             Button {
                                 editingDebt = debt
@@ -603,16 +717,21 @@ struct DebtPlanView: View {
                         }
                     }
                 }
+            }
+            Section {
                 Button {
                     showAdd = true
                 } label: {
                     Label("Add debt", systemImage: "plus")
                 }
                 .buttonStyle(.pennySecondary)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: PennySpacing.sm, leading: PennySpacing.screenPadding, bottom: PennySpacing.sm, trailing: PennySpacing.screenPadding))
             }
-            .padding(.horizontal, PennySpacing.screenPadding)
-            .padding(.bottom, PennySpacing.xxxl)
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(PennyColors.background.ignoresSafeArea())
         .sheet(isPresented: $showAdd) {
             AddDebtView()
         }
@@ -723,6 +842,7 @@ struct AddDebtView: View {
     @State private var paymentText = ""
     @State private var minimumText = ""
     @State private var didLoadExisting = false
+    @State private var showDeleteConfirm = false
 
     private var isEditing: Bool { debt != nil }
 
@@ -743,6 +863,13 @@ struct AddDebtView: View {
                 TextField("Planned monthly payment", text: $paymentText)
                     .keyboardType(.decimalPad)
                     .pennyNoAutoFill()
+                if isEditing {
+                    Section {
+                        Button("Delete Debt", role: .destructive) {
+                            showDeleteConfirm = true
+                        }
+                    }
+                }
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(isEditing ? "Edit Debt" : "New Debt")
@@ -760,6 +887,16 @@ struct AddDebtView: View {
                 }
             }
             .onAppear { loadExistingIfNeeded() }
+            .confirmationDialog(
+                "Delete debt?",
+                isPresented: $showDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) { deleteDebt() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Remove “\(name)”? This can’t be undone.")
+            }
         }
     }
 
@@ -800,6 +937,15 @@ struct AddDebtView: View {
         }
         try? modelContext.save()
         Haptics.success()
+        dismiss()
+    }
+
+    private func deleteDebt() {
+        guard let debt else { return }
+        Keyboard.dismiss()
+        modelContext.delete(debt)
+        try? modelContext.save()
+        Haptics.warning()
         dismiss()
     }
 }

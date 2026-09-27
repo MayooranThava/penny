@@ -170,6 +170,25 @@ struct MoneyFormatterTests {
         #expect(negative.hasPrefix("-"))
     }
 
+    @Test("Compact pads fractional cents to two places")
+    func compactPadsFractionalCents() {
+        let locale = Locale(identifier: "en_US")
+        let fractional = MoneyFormatters.compact(from: Decimal(string: "235.4")!, currencyCode: "USD", locale: locale)
+        #expect(fractional.contains("235.40"))
+        let whole = MoneyFormatters.compact(from: 3_450, currencyCode: "USD", locale: locale)
+        #expect(whole.contains("3,450") || whole.contains("3450"))
+        #expect(!whole.contains(".00"))
+    }
+
+    @Test("Full string always shows two decimal places")
+    func stringAlwaysTwoDecimals() {
+        let locale = Locale(identifier: "en_US")
+        let whole = MoneyFormatters.string(from: 3_450, currencyCode: "USD", locale: locale)
+        #expect(whole.contains("3,450.00") || whole.contains("3450.00"))
+        let fractional = MoneyFormatters.string(from: Decimal(string: "235.4")!, currencyCode: "USD", locale: locale)
+        #expect(fractional.contains("235.40"))
+    }
+
     @Test("Decimal parsing")
     func parsing() {
         #expect(Decimal.from("1234.56") == Decimal(string: "1234.56"))

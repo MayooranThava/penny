@@ -44,6 +44,7 @@ jobs:
 
       - name: Run pre-release sanity
         run: |
+          set -o pipefail
           mkdir -p artifacts
           ./scripts/pre-release-sanity.sh 2>&1 | tee artifacts/pre-release-sanity.log
 

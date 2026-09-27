@@ -90,6 +90,8 @@ Business-logic coverage in `PennyTests/` plus a mirrored Linux package:
 ./scripts/pre-release-sanity.sh --xcode  # Mac: also runs PennyTests
 ```
 
+The same Linux gate runs automatically in GitHub Actions (**Actions → Pre-release Sanity**) on every push and pull request.
+
 See **[docs/pre-release-sanity.md](./docs/pre-release-sanity.md)** for the full automated + manual checklist.
 
 In Xcode: **⌘U**, or:

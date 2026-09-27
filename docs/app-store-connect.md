@@ -274,7 +274,8 @@ Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Fo
 6. **Upload screenshots** (section 10).
 7. **Answer App Privacy** = Data not collected (section 4) and **Age rating** = 4+ (section 7).
 8. **Set pricing** = Free + availability (section 6).
-9. **Upload a build (≥ build 3)** via Xcode Cloud (push to `main`) and **attach it** to version 1.0.2. Make sure the StoreKit fix (PR #19) is merged so the Archive build succeeds.
-10. **Fill App Review Information** (section 9), **attach the IAPs to the version**, then **Submit for Review**.
+9. **Run pre-release sanity** (`./scripts/pre-release-sanity.sh --xcode` on a Mac, plus the manual steps in [pre-release-sanity.md](./pre-release-sanity.md)).
+10. **Upload a build (≥ build 3)** via Xcode Cloud (push to `main`) and **attach it** to version 1.0.2. Make sure the StoreKit fix (PR #19) is merged so the Archive build succeeds.
+11. **Fill App Review Information** (section 9), **attach the IAPs to the version**, then **Submit for Review**.
 
 > Prerequisite: the app must compile. Ensure PR #19 (StoreKit `Transaction` fix) is merged before triggering the Archive/upload build.

@@ -91,7 +91,7 @@ See [data-persistence.md](./data-persistence.md). Short version: updating TestFl
 
 # App Store submission prep
 
-> **Version note (2026-09-23):** App Store Connect closed the `1.0.0` train (`Invalid Pre-Release Train` / `CFBundleShortVersionString` must be higher than the previously approved `1.0.0`). The project marketing version is now **`1.0.1`**. Create an **iOS App Version 1.0.1** in ASC and attach the new build there — do not keep uploading to 1.0.0.
+> **Version note (2026-09-27):** App Store Connect closed the `1.0.1` train (`Invalid Pre-Release Train` / `CFBundleShortVersionString` must be higher than the previously approved `1.0.1`). The project marketing version is now **`1.0.2`**. Create an **iOS App Version 1.0.2** in ASC and attach the new build there — do not keep uploading to 1.0.1.
 
 Everything below is ready to paste into App Store Connect. Prices are suggestions — you choose the final tiers. Nothing here is a substitute for the manual steps in the checklist at the end.
 
@@ -106,7 +106,7 @@ Everything below is ready to paste into App Store Connect. Prices are suggestion
 | Content rights | Does **not** contain, show, or access third-party content |
 | Age rating | 4+ (answer every questionnaire item **None/No**) |
 
-## 2. Version metadata — English (Canada) (Version → 1.0.1)
+## 2. Version metadata — English (Canada) (Version → 1.0.2)
 
 **Promotional text (≤170):**
 ```
@@ -163,7 +163,7 @@ Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
-**What's New (1.0.1):** `iPhone-only update, privacy & support links, and polish for App Store review. Safe-to-spend budgeting, bills, savings goals, forecasts, and widgets — all on-device.`
+**What's New (1.0.2):** `Monthly Penny Pro option, clearer paywall when products are unavailable, Wallet capture polish, and on-device budgeting improvements.`
 
 **Support URL (required):** `https://mayooranthava.github.io/penny/support.html`
 
@@ -274,7 +274,7 @@ Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Fo
 6. **Upload screenshots** (section 10).
 7. **Answer App Privacy** = Data not collected (section 4) and **Age rating** = 4+ (section 7).
 8. **Set pricing** = Free + availability (section 6).
-9. **Upload a build (≥ build 3)** via Xcode Cloud (push to `main`) and **attach it** to version 1.0.0. Make sure the StoreKit fix (PR #19) is merged so the Archive build succeeds.
+9. **Upload a build (≥ build 3)** via Xcode Cloud (push to `main`) and **attach it** to version 1.0.2. Make sure the StoreKit fix (PR #19) is merged so the Archive build succeeds.
 10. **Fill App Review Information** (section 9), **attach the IAPs to the version**, then **Submit for Review**.
 
 > Prerequisite: the app must compile. Ensure PR #19 (StoreKit `Transaction` fix) is merged before triggering the Archive/upload build.

@@ -986,6 +986,7 @@ struct ForecastPlanView: View {
     @Query private var accounts: [FinancialAccount]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
     @Query private var debts: [Debt]
+    @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Environment(AppSession.self) private var session
@@ -1022,13 +1023,22 @@ struct ForecastPlanView: View {
         return FinanceCalculator.average(totals)
     }
 
+    private var plannedSavings: Decimal {
+        FinanceCalculator.effectiveMonthlySavings(
+            goals: goals.map {
+                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            },
+            fallbackPlannedSavings: settingsList.first?.plannedMonthlySavings ?? 0
+        )
+    }
+
     private var projections: [FinanceCalculator.BalanceProjection] {
         FinanceCalculator.projectBalance(
             currentBalance: currentBalance,
             monthlyIncome: settingsList.first?.monthlyIncome ?? 0,
             recurringBills: recurring,
             averageDiscretionary: averageDiscretionary,
-            plannedSavings: settingsList.first?.plannedMonthlySavings ?? 0,
+            plannedSavings: plannedSavings,
             debtPayments: debts.reduce(0) { $0 + $1.plannedMonthlyPayment },
             horizons: horizons
         )

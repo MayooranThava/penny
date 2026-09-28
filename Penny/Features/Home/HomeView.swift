@@ -51,7 +51,26 @@ struct HomeView: View {
             .reduce(Decimal(0)) { $0 + $1.amount }
     }
 
-    private var plannedSavings: Decimal { settings?.plannedMonthlySavings ?? 0 }
+    private var plannedSavings: Decimal {
+        FinanceCalculator.effectiveMonthlySavings(
+            goals: goals.map {
+                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            },
+            fallbackPlannedSavings: settings?.plannedMonthlySavings ?? 0
+        )
+    }
+
+    private var savingsUsesPlanGoals: Bool {
+        goals.contains { goal in
+            guard let targetDate = goal.targetDate else { return false }
+            guard let required = FinanceCalculator.requiredMonthlySavings(
+                current: goal.currentAmount,
+                target: goal.targetAmount,
+                targetDate: targetDate
+            ) else { return false }
+            return required > 0
+        }
+    }
 
     private var breakdown: FinanceCalculator.SafeToSpendBreakdown {
         FinanceCalculator.safeToSpendBreakdown(
@@ -160,12 +179,23 @@ struct HomeView: View {
         }
 
         let goalSnapshots: [InsightEngine.GoalSnapshot] = goals.map { goal in
-            .init(
+            let perGoal: Decimal = {
+                if let target = goal.targetDate,
+                   let required = FinanceCalculator.requiredMonthlySavings(
+                    current: goal.currentAmount,
+                    target: goal.targetAmount,
+                    targetDate: target
+                   ) {
+                    return required
+                }
+                return plannedSavings / Decimal(max(goals.count, 1))
+            }()
+            return .init(
                 name: goal.name,
                 current: goal.currentAmount,
                 target: goal.targetAmount,
                 targetDate: goal.targetDate,
-                monthlyContributionEstimate: plannedSavings / Decimal(max(goals.count, 1))
+                monthlyContributionEstimate: perGoal
             )
         }
 
@@ -312,7 +342,11 @@ struct HomeView: View {
                     breakdownRow("Debt payments", -debtMonthlyCommitted, positive: false)
                 }
                 breakdownRow("Spent", -breakdown.discretionarySpent, positive: false)
-                breakdownRow("Saved", -breakdown.plannedSavings, positive: false)
+                breakdownRow(
+                    savingsUsesPlanGoals ? "Goals" : "Saved",
+                    -breakdown.plannedSavings,
+                    positive: false
+                )
                 breakdownRow(
                     "Safe to Spend",
                     breakdown.safeToSpend,
@@ -342,6 +376,37 @@ struct HomeView: View {
                             .font(PennyTypography.caption)
                             .monospacedDigit()
                             .foregroundStyle(PennyColors.textOnBrand)
+                        }
+                    }
+                }
+            }
+
+            if savingsUsesPlanGoals {
+                Divider().overlay(Color.white.opacity(0.2))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Includes Plan goal targets")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textOnBrand.opacity(0.75))
+                    ForEach(goals, id: \.id) { goal in
+                        if let targetDate = goal.targetDate,
+                           let required = FinanceCalculator.requiredMonthlySavings(
+                            current: goal.currentAmount,
+                            target: goal.targetAmount,
+                            targetDate: targetDate
+                           ),
+                           required > 0 {
+                            HStack {
+                                Text(goal.name)
+                                    .font(PennyTypography.caption)
+                                    .foregroundStyle(PennyColors.textOnBrand.opacity(0.9))
+                                Spacer()
+                                Text(
+                                    MoneyFormatters.string(from: required, currencyCode: currency) + "/mo"
+                                )
+                                .font(PennyTypography.caption)
+                                .monospacedDigit()
+                                .foregroundStyle(PennyColors.textOnBrand)
+                            }
                         }
                     }
                 }

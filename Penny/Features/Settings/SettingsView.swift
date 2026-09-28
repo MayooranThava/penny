@@ -11,6 +11,7 @@ struct SettingsView: View {
     @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
+    @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
 
     @State private var confirmReset = false
     @State private var confirmDelete = false
@@ -183,6 +184,9 @@ struct SettingsView: View {
                     step: 50
                 )
                 .tint(PennyColors.brand)
+                Text("Plan goals with a target date are deducted from Safe to Spend. This slider sets a minimum floor when goals need less (or have no date).")
+                    .font(PennyTypography.caption)
+                    .foregroundStyle(PennyColors.textSecondary)
             }
         }
     }
@@ -471,11 +475,17 @@ struct SettingsView: View {
                     && !Set(bills.map { $0.name.lowercased() }).contains($0.title.lowercased())
             }
             .reduce(Decimal(0)) { $0 + $1.amount }
+        let plannedSavings = FinanceCalculator.effectiveMonthlySavings(
+            goals: goals.map {
+                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            },
+            fallbackPlannedSavings: settings?.plannedMonthlySavings ?? 0
+        )
         let breakdown = FinanceCalculator.safeToSpendBreakdown(
             monthlyIncome: settings?.monthlyIncome ?? 0,
             recurringCommitted: billsMonthly + debtMonthly,
             discretionarySpent: discretionary,
-            plannedSavings: settings?.plannedMonthlySavings ?? 0
+            plannedSavings: plannedSavings
         )
         let categoryLines: [(String, Decimal, Decimal)] = categories.map { cat in
             let catSpent = monthTx

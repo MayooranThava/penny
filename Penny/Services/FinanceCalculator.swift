@@ -163,6 +163,44 @@ enum FinanceCalculator {
         return monthly.rounded(scale: 2, mode: .up)
     }
 
+    struct GoalSavingsInput: Equatable {
+        let current: Decimal
+        let target: Decimal
+        let targetDate: Date?
+    }
+
+    /// Monthly savings deducted from Safe to Spend.
+    /// Sums required amounts for incomplete goals that have a target date.
+    /// Falls back to Settings → Planned monthly savings when no dated goals apply.
+    /// When both exist, uses the larger amount so the Settings slider can still raise the floor.
+    static func effectiveMonthlySavings(
+        goals: [GoalSavingsInput],
+        fallbackPlannedSavings: Decimal,
+        from date: Date = .now,
+        calendar: Calendar = .current
+    ) -> Decimal {
+        var fromGoals = Decimal(0)
+        var hasDatedRequirement = false
+        for goal in goals {
+            guard let targetDate = goal.targetDate else { continue }
+            guard let required = requiredMonthlySavings(
+                current: goal.current,
+                target: goal.target,
+                targetDate: targetDate,
+                from: date,
+                calendar: calendar
+            ) else { continue }
+            if required > 0 {
+                fromGoals += required
+                hasDatedRequirement = true
+            }
+        }
+        if hasDatedRequirement {
+            return max(fromGoals, fallbackPlannedSavings)
+        }
+        return fallbackPlannedSavings
+    }
+
     static func estimatedCompletionDate(
         current: Decimal,
         target: Decimal,

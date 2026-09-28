@@ -318,6 +318,10 @@ struct HomeView: View {
                     }
                 }
             }
+
+            Text(LegalCopy.safeToSpendFootnote)
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textOnBrand.opacity(0.75))
         }
         .padding(PennySpacing.lg)
         .background(
@@ -505,11 +509,14 @@ struct HomeView: View {
                 .accessibilityElement(children: .combine)
             } else {
                 PennyCard {
-                    Text("Keep logging spending to unlock personalized insights.")
+                    Text("Keep logging spending to unlock on-device insights.")
                         .font(PennyTypography.callout)
                         .foregroundStyle(PennyColors.textSecondary)
                 }
             }
+            Text(LegalCopy.insightsFootnote)
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textTertiary)
         }
     }
 

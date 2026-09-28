@@ -11,11 +11,11 @@ Penny is a native iOS personal finance planner focused on clarity: safe-to-spend
 - **Activity**: month selector, search, income/expense/category filters, grouped transactions, add/delete
 - **Budget**: planned vs spent ring, category progress with health states, category detail + edit + trend chart
 - **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date), Debt payoff estimates, Forecast chart
-- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, reset/delete data, privacy copy, Penny Pro roadmap stub
+- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance + Pro accent themes, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, CSV export (Pro), reset/delete data, Privacy / Terms links, Penny Pro paywall
 - **Widgets**: Safe to Spend (Home + Lock Screen), Upcoming reminder, Upcoming bills, Monthly budget, Savings goal (App Group `group.com.mayooran.penny`)
 - **Design system**: mint/emerald warm identity, light + dark mode, reusable cards/rows/buttons
 - **Local insights**: deterministic rules (no AI APIs)
-- **Demo data**: sample household including “BMO VIP Porter” debt and display name **Mayooran**
+- **Demo data**: sample household with display name **Alex** and a generic credit-card debt (not a real person)
 
 ## Architecture
 
@@ -63,15 +63,22 @@ Chosen because it is the baseline for SwiftData + Observation while remaining a 
 
 ## Data & privacy
 
-- All prototype data stays **on-device** via SwiftData
+- All user data stays **on-device** via SwiftData
 - No bank connectivity, Plaid, analytics, ads, or remote databases
 - Optional **Wallet tap capture** is documented in Settings only (never required). Users who want it build a Shortcuts personal automation once; amounts never leave the device.
 - Reset demo data / delete all data available in Settings
 - Notification permission is only used for optional bill reminders
 
-## Monetization (architecture only)
+## Monetization
 
-`PennyProductCatalog` reserves a lifetime Pro product id. There is **no paywall** in this prototype. Likely model: free app + one-time lifetime unlock (not a high-priced subscription).
+Free app with optional **Penny Pro** (monthly subscription and/or lifetime unlock via StoreKit 2):
+
+- Unlimited savings goals (free tier: 3)
+- Longer-range forecasts (6 & 12 months)
+- CSV export of transactions
+- Custom accent themes (mint / ocean / slate / amber)
+
+iCloud sync is **not** included yet and is not marketed as a Pro benefit.
 
 ## Tests
 
@@ -134,17 +141,18 @@ python3 scripts/generate_xcode_project.py
 
 - This Cloud Agent environment is Linux and cannot compile or launch the iOS Simulator; validate builds on macOS Xcode.
 - App Icon is a placeholder slot (no final artwork yet).
-- No live bank feeds, iCloud sync, CSV export, or StoreKit purchase flow yet.
+- No live bank feeds or iCloud sync yet (intentionally omitted from Pro marketing until shipped).
 - Home-screen widgets require the App Group `group.com.mayooran.penny` enabled for your Apple Developer team.
-- Forecasts are deterministic estimates from income/bills/average spending — not predictions.
+- Forecasts are deterministic estimates from income/bills/average spending — not predictions or financial advice.
 - Debt payoff uses monthly compounding amortization with rounded interest.
+- Alternate App Store icons are not offered yet (accent themes only).
 
 ## Future roadmap (highest value next)
 
 1. Polish launch branding extras
-2. CSV import/export
-3. iCloud sync via SwiftData CloudKit
-4. StoreKit 2 lifetime Penny Pro unlock
+2. CSV import (export already ships with Pro)
+3. iCloud sync via SwiftData CloudKit (add to Pro only after it ships)
+4. Optional alternate app icons
 
 ## Brand
 

@@ -72,7 +72,7 @@ enum InsightEngine {
                     insights.append(
                         PennyInsight(
                             title: "\(category.name) spending is \(pct)% lower than last month.",
-                            detail: "Nice progress keeping \(category.name.lowercased()) costs down.",
+                            detail: "Based on your logged \(category.name.lowercased()) spending.",
                             symbolName: "arrow.down.right.circle.fill",
                             kind: .positive
                         )
@@ -81,7 +81,7 @@ enum InsightEngine {
                     insights.append(
                         PennyInsight(
                             title: "\(category.name) spending is \(pct)% higher than last month.",
-                            detail: "Review recent \(category.name.lowercased()) purchases if you want to adjust.",
+                            detail: "A summary of your recent \(category.name.lowercased()) entries — not advice.",
                             symbolName: "arrow.up.right.circle.fill",
                             kind: .caution
                         )
@@ -117,7 +117,7 @@ enum InsightEngine {
                     insights.append(
                         PennyInsight(
                             title: "You're \(MoneyFormatters.string(from: over, currencyCode: input.currencyCode)) over your \(category.name) budget.",
-                            detail: "Consider shifting spending from other categories.",
+                            detail: "Based on the budget and spending you entered for this category.",
                             symbolName: "chart.bar.fill",
                             kind: .caution
                         )
@@ -151,7 +151,7 @@ enum InsightEngine {
                 insights.append(
                     PennyInsight(
                         title: "At this pace you may exceed your monthly budget.",
-                        detail: "Projected about \(MoneyFormatters.compact(from: over, currencyCode: input.currencyCode)) over.",
+                        detail: "Rough estimate: about \(MoneyFormatters.compact(from: over, currencyCode: input.currencyCode)) over if spending continues as logged.",
                         symbolName: "gauge.with.dots.needle.67percent",
                         kind: .caution
                     )
@@ -161,7 +161,7 @@ enum InsightEngine {
                 insights.append(
                     PennyInsight(
                         title: "You're spending below your monthly budget pace.",
-                        detail: "Roughly \(MoneyFormatters.compact(from: under, currencyCode: input.currencyCode)) of headroom if this continues.",
+                        detail: "Rough estimate: about \(MoneyFormatters.compact(from: under, currencyCode: input.currencyCode)) of headroom if logged spending continues.",
                         symbolName: "leaf.fill",
                         kind: .positive
                     )
@@ -183,7 +183,7 @@ enum InsightEngine {
                     insights.append(
                         PennyInsight(
                             title: "You've reached your \(goal.name) goal.",
-                            detail: "Great milestone — consider setting the next one.",
+                            detail: "Based on the current and target amounts you entered.",
                             symbolName: "flag.fill",
                             kind: .positive
                         )
@@ -192,7 +192,7 @@ enum InsightEngine {
                     insights.append(
                         PennyInsight(
                             title: "You're on track for \(goal.name).",
-                            detail: "At your current rate you'll reach it by \(DateHelpers.monthYear(for: targetDate)).",
+                            detail: "Estimate: at your planned rate you may reach it by \(DateHelpers.monthYear(for: targetDate)).",
                             symbolName: "target",
                             kind: .positive
                         )
@@ -201,7 +201,7 @@ enum InsightEngine {
                     insights.append(
                         PennyInsight(
                             title: "\(goal.name) needs about \(MoneyFormatters.compact(from: required, currencyCode: input.currencyCode))/month.",
-                            detail: "To hit \(DateHelpers.monthYear(for: targetDate)).",
+                            detail: "Estimate to reach your entered target by \(DateHelpers.monthYear(for: targetDate)).",
                             symbolName: "calendar",
                             kind: .tip
                         )

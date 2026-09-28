@@ -113,7 +113,7 @@ struct GoalsPlanView: View {
                                     target: goal.targetAmount,
                                     targetDate: target
                                    ), required > 0 {
-                                    Text("To reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target)), save about \(MoneyFormatters.compact(from: required, currencyCode: currency))/month.")
+                                    Text("Based on your entries, about \(MoneyFormatters.compact(from: required, currencyCode: currency))/month would reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target)). Estimate only.")
                                         .font(PennyTypography.caption)
                                         .foregroundStyle(PennyColors.textSecondary)
                                 }
@@ -824,6 +824,10 @@ struct DebtCard: View {
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.expense)
                 }
+
+                Text(LegalCopy.debtFootnote)
+                    .font(PennyTypography.footnote)
+                    .foregroundStyle(PennyColors.textTertiary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -959,8 +963,11 @@ struct ForecastPlanView: View {
     @Query private var settingsList: [UserSettings]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Environment(AppSession.self) private var session
+    @Environment(StoreManager.self) private var store
+    @State private var showPaywall = false
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
+    private var horizons: [Int] { PennyProductCatalog.forecastHorizons(isPro: store.isPro) }
 
     private var currentBalance: Decimal {
         accounts.filter { $0.accountType == .chequing || $0.accountType == .savings || $0.accountType == .cash }
@@ -997,8 +1004,12 @@ struct ForecastPlanView: View {
             averageDiscretionary: averageDiscretionary,
             plannedSavings: settingsList.first?.plannedMonthlySavings ?? 0,
             debtPayments: debts.reduce(0) { $0 + $1.plannedMonthlyPayment },
-            horizons: [0, 1, 3, 6, 12]
+            horizons: horizons
         )
+    }
+
+    private var summaryHorizons: Set<Int> {
+        store.isPro ? [0, 3, 6, 12] : [0, 1, 3]
     }
 
     var body: some View {
@@ -1009,7 +1020,7 @@ struct ForecastPlanView: View {
                         Label("Estimates only", systemImage: "info.circle")
                             .font(PennyTypography.caption)
                             .foregroundStyle(PennyColors.warning)
-                        Text("Projections use your income, bills, recent spending, savings plan, and debt payments. They are not guaranteed outcomes.")
+                        Text("Projections use your income, bills, recent spending, savings plan, and debt payments. They are not guaranteed outcomes and are not financial advice.")
                             .font(PennyTypography.footnote)
                             .foregroundStyle(PennyColors.textSecondary)
                     }
@@ -1040,7 +1051,7 @@ struct ForecastPlanView: View {
                         }
                         .frame(height: 200)
                         .chartXAxis {
-                            AxisMarks(values: [0, 1, 3, 6, 12]) { value in
+                            AxisMarks(values: horizons) { value in
                                 AxisValueLabel {
                                     if let m = value.as(Int.self) {
                                         Text(m == 0 ? "Now" : "\(m)mo")
@@ -1050,7 +1061,7 @@ struct ForecastPlanView: View {
                         }
                         .accessibilityLabel(chartAccessibility)
 
-                        ForEach(projections.filter { [0, 3, 6, 12].contains($0.monthsAhead) }) { point in
+                        ForEach(projections.filter { summaryHorizons.contains($0.monthsAhead) }) { point in
                             HStack {
                                 Text(point.monthsAhead == 0 ? "Today" : "\(point.monthsAhead) months")
                                     .foregroundStyle(PennyColors.textSecondary)
@@ -1059,11 +1070,24 @@ struct ForecastPlanView: View {
                             }
                             .font(PennyTypography.callout)
                         }
+
+                        if !store.isPro {
+                            Button {
+                                Haptics.light()
+                                showPaywall = true
+                            } label: {
+                                Label("Unlock 6- and 12-month forecasts with Pro", systemImage: "sparkles")
+                            }
+                            .buttonStyle(.pennySecondary)
+                        }
                     }
                 }
             }
             .padding(.horizontal, PennySpacing.screenPadding)
             .padding(.bottom, PennySpacing.xxxl)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
         }
     }
 

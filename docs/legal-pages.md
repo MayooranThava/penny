@@ -19,12 +19,13 @@ After it goes green, use:
 | App Store Connect field | URL |
 |---|---|
 | Privacy Policy | `https://mayooranthava.github.io/penny/privacy-policy.html` |
+| Terms of Use (custom) | `https://mayooranthava.github.io/penny/terms-of-use.html` |
 | Support URL | `https://mayooranthava.github.io/penny/support.html` |
 | Marketing URL (optional) | `https://mayooranthava.github.io/penny/` |
 
-Those match `PennyAppInfo.privacyPolicyURL` / `supportURL` in the app.
+Those match `PennyAppInfo.privacyPolicyURL` / `termsOfUseURL` / `supportURL` in the app. For App Store Connect’s Terms field you may use the custom Terms URL (preferred) or Apple’s Standard EULA.
 
 ## Files
 
-- `docs/index.html`, `docs/privacy-policy.html`, `docs/support.html`, `docs/.nojekyll`
+- `docs/index.html`, `docs/privacy-policy.html`, `docs/terms-of-use.html`, `docs/support.html`, `docs/wallet-capture.html`, `docs/.nojekyll`
 - Workflow: `.github/workflows/pages.yml` (publishes only those HTML files)

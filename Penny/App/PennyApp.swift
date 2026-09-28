@@ -128,10 +128,14 @@ struct StorageErrorView: View {
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(StoreManager.self) private var store
     @Query private var settingsList: [UserSettings]
 
     private var settings: UserSettings? { settingsList.first }
     private var hasOnboarded: Bool { settings?.hasCompletedOnboarding == true }
+    private var effectiveTheme: AccentTheme {
+        AccentTheme.effective(storedRaw: settings?.accentThemeRaw, isPro: store.isPro)
+    }
 
     var body: some View {
         Group {
@@ -143,10 +147,18 @@ struct RootView: View {
         }
         .preferredColorScheme(settings?.appearance.colorScheme)
         .tint(PennyColors.brand)
+        .id(effectiveTheme.rawValue)
+        .onAppear { applyAccentTheme() }
+        .onChange(of: settings?.accentThemeRaw) { _, _ in applyAccentTheme() }
+        .onChange(of: store.isPro) { _, _ in applyAccentTheme() }
         .task {
             // Belt-and-suspenders if settings were missing after an update.
             try? PennyPersistence.repairIfNeeded(in: modelContext)
         }
+    }
+
+    private func applyAccentTheme() {
+        AccentTheme.active = effectiveTheme
     }
 }
 

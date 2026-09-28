@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Query private var settingsList: [UserSettings]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
     @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
+    @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
 
     @State private var confirmReset = false
     @State private var confirmDelete = false
@@ -17,6 +18,9 @@ struct SettingsView: View {
     @State private var accountBalanceText = ""
     @State private var showPaywall = false
     @State private var showApplePaySetup = false
+    @State private var exportShareURL: URL?
+    @State private var exportErrorMessage: String?
+    @State private var themeRefreshToken = 0
 
     private var settings: UserSettings? { settingsList.first }
 
@@ -33,13 +37,22 @@ struct SettingsView: View {
                 proSection
                 dataSection
                 aboutSection
-                privacySection
+                legalSection
             }
             .navigationTitle("Settings")
             .scrollContentBackground(.hidden)
             .background(PennyColors.background.ignoresSafeArea())
+            .id(themeRefreshToken)
             .sheet(isPresented: $showPaywall) { PaywallView() }
             .sheet(isPresented: $showApplePaySetup) { ApplePayCaptureSetupView() }
+            .sheet(isPresented: Binding(
+                get: { exportShareURL != nil },
+                set: { if !$0 { exportShareURL = nil } }
+            )) {
+                if let exportShareURL {
+                    ActivityShareSheet(items: [exportShareURL])
+                }
+            }
             .pennyKeyboardDone()
             .scrollDismissesKeyboard(.interactively)
             .onAppear {
@@ -58,7 +71,18 @@ struct SettingsView: View {
                 Button("Delete", role: .destructive) { deleteAll() }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This permanently removes transactions, budgets, goals, bills, and settings on this device.")
+                Text("This permanently removes transactions, budgets, goals, bills, and settings on this device. Export a CSV first if you want a copy — the developer cannot recover deleted data.")
+            }
+            .alert(
+                "Export unavailable",
+                isPresented: Binding(
+                    get: { exportErrorMessage != nil },
+                    set: { if !$0 { exportErrorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { exportErrorMessage = nil }
+            } message: {
+                Text(exportErrorMessage ?? "")
             }
             .alert(
                 "Update balance",
@@ -246,14 +270,78 @@ struct SettingsView: View {
     }
 
     private var appearanceSection: some View {
-        Section("Appearance") {
+        Section {
             Picker("Appearance", selection: appearanceBinding) {
                 ForEach(AppAppearance.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
+
+            VStack(alignment: .leading, spacing: PennySpacing.sm) {
+                Text("Accent theme")
+                    .font(PennyTypography.caption)
+                    .foregroundStyle(PennyColors.textSecondary)
+                HStack(spacing: PennySpacing.sm) {
+                    ForEach(AccentTheme.allCases) { theme in
+                        accentThemeButton(theme)
+                    }
+                }
+                if !store.isPro {
+                    Text("Mint is free. Other accents unlock with Penny Pro.")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textTertiary)
+                }
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Text("Appearance")
         }
+    }
+
+    private func accentThemeButton(_ theme: AccentTheme) -> some View {
+        let selected = AccentTheme.effective(
+            storedRaw: settings?.accentThemeRaw,
+            isPro: store.isPro
+        ) == theme
+        let locked = theme.requiresPro && !store.isPro
+
+        return Button {
+            if locked {
+                Haptics.light()
+                showPaywall = true
+                return
+            }
+            settings?.accentTheme = theme
+            try? modelContext.save()
+            AccentTheme.active = theme
+            themeRefreshToken += 1
+            Haptics.selection()
+        } label: {
+            VStack(spacing: 6) {
+                ZStack {
+                    Circle()
+                        .fill(Color(light: theme.brandLight, dark: theme.brandDark))
+                        .frame(width: 36, height: 36)
+                        .overlay {
+                            Circle()
+                                .strokeBorder(selected ? PennyColors.textPrimary : Color.clear, lineWidth: 2)
+                        }
+                    if locked {
+                        Image(systemName: "lock.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.white)
+                    }
+                }
+                Text(theme.displayName)
+                    .font(.caption2)
+                    .foregroundStyle(selected ? PennyColors.textPrimary : PennyColors.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(theme.displayName) theme\(locked ? ", requires Penny Pro" : "")")
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var notificationsSection: some View {
@@ -263,9 +351,21 @@ struct SettingsView: View {
     }
 
     private var dataSection: some View {
-        Section("Data") {
+        Section {
+            Button {
+                exportTransactions()
+            } label: {
+                Label(
+                    store.isPro ? "Export transactions (CSV)" : "Export transactions (Pro)",
+                    systemImage: store.isPro ? "square.and.arrow.up" : "sparkles"
+                )
+            }
             Button("Reset demo data") { confirmReset = true }
             Button("Delete all data", role: .destructive) { confirmDelete = true }
+        } header: {
+            Text("Data")
+        } footer: {
+            Text("CSV export is a Penny Pro feature. Export before deleting if you want a copy. Device backups (if enabled) may still retain app data under Apple’s terms.")
         }
     }
 
@@ -274,7 +374,7 @@ struct SettingsView: View {
             if store.isPro {
                 Label("Penny Pro is active", systemImage: "checkmark.seal.fill")
                     .foregroundStyle(PennyColors.brand)
-                Text("Thanks for supporting Penny — every Pro feature is unlocked.")
+                Text("Thanks for supporting Penny — Pro features are unlocked.")
                     .font(PennyTypography.caption)
                     .foregroundStyle(PennyColors.textSecondary)
             } else {
@@ -296,19 +396,40 @@ struct SettingsView: View {
         Section("About Penny") {
             LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
             LabeledContent("Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
-            Text("Beautiful personal finance without an expensive subscription.")
+            Text("Personal finance planning that stays on your device. Free to use; Penny Pro is optional.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
+            LegalDisclaimerBanner()
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Color.clear)
         }
     }
 
-    private var privacySection: some View {
-        Section("Privacy") {
-            Text("Penny keeps your financial information on this device. App updates keep your data. Only deleting the app, or using Reset/Delete below, clears it. Optional Wallet tap capture (Settings) uses Shortcuts on your iPhone — amounts stay local. This prototype does not sync to the cloud, connect to banks, or send analytics.")
+    private var legalSection: some View {
+        Section {
+            Text("Penny keeps your financial information on this device. App updates keep your data. Deleting the app, or using Reset/Delete in Data, clears local data. Optional Wallet tap capture uses Shortcuts on your iPhone — amounts stay local. Penny does not connect to banks or send analytics to the developer. Widgets may show a local summary snapshot via an App Group.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
+            Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
             Link("Support", destination: PennyAppInfo.supportURL)
+        } header: {
+            Text("Legal & privacy")
+        }
+    }
+
+    private func exportTransactions() {
+        guard store.isPro else {
+            Haptics.light()
+            showPaywall = true
+            return
+        }
+        do {
+            exportShareURL = try CSVExportService.exportFile(transactions: Array(transactions))
+            Haptics.success()
+        } catch {
+            exportErrorMessage = error.localizedDescription
+            Haptics.warning()
         }
     }
 
@@ -382,10 +503,9 @@ struct PaywallView: View {
 
     private let benefits: [(String, String)] = [
         ("target", "Unlimited savings goals"),
-        ("chart.line.uptrend.xyaxis", "Advanced multi-month forecasts"),
+        ("chart.line.uptrend.xyaxis", "Longer-range forecasts (6 & 12 months)"),
         ("square.and.arrow.up", "CSV export of your transactions"),
-        ("icloud.fill", "iCloud sync across your devices"),
-        ("paintpalette.fill", "Custom themes & app icons")
+        ("paintpalette.fill", "Custom accent themes")
     ]
 
     var body: some View {
@@ -425,7 +545,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("Everything in Penny, supercharged — start with a monthly plan.")
+            Text("Optional upgrades for goals, longer forecasts, CSV export, and accent themes.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -471,7 +591,7 @@ struct PaywallView: View {
                             .foregroundStyle(PennyColors.textTertiary)
                             .multilineTextAlignment(.center)
                     }
-                    Text("Products only load after the Paid Applications agreement is active, the subscription has a price, and you’re testing via TestFlight (or the IAP is approved on the App Store).")
+                    Text("If this continues, check your connection and try again later. Restore purchases if you already bought Penny Pro.")
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.textTertiary)
                         .multilineTextAlignment(.center)
@@ -524,11 +644,20 @@ struct PaywallView: View {
     }
 
     private var footer: some View {
-        VStack(spacing: PennySpacing.xs) {
+        VStack(spacing: PennySpacing.sm) {
             Button("Restore purchases") { Task { await store.restore() } }
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.brand)
-            Text("Subscriptions renew automatically until cancelled in Settings. Payment is charged to your Apple Account.")
+            Text("Payment is charged to your Apple Account at confirmation. Subscriptions renew automatically unless canceled at least 24 hours before the end of the current period. Manage or cancel anytime in Settings → Apple Account → Subscriptions.")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textTertiary)
+                .multilineTextAlignment(.center)
+            HStack(spacing: PennySpacing.md) {
+                Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
+                Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
+            }
+            .font(PennyTypography.caption)
+            Text(LegalCopy.notAdviceShort)
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textTertiary)
                 .multilineTextAlignment(.center)

@@ -110,7 +110,7 @@ Everything below is ready to paste into App Store Connect. Prices are suggestion
 
 **Promotional text (≤170):**
 ```
-Know exactly what's safe to spend today. Penny turns your income, bills, and goals into one calm number — private, on-device, and free of expensive subscriptions.
+See a clear Safe to Spend estimate from your income, bills, and goals — private, on-device, and free to use with optional Penny Pro.
 ```
 
 **Keywords (≤100, comma-separated, no spaces):**
@@ -120,15 +120,15 @@ budget,budgeting,money,finance,spending,savings,bills,expense,tracker,planner,de
 
 **Description:**
 ```
-Penny is a calm, private way to see exactly what you can safely spend — without spreadsheets, bank logins, or an expensive subscription.
+Penny is a calm, private way to estimate what you can safely spend — without spreadsheets, bank logins, or requiring a paid plan.
 
-Most budgeting apps overwhelm you with charts or ask you to hand over your bank passwords. Penny does the opposite: you tell it your income, bills, and goals, and it turns everything into one clear number — your Safe to Spend for the rest of the month.
+Most budgeting apps overwhelm you with charts or ask you to hand over your bank passwords. Penny does the opposite: you tell it your income, bills, and goals, and it turns everything into one clear number — your Safe to Spend estimate for the rest of the month.
 
 Everything stays on your device. No bank connections. No ads. No tracking.
 
 SAFE TO SPEND
-- One clear number for what's left to spend this month
-- Automatically accounts for income, bills, spending, and savings
+- One clear estimate for what's left to spend this month (based on your entries — not a bank balance)
+- Accounts for income, bills, spending, and savings you enter
 
 BUDGETS THAT MAKE SENSE
 - Simple category budgets with healthy / near-limit / over states
@@ -139,11 +139,11 @@ BILLS & REMINDERS
 - Optional reminders before a bill is due
 
 SAVINGS GOALS
-- Set goals and see how much to save each month to reach them
+- Set goals and see estimated monthly savings toward them
 
 DEBT & FORECASTS
-- Estimate debt payoff timelines
-- Peek a few months ahead with lightweight forecasts (always labeled as estimates)
+- Estimate debt payoff timelines from the balance, rate, and payment you enter
+- Lightweight forecasts labeled as estimates (longer ranges with Penny Pro)
 
 WIDGETS
 - Safe to Spend and next-bill widgets for your Home and Lock Screen
@@ -153,14 +153,17 @@ PRIVATE BY DESIGN
 - No bank logins, no analytics, no ads, no accounts
 
 PENNY PRO (optional)
-Unlock unlimited savings goals, advanced forecasts, CSV export, iCloud sync, and custom themes. Available as a monthly subscription with a free trial, or a one-time lifetime purchase. Penny is fully usable for free.
+Unlock unlimited savings goals, 6- and 12-month forecasts, CSV export, and custom accent themes. Available as a monthly subscription with a free trial, or a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync is not included yet.)
+
+IMPORTANT
+Penny is a planning tool, not financial, tax, or investment advice. Figures are estimates from numbers you enter and are not guarantees.
 
 Penny supports CAD, USD, GBP, EUR, and AUD.
 
 ---
 Penny Pro (Monthly) is an auto-renewing subscription. Payment is charged to your Apple Account at purchase confirmation. It renews automatically unless canceled at least 24 hours before the end of the period. Manage or cancel anytime in your Apple Account settings.
 Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
-Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Terms of Use: https://mayooranthava.github.io/penny/terms-of-use.html
 ```
 
 **What's New (1.0.2):** `Monthly Penny Pro option, clearer paywall when products are unavailable, Wallet capture polish, and on-device budgeting improvements.`
@@ -176,10 +179,11 @@ Hosted like Void Runner. After Pages is enabled (see checklist), paste:
 | App Store Connect field | URL |
 |---|---|
 | Privacy Policy | `https://mayooranthava.github.io/penny/privacy-policy.html` |
+| Terms of Use | `https://mayooranthava.github.io/penny/terms-of-use.html` |
 | Support URL | `https://mayooranthava.github.io/penny/support.html` |
 | Marketing URL (optional) | `https://mayooranthava.github.io/penny/` |
 
-Source files: `docs/index.html`, `docs/privacy-policy.html`, `docs/support.html`. Workflow: `.github/workflows/pages.yml`.
+Source files: `docs/index.html`, `docs/privacy-policy.html`, `docs/terms-of-use.html`, `docs/support.html`. Workflow: `.github/workflows/pages.yml`.
 
 ## 4. App Privacy (App Store Connect → App Privacy)
 
@@ -202,7 +206,7 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 | Price | your choice (suggest CAD $4.99/mo) |
 | Introductory Offer | Free trial, 1 week |
 | Display Name | `Penny Pro (Monthly)` |
-| Description | `Unlock every Penny Pro feature. 7-day free trial, then billed monthly. Cancel anytime.` |
+| Description | `Unlimited goals, longer forecasts, CSV export, and accent themes. 7-day free trial, then monthly. Cancel anytime.` |
 | Review screenshot | screenshot of the in-app paywall (required) |
 
 **Non-consumable — Penny Pro (Lifetime)** *(optional second option)*
@@ -212,7 +216,7 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 | Product ID | `com.penny.app.pro.lifetime` |
 | Price | your choice (suggest CAD $79.99 one-time) |
 | Display Name | `Penny Pro (Lifetime)` |
-| Description | `Unlock every Penny Pro feature forever with a single purchase.` |
+| Description | `Unlimited goals, longer forecasts, CSV export, and accent themes — forever.` |
 | Review screenshot | screenshot of the in-app paywall (required) |
 
 > First-time IAPs must be **submitted together with a new app version**, and **Agreements, Tax, and Banking → Paid Applications** must be active or products won't load.

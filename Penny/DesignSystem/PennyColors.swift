@@ -2,17 +2,21 @@ import SwiftUI
 import UIKit
 
 /// Semantic color tokens for Penny's warm modern finance identity.
-/// Primary: fresh mint/emerald. Supporting: cream, charcoal, soft blue, amber.
+/// Brand accents follow `AccentTheme.active` (mint by default; Pro unlocks more).
 enum PennyColors {
-    // Fallback adaptive colors (canonical brand tokens)
-    static let brand = Color(light: Color(red: 0.12, green: 0.62, blue: 0.48),
-                             dark: Color(red: 0.30, green: 0.82, blue: 0.66))
-    static let brandMuted = Color(light: Color(red: 0.12, green: 0.62, blue: 0.48).opacity(0.14),
-                                  dark: Color(red: 0.30, green: 0.82, blue: 0.66).opacity(0.18))
+    private static var theme: AccentTheme { AccentTheme.active }
+
+    static var brand: Color {
+        Color(light: theme.brandLight, dark: theme.brandDark)
+    }
+
+    static var brandMuted: Color {
+        Color(light: theme.brandLight.opacity(0.14), dark: theme.brandDark.opacity(0.18))
+    }
 
     /// Semantic alias used throughout the app
-    static let primary = brand
-    static let primarySoft = brandMuted
+    static var primary: Color { brand }
+    static var primarySoft: Color { brandMuted }
 
     // MARK: - Surfaces
 
@@ -74,16 +78,16 @@ enum PennyColors {
 
     // MARK: - Gradients
 
-    static let heroGradient = LinearGradient(
-        colors: [
-            Color(light: Color(red: 0.10, green: 0.55, blue: 0.45),
-                  dark: Color(red: 0.12, green: 0.42, blue: 0.38)),
-            Color(light: Color(red: 0.08, green: 0.42, blue: 0.48),
-                  dark: Color(red: 0.08, green: 0.28, blue: 0.36))
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    static var heroGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(light: theme.heroStartLight, dark: theme.heroStartDark),
+                Color(light: theme.heroEndLight, dark: theme.heroEndDark)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 
     static let softBackgroundGradient = LinearGradient(
         colors: [

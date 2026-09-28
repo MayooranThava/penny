@@ -91,6 +91,8 @@ struct OnboardingView: View {
                     .font(PennyTypography.callout)
                     .foregroundStyle(PennyColors.textSecondary)
 
+                LegalDisclaimerBanner(text: LegalCopy.onboardingDisclaimer)
+
                 VStack(alignment: .leading, spacing: PennySpacing.sm) {
                     Text("Your name (optional)")
                         .font(PennyTypography.caption)
@@ -178,11 +180,17 @@ struct OnboardingView: View {
                 .buttonStyle(.pennySecondary)
                 .disabled(isWorking)
 
-                Text("Sample data fills the app with an example household you can delete anytime. Start empty gives you a clean slate.")
+                Text("Sample data fills the app with an example household you can delete anytime. Start empty gives you a clean slate. By continuing you agree to the Terms of Use and Privacy Policy.")
                     .font(PennyTypography.caption)
                     .foregroundStyle(PennyColors.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.top, PennySpacing.xs)
+
+                HStack(spacing: PennySpacing.md) {
+                    Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
+                    Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
+                }
+                .font(PennyTypography.caption)
             }
         }
     }

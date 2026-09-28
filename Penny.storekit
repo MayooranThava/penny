@@ -8,7 +8,7 @@
       "internalID" : "8A1C2D34-0001-4E5F-9A11-000000000001",
       "localizations" : [
         {
-          "description" : "Unlock every Penny Pro feature forever with a single purchase.",
+          "description" : "Unlimited goals, longer forecasts, CSV export, and accent themes — forever.",
           "displayName" : "Penny Pro — Lifetime",
           "locale" : "en_US"
         }
@@ -46,7 +46,7 @@
           },
           "localizations" : [
             {
-              "description" : "All Penny Pro features. 7-day free trial, then billed monthly. Cancel anytime.",
+              "description" : "Unlimited goals, longer forecasts, CSV export, and accent themes. 7-day free trial, then monthly. Cancel anytime.",
               "displayName" : "Penny Pro — Monthly",
               "locale" : "en_US"
             }

@@ -91,8 +91,6 @@ struct OnboardingView: View {
                     .font(PennyTypography.callout)
                     .foregroundStyle(PennyColors.textSecondary)
 
-                LegalDisclaimerBanner(text: LegalCopy.onboardingDisclaimer)
-
                 VStack(alignment: .leading, spacing: PennySpacing.sm) {
                     Text("Your name (optional)")
                         .font(PennyTypography.caption)

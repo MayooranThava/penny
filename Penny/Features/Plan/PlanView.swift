@@ -113,7 +113,7 @@ struct GoalsPlanView: View {
                                     target: goal.targetAmount,
                                     targetDate: target
                                    ), required > 0 {
-                                    Text("Based on your entries, about \(MoneyFormatters.compact(from: required, currencyCode: currency))/month would reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target)). Estimate only.")
+                                    Text("About \(MoneyFormatters.compact(from: required, currencyCode: currency))/month to reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target))\(LegalCopy.asterisk)")
                                         .font(PennyTypography.caption)
                                         .foregroundStyle(PennyColors.textSecondary)
                                 }
@@ -802,7 +802,7 @@ struct DebtCard: View {
 
                 switch result {
                 case .paidOff(let date, let months, let interest):
-                    Label("Estimated payoff: \(DateHelpers.monthYear(for: date))", systemImage: "calendar")
+                    Label("Estimated payoff\(LegalCopy.asterisk): \(DateHelpers.monthYear(for: date))", systemImage: "calendar")
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.textPrimary)
                     Text("\(months) months · \(MoneyFormatters.compact(from: interest, currencyCode: currencyCode)) total interest")
@@ -824,10 +824,6 @@ struct DebtCard: View {
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.expense)
                 }
-
-                Text(LegalCopy.debtFootnote)
-                    .font(PennyTypography.footnote)
-                    .foregroundStyle(PennyColors.textTertiary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -1015,21 +1011,13 @@ struct ForecastPlanView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PennySpacing.md) {
-                PennyCard(fill: PennyColors.secondarySurface) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Label("Estimates only", systemImage: "info.circle")
-                            .font(PennyTypography.caption)
-                            .foregroundStyle(PennyColors.warning)
-                        Text("Projections use your income, bills, recent spending, savings plan, and debt payments. They are not guaranteed outcomes and are not financial advice.")
-                            .font(PennyTypography.footnote)
-                            .foregroundStyle(PennyColors.textSecondary)
-                    }
-                }
-
                 PennyCard {
                     VStack(alignment: .leading, spacing: PennySpacing.md) {
-                        Text("Projected liquid balance")
-                            .font(PennyTypography.cardTitle)
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text("Projected liquid balance")
+                                .font(PennyTypography.cardTitle)
+                            EstimateAsterisk()
+                        }
                         Chart(projections) { point in
                             LineMark(
                                 x: .value("Months", point.monthsAhead),

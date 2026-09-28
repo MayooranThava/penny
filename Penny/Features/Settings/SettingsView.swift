@@ -399,15 +399,15 @@ struct SettingsView: View {
             Text("Personal finance planning that stays on your device. Free to use; Penny Pro Lifetime is an optional one-time unlock.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
-            LegalDisclaimerBanner()
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                .listRowBackground(Color.clear)
         }
     }
 
     private var legalSection: some View {
         Section {
             Text("Penny keeps your financial information on this device. App updates keep your data. Deleting the app, or using Reset/Delete in Data, clears local data. Optional Wallet tap capture uses Shortcuts on your iPhone — amounts stay local. Penny does not connect to banks or send analytics to the developer. Widgets may show a local summary snapshot via an App Group.")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textSecondary)
+            Text("Figures marked with \(LegalCopy.asterisk) are estimates from your entries — not bank balances or financial advice. Full details are in the Terms of Use.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
@@ -645,10 +645,6 @@ struct PaywallView: View {
                 Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
             }
             .font(PennyTypography.caption)
-            Text(LegalCopy.notAdviceShort)
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textTertiary)
-                .multilineTextAlignment(.center)
         }
         .padding(.top, PennySpacing.sm)
     }

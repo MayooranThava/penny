@@ -16,6 +16,10 @@ struct ReleaseSanityTests {
         #expect(PennyProductCatalog.lifetimeProductID == "com.penny.app.pro.lifetime")
         #expect(PennyProductCatalog.allProductIDs.count == 2)
         #expect(PennyProductCatalog.freeTierGoalLimit == 3)
+        #expect(PennyProductCatalog.forecastHorizons(isPro: false) == [0, 1, 3])
+        #expect(PennyProductCatalog.forecastHorizons(isPro: true) == [0, 1, 3, 6, 12])
+        #expect(AccentTheme.effective(storedRaw: "ocean", isPro: false) == .mint)
+        #expect(AccentTheme.effective(storedRaw: "ocean", isPro: true) == .ocean)
 
         let storeKitURL = try locateStoreKitConfig()
         let data = try Data(contentsOf: storeKitURL)
@@ -203,6 +207,33 @@ struct ReleaseSanityTests {
         #expect(hero.contains("235.40"))
         let budget = MoneyFormatters.string(from: 3_450, currencyCode: "USD", locale: locale)
         #expect(budget.contains("3,450.00") || budget.contains("3450.00"))
+    }
+
+    // MARK: - CSV export
+
+    @Test("CSV export escapes fields and includes header")
+    func csvExportVital() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
+        let csv = CSVExportLogic.makeCSV(
+            rows: [
+                .init(
+                    date: date,
+                    title: "Rent, apt",
+                    amount: 2000,
+                    type: "Expense",
+                    category: "Housing",
+                    note: "note",
+                    merchant: "",
+                    source: "Manual"
+                )
+            ],
+            calendar: calendar
+        )
+        #expect(csv.contains(CSVExportLogic.header))
+        #expect(csv.contains("\"Rent, apt\""))
+        #expect(csv.contains("2026-09-01"))
     }
 
     // MARK: - Helpers

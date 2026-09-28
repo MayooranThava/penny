@@ -368,10 +368,17 @@ final class UserSettings {
     var displayName: String
     /// User marked the Shortcuts Wallet automation as finished (Apple still requires that setup).
     var applePayCaptureConfigured: Bool = false
+    /// Accent theme raw value (`mint`, `ocean`, `slate`, `amber`). Additive; defaults to mint.
+    var accentThemeRaw: String = AccentTheme.mint.rawValue
 
     var appearance: AppAppearance {
         get { AppAppearance(rawValue: appearanceRaw) ?? .system }
         set { appearanceRaw = newValue.rawValue }
+    }
+
+    var accentTheme: AccentTheme {
+        get { AccentTheme.resolved(accentThemeRaw) }
+        set { accentThemeRaw = newValue.rawValue }
     }
 
     init(
@@ -384,7 +391,8 @@ final class UserSettings {
         appearance: AppAppearance = .system,
         usingDemoData: Bool = false,
         displayName: String = "",
-        applePayCaptureConfigured: Bool = false
+        applePayCaptureConfigured: Bool = false,
+        accentTheme: AccentTheme = .mint
     ) {
         self.id = id
         self.currencyCode = currencyCode
@@ -396,6 +404,7 @@ final class UserSettings {
         self.usingDemoData = usingDemoData
         self.displayName = displayName
         self.applePayCaptureConfigured = applePayCaptureConfigured
+        self.accentThemeRaw = accentTheme.rawValue
     }
 }
 

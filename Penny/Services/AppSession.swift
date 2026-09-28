@@ -17,6 +17,15 @@ enum PennyProductCatalog {
 
     /// Free users can keep this many savings goals; adding more prompts Pro.
     static let freeTierGoalLimit = 3
+
+    /// Forecast months ahead available without Pro.
+    static let freeTierForecastHorizons = [0, 1, 3]
+    /// Forecast months ahead with Penny Pro (includes longer-range projections).
+    static let proForecastHorizons = [0, 1, 3, 6, 12]
+
+    static func forecastHorizons(isPro: Bool) -> [Int] {
+        isPro ? proForecastHorizons : freeTierForecastHorizons
+    }
 }
 
 /// StoreKit 2 façade that owns product loading, purchase, restore, and the

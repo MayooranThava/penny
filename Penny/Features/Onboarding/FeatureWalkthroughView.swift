@@ -1,9 +1,13 @@
 import SwiftUI
 
-/// Short, skippable spotlight tour shown after first setup.
+/// Skippable spotlight tour that keeps the real page visible and highlights a target region.
 struct FeatureWalkthroughView: View {
     @Binding var isPresented: Bool
+    var anchors: [WalkthroughAnchorID: Anchor<CGRect>]
+    var proxy: GeometryProxy
     var onSelectTab: (AppSession.MainTab) -> Void
+    var onSelectPlanSegment: (PlanSegment?) -> Void
+    var onHighlight: (WalkthroughAnchorID?) -> Void
     var onFinished: () -> Void
 
     @State private var stepIndex = 0
@@ -13,28 +17,24 @@ struct FeatureWalkthroughView: View {
         [
             .init(
                 tab: .home,
+                planSegment: nil,
+                anchor: .safeToSpend,
                 title: "Safe to Spend",
-                detail: "Your calm number for what’s left this month — based on income, bills, spending, and savings you enter."
+                detail: "This card is your calm leftover for the month — income minus bills, spending, and goal targets you enter."
             ),
             .init(
-                tab: .activity,
-                title: "Activity",
-                detail: "Log income and expenses. Filter by month or category anytime."
-            ),
-            .init(
-                tab: .budget,
-                title: "Budget",
-                detail: "Set category budgets and see healthy / near-limit / over at a glance."
+                tab: .home,
+                planSegment: nil,
+                anchor: .upcomingBills,
+                title: "Bills on Home",
+                detail: "Upcoming lists what’s due soon. When a bill’s date passes — like Rent on the 1st — Penny adds a small checkmark automatically. No to-do list to tap."
             ),
             .init(
                 tab: .plan,
-                title: "Plan",
-                detail: "Track bills (tap the checkmark when paid), goals, debt estimates, and forecasts."
-            ),
-            .init(
-                tab: .settings,
-                title: "Settings",
-                detail: "Currency, reminders, accent themes, and exports live here. You’re always in control of your data."
+                planSegment: .bills,
+                anchor: .addBill,
+                title: "Add a bill",
+                detail: "Open Plan → Bills and tap Add bill to track something like Internet or Phone. One bill at a time keeps Safe to Spend honest."
             )
         ]
     }
@@ -42,25 +42,55 @@ struct FeatureWalkthroughView: View {
     private var step: Step { steps[stepIndex] }
     private var isLast: Bool { stepIndex >= steps.count - 1 }
 
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.72)
-                .ignoresSafeArea()
-                .onTapGesture { /* absorb taps */ }
+    private var highlightRect: CGRect? {
+        guard let anchor = anchors[step.anchor] else { return nil }
+        return proxy[anchor].insetBy(dx: -8, dy: -8)
+    }
 
-            VStack {
-                Spacer()
-                card
-                    .padding(.horizontal, PennySpacing.screenPadding)
-                    .padding(.bottom, 96)
-            }
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            spotlightMask
+                .allowsHitTesting(true)
+                .onTapGesture { /* absorb background taps */ }
+
+            card
+                .padding(.horizontal, PennySpacing.screenPadding)
+                .padding(.bottom, 96)
         }
         .transition(.opacity)
-        .onAppear { onSelectTab(step.tab) }
-        .onChange(of: stepIndex) { _, _ in
-            onSelectTab(step.tab)
-        }
+        .onAppear { applyStep() }
+        .onChange(of: stepIndex) { _, _ in applyStep() }
         .accessibilityAddTraits(.isModal)
+    }
+
+    @ViewBuilder
+    private var spotlightMask: some View {
+        let hole = highlightRect
+        Canvas { context, size in
+            let full = Path(CGRect(origin: .zero, size: size))
+            context.fill(full, with: .color(.black.opacity(0.45)))
+            if let hole {
+                let rounded = Path(
+                    roundedRect: hole,
+                    cornerRadius: PennySpacing.radiusLg,
+                    style: .continuous
+                )
+                context.blendMode = .destinationOut
+                context.fill(rounded, with: .color(.white))
+            }
+        }
+        .compositingGroup()
+        .ignoresSafeArea()
+        .overlay {
+            if let hole {
+                RoundedRectangle(cornerRadius: PennySpacing.radiusLg, style: .continuous)
+                    .strokeBorder(PennyColors.brand.opacity(0.95), lineWidth: 2.5)
+                    .frame(width: hole.width, height: hole.height)
+                    .position(x: hole.midX, y: hole.midY)
+                    .allowsHitTesting(false)
+                    .shadow(color: PennyColors.brand.opacity(0.35), radius: 10)
+            }
+        }
     }
 
     private var card: some View {
@@ -109,15 +139,25 @@ struct FeatureWalkthroughView: View {
         )
     }
 
+    private func applyStep() {
+        onSelectTab(step.tab)
+        onSelectPlanSegment(step.planSegment)
+        onHighlight(step.anchor)
+    }
+
     private func finish() {
         Haptics.success()
+        onHighlight(nil)
+        onSelectPlanSegment(nil)
         onFinished()
         isPresented = false
     }
 
     private struct Step: Identifiable {
-        var id: AppSession.MainTab { tab }
+        var id: WalkthroughAnchorID { anchor }
         var tab: AppSession.MainTab
+        var planSegment: PlanSegment?
+        var anchor: WalkthroughAnchorID
         var title: String
         var detail: String
     }

@@ -3,6 +3,7 @@ import SwiftData
 import Charts
 
 struct PlanView: View {
+    @Environment(AppSession.self) private var session
     @State private var segment: PlanSegment = .goals
 
     var body: some View {
@@ -29,6 +30,16 @@ struct PlanView: View {
             }
             .background(PennyColors.background.ignoresSafeArea())
             .navigationTitle("Plan")
+            .onAppear {
+                if let hint = session.walkthroughPlanSegment {
+                    segment = hint
+                }
+            }
+            .onChange(of: session.walkthroughPlanSegment) { _, newValue in
+                if let newValue {
+                    segment = newValue
+                }
+            }
         }
     }
 }
@@ -416,16 +427,7 @@ struct BillsPlanView: View {
                             icon: bill.icon,
                             categoryName: bill.categoryName,
                             recurrenceLabel: bill.recurrence.displayName,
-                            isPaid: paid,
-                            onTogglePaid: {
-                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
-                                    isCurrentlyPaid: paid,
-                                    recurrence: bill.recurrence,
-                                    asOf: .now
-                                )
-                                try? modelContext.save()
-                                Haptics.selection()
-                            }
+                            isPaid: paid
                         )
                         .contentShape(Rectangle())
                         .onTapGesture { editingBill = bill }
@@ -442,34 +444,12 @@ struct BillsPlanView: View {
                                 Label("Edit", systemImage: "pencil")
                             }
                             .tint(PennyColors.brand)
-                            Button {
-                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
-                                    isCurrentlyPaid: paid,
-                                    recurrence: bill.recurrence,
-                                    asOf: .now
-                                )
-                                try? modelContext.save()
-                                Haptics.selection()
-                            } label: {
-                                Label(paid ? "Unpaid" : "Paid", systemImage: paid ? "circle" : "checkmark.circle")
-                            }
-                            .tint(PennyColors.brand)
                         }
                         .contextMenu {
                             Button {
                                 editingBill = bill
                             } label: {
                                 Label("Edit", systemImage: "pencil")
-                            }
-                            Button {
-                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
-                                    isCurrentlyPaid: paid,
-                                    recurrence: bill.recurrence,
-                                    asOf: .now
-                                )
-                                try? modelContext.save()
-                            } label: {
-                                Label(paid ? "Mark unpaid" : "Mark paid", systemImage: paid ? "circle" : "checkmark.circle")
                             }
                             Button(role: .destructive) {
                                 pendingDelete = bill
@@ -488,6 +468,7 @@ struct BillsPlanView: View {
                     Label("Add bill", systemImage: "plus")
                 }
                 .buttonStyle(.pennySecondary)
+                .walkthroughAnchor(.addBill)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: PennySpacing.sm, leading: PennySpacing.screenPadding, bottom: PennySpacing.sm, trailing: PennySpacing.screenPadding))
             }

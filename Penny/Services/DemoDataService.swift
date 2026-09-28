@@ -33,7 +33,8 @@ enum CategoryCatalog {
 @MainActor
 enum DemoDataService {
     static let demoMonthlyIncome: Decimal = 4_600
-    static let demoPlannedSavings: Decimal = 500
+    /// Soft floor for Safe to Spend when Plan goals are lighter than this.
+    static let demoPlannedSavings: Decimal = 350
 
     static func resetAll(in context: ModelContext) throws {
         try deleteAll(in: context)
@@ -178,13 +179,14 @@ enum DemoDataService {
         context.insert(FinancialAccount(name: "TFSA Savings", accountType: .savings, balance: 6_800, sortOrder: 1))
         context.insert(FinancialAccount(name: "Credit Card", accountType: .creditCard, balance: -3_200, sortOrder: 2))
 
-        // Goals — common priorities for an average Toronto saver.
+        // Goals — realistic monthly targets so demo Safe to Spend stays positive.
+        // (~$130 + ~$390 + ~$85 ≈ $605/mo vs the previous ~$2,500/mo).
         context.insert(
             SavingsGoal(
                 name: "Emergency Fund",
-                targetAmount: 12_000,
+                targetAmount: 8_000,
                 currentAmount: 3_400,
-                targetDate: calendar.date(byAdding: .month, value: 12, to: now),
+                targetDate: calendar.date(byAdding: .month, value: 36, to: now),
                 icon: "shield.fill",
                 colourIdentifier: "savings"
             )
@@ -192,9 +194,9 @@ enum DemoDataService {
         context.insert(
             SavingsGoal(
                 name: "Condo Down Payment",
-                targetAmount: 60_000,
-                currentAmount: 8_200,
-                targetDate: calendar.date(byAdding: .month, value: 36, to: now),
+                targetAmount: 40_000,
+                currentAmount: 12_000,
+                targetDate: calendar.date(byAdding: .month, value: 72, to: now),
                 icon: "house.fill",
                 colourIdentifier: "housing"
             )
@@ -202,9 +204,9 @@ enum DemoDataService {
         context.insert(
             SavingsGoal(
                 name: "Vacation",
-                targetAmount: 3_500,
+                targetAmount: 2_400,
                 currentAmount: 900,
-                targetDate: calendar.date(byAdding: .month, value: 7, to: now),
+                targetDate: calendar.date(byAdding: .month, value: 18, to: now),
                 icon: "airplane",
                 colourIdentifier: "travel"
             )

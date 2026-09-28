@@ -156,6 +156,10 @@ final class AppSession {
     var showAddTransaction: Bool = false
     /// Drives the post-setup spotlight tour overlay.
     var showWalkthrough: Bool = false
+    /// Which Plan segment the tour wants visible (e.g. Bills for “Add bill”).
+    var walkthroughPlanSegment: PlanSegment? = nil
+    /// Active spotlight target so Home can scroll the Upcoming section into view.
+    var walkthroughAnchor: WalkthroughAnchorID? = nil
 
     func resetMonth() {
         selectedMonth = DateHelpers.startOfMonth()

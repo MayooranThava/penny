@@ -172,43 +172,52 @@ struct MainTabView: View {
 
     var body: some View {
         @Bindable var session = session
-        ZStack {
-            TabView(selection: $session.selectedTab) {
-                HomeView()
-                    .tabItem { Label("Home", systemImage: "house.fill") }
-                    .tag(AppSession.MainTab.home)
+        TabView(selection: $session.selectedTab) {
+            HomeView()
+                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tag(AppSession.MainTab.home)
 
-                ActivityView()
-                    .tabItem { Label("Activity", systemImage: "arrow.left.arrow.right") }
-                    .tag(AppSession.MainTab.activity)
+            ActivityView()
+                .tabItem { Label("Activity", systemImage: "arrow.left.arrow.right") }
+                .tag(AppSession.MainTab.activity)
 
-                BudgetView()
-                    .tabItem { Label("Budget", systemImage: "chart.pie.fill") }
-                    .tag(AppSession.MainTab.budget)
+            BudgetView()
+                .tabItem { Label("Budget", systemImage: "chart.pie.fill") }
+                .tag(AppSession.MainTab.budget)
 
-                PlanView()
-                    .tabItem { Label("Plan", systemImage: "target") }
-                    .tag(AppSession.MainTab.plan)
+            PlanView()
+                .tabItem { Label("Plan", systemImage: "target") }
+                .tag(AppSession.MainTab.plan)
 
-                SettingsView()
-                    .tabItem { Label("Settings", systemImage: "gearshape.fill") }
-                    .tag(AppSession.MainTab.settings)
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+                .tag(AppSession.MainTab.settings)
+        }
+        .sheet(isPresented: $session.showAddTransaction) {
+            AddTransactionView()
+        }
+        .overlayPreferenceValue(WalkthroughAnchorKey.self) { anchors in
+            GeometryReader { proxy in
+                if session.showWalkthrough {
+                    FeatureWalkthroughView(
+                        isPresented: $session.showWalkthrough,
+                        anchors: anchors,
+                        proxy: proxy,
+                        onSelectTab: { session.selectedTab = $0 },
+                        onSelectPlanSegment: { session.walkthroughPlanSegment = $0 },
+                        onHighlight: { session.walkthroughAnchor = $0 },
+                        onFinished: {
+                            settings?.hasCompletedWalkthrough = true
+                            session.walkthroughAnchor = nil
+                            session.walkthroughPlanSegment = nil
+                            try? modelContext.save()
+                        }
+                    )
+                    .transition(.opacity)
+                }
             }
-            .sheet(isPresented: $session.showAddTransaction) {
-                AddTransactionView()
-            }
-
-            if session.showWalkthrough {
-                FeatureWalkthroughView(
-                    isPresented: $session.showWalkthrough,
-                    onSelectTab: { session.selectedTab = $0 },
-                    onFinished: {
-                        settings?.hasCompletedWalkthrough = true
-                        try? modelContext.save()
-                    }
-                )
-                .zIndex(10)
-            }
+            .ignoresSafeArea()
+            .allowsHitTesting(session.showWalkthrough)
         }
         .task {
             let enabled = settingsList.first?.billRemindersEnabled ?? false

@@ -186,8 +186,15 @@ final class RecurringBill {
         set { recurrenceRaw = newValue.rawValue }
     }
 
+    /// Whether this bill’s due date for the cycle containing `date` has passed.
+    /// Automatic — not a manual to-do toggle.
     func isPaid(asOf date: Date = .now) -> Bool {
-        BillPaymentCycle.isPaid(paidCycleKey: paidCycleKey, recurrence: recurrence, asOf: date)
+        BillPaymentCycle.hasDueDatePassed(
+            dueDay: dueDay,
+            recurrence: recurrence,
+            nextDueDate: nextDueDate,
+            asOf: date
+        )
     }
 
     init(

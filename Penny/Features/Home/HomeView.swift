@@ -4,6 +4,7 @@ import WidgetKit
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }, sort: \RecurringBill.nextDueDate)
@@ -50,7 +51,26 @@ struct HomeView: View {
             .reduce(Decimal(0)) { $0 + $1.amount }
     }
 
-    private var plannedSavings: Decimal { settings?.plannedMonthlySavings ?? 0 }
+    private var plannedSavings: Decimal {
+        FinanceCalculator.effectiveMonthlySavings(
+            goals: goals.map {
+                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            },
+            fallbackPlannedSavings: settings?.plannedMonthlySavings ?? 0
+        )
+    }
+
+    private var savingsUsesPlanGoals: Bool {
+        goals.contains { goal in
+            guard let targetDate = goal.targetDate else { return false }
+            guard let required = FinanceCalculator.requiredMonthlySavings(
+                current: goal.currentAmount,
+                target: goal.targetAmount,
+                targetDate: targetDate
+            ) else { return false }
+            return required > 0
+        }
+    }
 
     private var breakdown: FinanceCalculator.SafeToSpendBreakdown {
         FinanceCalculator.safeToSpendBreakdown(
@@ -82,18 +102,22 @@ struct HomeView: View {
         let amount: Decimal
         let icon: String
         let subtitle: String
+        let isPaid: Bool
     }
 
     private var upcomingItems: [UpcomingItem] {
+        let asOf = session.selectedMonth
         let billItems = bills.map {
-            UpcomingItem(
+            let paid = $0.isPaid(asOf: asOf)
+            return UpcomingItem(
                 id: "bill-\($0.id.uuidString)",
                 kind: .bill,
                 name: $0.name,
                 date: $0.nextDueDate,
                 amount: $0.amount,
                 icon: $0.icon,
-                subtitle: $0.recurrence.displayName
+                subtitle: paid ? "Paid · \($0.recurrence.displayName)" : $0.recurrence.displayName,
+                isPaid: paid
             )
         }
         let debtItems = debts.map {
@@ -104,10 +128,30 @@ struct HomeView: View {
                 date: DateHelpers.nextDueDate(dueDay: $0.dueDay),
                 amount: $0.plannedMonthlyPayment,
                 icon: $0.icon,
-                subtitle: "Debt payment"
+                subtitle: "Debt payment",
+                isPaid: false
             )
         }
-        return (billItems + debtItems).sorted { $0.date < $1.date }.prefix(5).map { $0 }
+        // Unpaid bills first, then by date.
+        return (billItems + debtItems)
+            .sorted {
+                if $0.isPaid != $1.isPaid { return !$0.isPaid && $1.isPaid }
+                return $0.date < $1.date
+            }
+            .prefix(5)
+            .map { $0 }
+    }
+
+    private func toggleBillPaid(_ bill: RecurringBill) {
+        let asOf = session.selectedMonth
+        let paid = bill.isPaid(asOf: asOf)
+        bill.paidCycleKey = BillPaymentCycle.toggledKey(
+            isCurrentlyPaid: paid,
+            recurrence: bill.recurrence,
+            asOf: asOf
+        )
+        try? modelContext.save()
+        Haptics.selection()
     }
 
     private var insights: [PennyInsight] {
@@ -135,12 +179,23 @@ struct HomeView: View {
         }
 
         let goalSnapshots: [InsightEngine.GoalSnapshot] = goals.map { goal in
-            .init(
+            let perGoal: Decimal = {
+                if let target = goal.targetDate,
+                   let required = FinanceCalculator.requiredMonthlySavings(
+                    current: goal.currentAmount,
+                    target: goal.targetAmount,
+                    targetDate: target
+                   ) {
+                    return required
+                }
+                return plannedSavings / Decimal(max(goals.count, 1))
+            }()
+            return .init(
                 name: goal.name,
                 current: goal.currentAmount,
                 target: goal.targetAmount,
                 targetDate: goal.targetDate,
-                monthlyContributionEstimate: plannedSavings / Decimal(max(goals.count, 1))
+                monthlyContributionEstimate: perGoal
             )
         }
 
@@ -287,7 +342,11 @@ struct HomeView: View {
                     breakdownRow("Debt payments", -debtMonthlyCommitted, positive: false)
                 }
                 breakdownRow("Spent", -breakdown.discretionarySpent, positive: false)
-                breakdownRow("Saved", -breakdown.plannedSavings, positive: false)
+                breakdownRow(
+                    savingsUsesPlanGoals ? "Goals" : "Saved",
+                    -breakdown.plannedSavings,
+                    positive: false
+                )
                 breakdownRow(
                     "Safe to Spend",
                     breakdown.safeToSpend,
@@ -317,6 +376,37 @@ struct HomeView: View {
                             .font(PennyTypography.caption)
                             .monospacedDigit()
                             .foregroundStyle(PennyColors.textOnBrand)
+                        }
+                    }
+                }
+            }
+
+            if savingsUsesPlanGoals {
+                Divider().overlay(Color.white.opacity(0.2))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Includes Plan goal targets")
+                        .font(PennyTypography.caption)
+                        .foregroundStyle(PennyColors.textOnBrand.opacity(0.75))
+                    ForEach(goals, id: \.id) { goal in
+                        if let targetDate = goal.targetDate,
+                           let required = FinanceCalculator.requiredMonthlySavings(
+                            current: goal.currentAmount,
+                            target: goal.targetAmount,
+                            targetDate: targetDate
+                           ),
+                           required > 0 {
+                            HStack {
+                                Text(goal.name)
+                                    .font(PennyTypography.caption)
+                                    .foregroundStyle(PennyColors.textOnBrand.opacity(0.9))
+                                Spacer()
+                                Text(
+                                    MoneyFormatters.string(from: required, currencyCode: currency) + "/mo"
+                                )
+                                .font(PennyTypography.caption)
+                                .monospacedDigit()
+                                .foregroundStyle(PennyColors.textOnBrand)
+                            }
                         }
                     }
                 }
@@ -399,41 +489,58 @@ struct HomeView: View {
                 PennyCard {
                     VStack(spacing: PennySpacing.md) {
                         ForEach(upcomingItems) { item in
-                            Button {
-                                switch item.kind {
-                                case .bill:
-                                    editingBill = bills.first { "bill-\($0.id.uuidString)" == item.id }
-                                case .debt:
-                                    editingDebt = debts.first { "debt-\($0.id.uuidString)" == item.id }
-                                }
-                            } label: {
-                                HStack(spacing: PennySpacing.sm) {
+                            HStack(spacing: PennySpacing.sm) {
+                                if item.kind == .bill,
+                                   let bill = bills.first(where: { "bill-\($0.id.uuidString)" == item.id }) {
+                                    Button {
+                                        toggleBillPaid(bill)
+                                    } label: {
+                                        Image(systemName: item.isPaid ? "checkmark.circle.fill" : "circle")
+                                            .font(.title3)
+                                            .foregroundStyle(item.isPaid ? PennyColors.brand : PennyColors.textTertiary)
+                                            .frame(width: 32, height: 32)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(item.isPaid ? "Mark \(item.name) unpaid" : "Mark \(item.name) paid")
+                                } else {
                                     CategoryIcon(
                                         icon: item.icon,
                                         colourIdentifier: item.kind == .debt ? "debt" : "subscriptions"
                                     )
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(item.name)
-                                            .font(PennyTypography.bodyEmphasized)
-                                            .foregroundStyle(PennyColors.textPrimary)
-                                        Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
-                                            .font(PennyTypography.caption)
-                                            .foregroundStyle(PennyColors.textSecondary)
-                                    }
-                                    Spacer()
-                                    MoneyText(
-                                        amount: item.amount,
-                                        currencyCode: currency,
-                                        font: PennyTypography.smallAmount
-                                    )
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundStyle(PennyColors.textTertiary)
                                 }
+
+                                Button {
+                                    switch item.kind {
+                                    case .bill:
+                                        editingBill = bills.first { "bill-\($0.id.uuidString)" == item.id }
+                                    case .debt:
+                                        editingDebt = debts.first { "debt-\($0.id.uuidString)" == item.id }
+                                    }
+                                } label: {
+                                    HStack(spacing: PennySpacing.sm) {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(item.name)
+                                                .font(PennyTypography.bodyEmphasized)
+                                                .foregroundStyle(item.isPaid ? PennyColors.textSecondary : PennyColors.textPrimary)
+                                                .strikethrough(item.isPaid, color: PennyColors.textTertiary)
+                                            Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
+                                                .font(PennyTypography.caption)
+                                                .foregroundStyle(PennyColors.textSecondary)
+                                        }
+                                        Spacer()
+                                        MoneyText(
+                                            amount: item.amount,
+                                            currencyCode: currency,
+                                            font: PennyTypography.smallAmount
+                                        )
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundStyle(PennyColors.textTertiary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Double tap to edit")
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityElement(children: .combine)
-                            .accessibilityHint("Double tap to edit")
                             if item.id != upcomingItems.last?.id {
                                 Divider()
                             }

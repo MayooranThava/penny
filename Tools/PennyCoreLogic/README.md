@@ -10,6 +10,7 @@ This package mirrors:
 - `DateHelpers`
 - `ApplePayCaptureLogic`
 - `CSVExportLogic`
+- `BillPaymentCycle`
 
 It is **not** used by the iOS app target. Keep sources in sync with `Penny/Services` and `Penny/Utilities` when changing business logic.
 

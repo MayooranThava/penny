@@ -168,6 +168,48 @@ enum FinanceCalculator {
         return monthly.rounded(scale: 2, mode: .up)
     }
 
+    public struct GoalSavingsInput: Equatable, Sendable {
+        public let current: Decimal
+        public let target: Decimal
+        public let targetDate: Date?
+
+        public init(current: Decimal, target: Decimal, targetDate: Date?) {
+            self.current = current
+            self.target = target
+            self.targetDate = targetDate
+        }
+    }
+
+    /// Monthly savings for Safe to Spend: sum of dated goal requirements, else fallback;
+    /// when both exist, uses the larger amount.
+    public static func effectiveMonthlySavings(
+        goals: [GoalSavingsInput],
+        fallbackPlannedSavings: Decimal,
+        from date: Date = .now,
+        calendar: Calendar = .current
+    ) -> Decimal {
+        var fromGoals = Decimal(0)
+        var hasDatedRequirement = false
+        for goal in goals {
+            guard let targetDate = goal.targetDate else { continue }
+            guard let required = requiredMonthlySavings(
+                current: goal.current,
+                target: goal.target,
+                targetDate: targetDate,
+                from: date,
+                calendar: calendar
+            ) else { continue }
+            if required > 0 {
+                fromGoals += required
+                hasDatedRequirement = true
+            }
+        }
+        if hasDatedRequirement {
+            return max(fromGoals, fallbackPlannedSavings)
+        }
+        return fallbackPlannedSavings
+    }
+
     static func estimatedCompletionDate(
         current: Decimal,
         target: Decimal,

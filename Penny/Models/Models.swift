@@ -178,10 +178,16 @@ final class RecurringBill {
     var reminderDaysBefore: Int
     var isActive: Bool
     var icon: String
+    /// Cycle key from `BillPaymentCycle` when marked paid for the current period; empty when unpaid.
+    var paidCycleKey: String = ""
 
     var recurrence: BillRecurrence {
         get { BillRecurrence(rawValue: recurrenceRaw) ?? .monthly }
         set { recurrenceRaw = newValue.rawValue }
+    }
+
+    func isPaid(asOf date: Date = .now) -> Bool {
+        BillPaymentCycle.isPaid(paidCycleKey: paidCycleKey, recurrence: recurrence, asOf: date)
     }
 
     init(
@@ -196,7 +202,8 @@ final class RecurringBill {
         reminderEnabled: Bool = true,
         reminderDaysBefore: Int = 2,
         isActive: Bool = true,
-        icon: String = "doc.text.fill"
+        icon: String = "doc.text.fill",
+        paidCycleKey: String = ""
     ) {
         self.id = id
         self.name = name
@@ -210,6 +217,7 @@ final class RecurringBill {
         self.reminderDaysBefore = reminderDaysBefore
         self.isActive = isActive
         self.icon = icon
+        self.paidCycleKey = paidCycleKey
     }
 }
 
@@ -368,8 +376,10 @@ final class UserSettings {
     var displayName: String
     /// User marked the Shortcuts Wallet automation as finished (Apple still requires that setup).
     var applePayCaptureConfigured: Bool = false
-    /// Accent theme raw value (`mint`, `ocean`, `slate`, `amber`). Additive; defaults to mint.
+    /// Accent theme raw value (`mint`, `ocean`, …). Additive; defaults to mint.
     var accentThemeRaw: String = AccentTheme.mint.rawValue
+    /// First-run spotlight tour completed (or skipped). Additive; defaults to false for new installs.
+    var hasCompletedWalkthrough: Bool = false
 
     var appearance: AppAppearance {
         get { AppAppearance(rawValue: appearanceRaw) ?? .system }
@@ -392,7 +402,8 @@ final class UserSettings {
         usingDemoData: Bool = false,
         displayName: String = "",
         applePayCaptureConfigured: Bool = false,
-        accentTheme: AccentTheme = .mint
+        accentTheme: AccentTheme = .mint,
+        hasCompletedWalkthrough: Bool = false
     ) {
         self.id = id
         self.currencyCode = currencyCode
@@ -405,6 +416,7 @@ final class UserSettings {
         self.displayName = displayName
         self.applePayCaptureConfigured = applePayCaptureConfigured
         self.accentThemeRaw = accentTheme.rawValue
+        self.hasCompletedWalkthrough = hasCompletedWalkthrough
     }
 }
 

@@ -7,11 +7,12 @@ Penny is a native iOS personal finance planner focused on clarity: safe-to-spend
 ## Current features
 
 - **Onboarding** (3 intro screens + quick setup): name, currency, income, sample data or start fresh
-- **Home**: “Welcome back {name}”, Safe to Spend hero with bills **and debt targets** deducted, spending progress, upcoming bills/debt, savings goals, insights
+- **Home**: “Welcome back {name}”, Safe to Spend hero with bills, debt targets, and **Plan goal monthly requirements** deducted (Settings planned savings is a floor), spending progress, upcoming bills/debt, savings goals, insights
 - **Activity**: month selector, search, income/expense/category filters, grouped transactions, add/delete
 - **Budget**: planned vs spent ring, category progress with health states, category detail + edit + trend chart
-- **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date), Debt payoff estimates, Forecast chart
-- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance + Pro accent themes, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, CSV export (Pro), reset/delete data, Privacy / Terms links, Penny Pro paywall
+- **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date, **paid-this-cycle checkmarks**), Debt payoff estimates, Forecast chart
+- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance + Pro accent themes, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, CSV + PDF export (Pro), reset/delete data, Privacy / Terms links, Penny Pro paywall, replay quick tour
+- **Walkthrough**: short skippable spotlight tour after first setup
 - **Widgets**: Safe to Spend (Home + Lock Screen), Upcoming reminder, Upcoming bills, Monthly budget, Savings goal (App Group `group.com.mayooran.penny`)
 - **Design system**: mint/emerald warm identity, light + dark mode, reusable cards/rows/buttons
 - **Local insights**: deterministic rules (no AI APIs)
@@ -75,8 +76,8 @@ Free app with optional **Penny Pro Lifetime** (one-time Non-Consumable via Store
 
 - Unlimited savings goals (free tier: 3)
 - Longer-range forecasts (6 & 12 months)
-- CSV export of transactions
-- Custom accent themes (mint / ocean / slate / amber)
+- CSV + monthly PDF export
+- Extra accent themes (ocean, slate, amber, rose, violet, forest, graphite)
 
 No subscription in the current release. iCloud sync is **not** included yet and is not marketed as a Pro benefit.
 

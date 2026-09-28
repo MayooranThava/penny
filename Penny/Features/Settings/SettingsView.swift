@@ -5,10 +5,13 @@ import StoreKit
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(StoreManager.self) private var store
+    @Environment(AppSession.self) private var session
     @Query private var settingsList: [UserSettings]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
     @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
+    @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
+    @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
 
     @State private var confirmReset = false
     @State private var confirmDelete = false
@@ -181,6 +184,9 @@ struct SettingsView: View {
                     step: 50
                 )
                 .tint(PennyColors.brand)
+                Text("Plan goals with a target date are deducted from Safe to Spend. This slider sets a minimum floor when goals need less (or have no date).")
+                    .font(PennyTypography.caption)
+                    .foregroundStyle(PennyColors.textSecondary)
             }
         }
     }
@@ -282,7 +288,10 @@ struct SettingsView: View {
                 Text("Accent theme")
                     .font(PennyTypography.caption)
                     .foregroundStyle(PennyColors.textSecondary)
-                HStack(spacing: PennySpacing.sm) {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 64), spacing: PennySpacing.sm)],
+                    spacing: PennySpacing.sm
+                ) {
                     ForEach(AccentTheme.allCases) { theme in
                         accentThemeButton(theme)
                     }
@@ -360,12 +369,20 @@ struct SettingsView: View {
                     systemImage: store.isPro ? "square.and.arrow.up" : "sparkles"
                 )
             }
+            Button {
+                exportPDFSummary()
+            } label: {
+                Label(
+                    store.isPro ? "Export monthly summary (PDF)" : "Export monthly summary (Pro)",
+                    systemImage: store.isPro ? "doc.richtext" : "sparkles"
+                )
+            }
             Button("Reset demo data") { confirmReset = true }
             Button("Delete all data", role: .destructive) { confirmDelete = true }
         } header: {
             Text("Data")
         } footer: {
-            Text("CSV export is a Penny Pro feature. Export before deleting if you want a copy. Device backups (if enabled) may still retain app data under Apple’s terms.")
+            Text("CSV and PDF export are Penny Pro features. Export before deleting if you want a copy. Device backups (if enabled) may still retain app data under Apple’s terms.")
         }
     }
 
@@ -399,6 +416,12 @@ struct SettingsView: View {
             Text("Personal finance planning that stays on your device. Free to use; Penny Pro Lifetime is an optional one-time unlock.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
+            Button("Replay quick tour") {
+                settings?.hasCompletedWalkthrough = false
+                try? modelContext.save()
+                session.showWalkthrough = true
+                Haptics.light()
+            }
         }
     }
 
@@ -426,6 +449,67 @@ struct SettingsView: View {
         }
         do {
             exportShareURL = try CSVExportService.exportFile(transactions: Array(transactions))
+            Haptics.success()
+        } catch {
+            exportErrorMessage = error.localizedDescription
+            Haptics.warning()
+        }
+    }
+
+    private func exportPDFSummary() {
+        guard store.isPro else {
+            Haptics.light()
+            showPaywall = true
+            return
+        }
+        let month = session.selectedMonth
+        let monthTx = transactions.filter { DateHelpers.isSameMonth($0.date, month) }
+        let spent = monthTx.filter { $0.transactionType == .expense }.reduce(Decimal(0)) { $0 + $1.amount }
+        let billsMonthly = bills.reduce(Decimal(0)) {
+            $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
+        }
+        let debtMonthly = Decimal(0) // PDF overview focuses on bills; debt stays in Plan
+        let discretionary = monthTx
+            .filter {
+                $0.transactionType == .expense
+                    && !Set(bills.map { $0.name.lowercased() }).contains($0.title.lowercased())
+            }
+            .reduce(Decimal(0)) { $0 + $1.amount }
+        let plannedSavings = FinanceCalculator.effectiveMonthlySavings(
+            goals: goals.map {
+                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            },
+            fallbackPlannedSavings: settings?.plannedMonthlySavings ?? 0
+        )
+        let breakdown = FinanceCalculator.safeToSpendBreakdown(
+            monthlyIncome: settings?.monthlyIncome ?? 0,
+            recurringCommitted: billsMonthly + debtMonthly,
+            discretionarySpent: discretionary,
+            plannedSavings: plannedSavings
+        )
+        let categoryLines: [(String, Decimal, Decimal)] = categories.map { cat in
+            let catSpent = monthTx
+                .filter { $0.transactionType == .expense && $0.categoryName == cat.name }
+                .reduce(Decimal(0)) { $0 + $1.amount }
+            return (cat.name, catSpent, cat.budgetedAmount)
+        }
+        let billLines = bills.map {
+            ($0.name, $0.amount, $0.isPaid(asOf: month))
+        }
+        do {
+            exportShareURL = try MonthlySummaryPDFService.exportFile(
+                input: .init(
+                    monthLabel: DateHelpers.monthYear(for: month),
+                    currencyCode: settings?.currencyCode ?? "CAD",
+                    displayName: settings?.displayName ?? "",
+                    income: settings?.monthlyIncome ?? 0,
+                    spent: spent,
+                    billsMonthly: billsMonthly,
+                    safeToSpend: breakdown.safeToSpend,
+                    categoryLines: categoryLines,
+                    billLines: billLines
+                )
+            )
             Haptics.success()
         } catch {
             exportErrorMessage = error.localizedDescription
@@ -505,7 +589,8 @@ struct PaywallView: View {
         ("target", "Unlimited savings goals"),
         ("chart.line.uptrend.xyaxis", "Longer-range forecasts (6 & 12 months)"),
         ("square.and.arrow.up", "CSV export of your transactions"),
-        ("paintpalette.fill", "Custom accent themes")
+        ("doc.richtext", "Monthly summary PDF"),
+        ("paintpalette.fill", "Extra accent themes")
     ]
 
     var body: some View {
@@ -545,7 +630,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("One-time unlock for unlimited goals, longer forecasts, CSV export, and accent themes.")
+            Text("One-time unlock for unlimited goals, longer forecasts, CSV + PDF export, and extra accent themes.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)

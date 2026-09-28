@@ -76,6 +76,46 @@ struct FinanceCalculatorTests {
         #expect(past == nil)
     }
 
+    @Test("Effective monthly savings sums dated goals and floors with Settings")
+    func effectiveMonthlySavings() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let from = calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
+        let targetA = calendar.date(from: DateComponents(year: 2027, month: 9, day: 1))!
+        let targetB = calendar.date(from: DateComponents(year: 2028, month: 9, day: 1))!
+
+        let goals: [FinanceCalculator.GoalSavingsInput] = [
+            .init(current: 3_400, target: 12_000, targetDate: targetA),
+            .init(current: 8_200, target: 60_000, targetDate: targetB),
+            .init(current: 500, target: 2_000, targetDate: nil)
+        ]
+
+        let fromGoals = FinanceCalculator.effectiveMonthlySavings(
+            goals: goals,
+            fallbackPlannedSavings: 0,
+            from: from,
+            calendar: calendar
+        )
+        #expect(fromGoals > 2_000)
+        #expect(fromGoals < 4_000)
+
+        let floored = FinanceCalculator.effectiveMonthlySavings(
+            goals: goals,
+            fallbackPlannedSavings: 5_000,
+            from: from,
+            calendar: calendar
+        )
+        #expect(floored == 5_000)
+
+        let fallbackOnly = FinanceCalculator.effectiveMonthlySavings(
+            goals: [.init(current: 100, target: 1_000, targetDate: nil)],
+            fallbackPlannedSavings: 250,
+            from: from,
+            calendar: calendar
+        )
+        #expect(fallbackOnly == 250)
+    }
+
     @Test("Zero-interest debt payoff")
     func debtPayoffZeroInterest() {
         var calendar = Calendar(identifier: .gregorian)

@@ -113,8 +113,6 @@ enum PennyColors {
     }
 }
 
-// MARK: - Adaptive color helper
-
 extension Color {
     init(light: Color, dark: Color) {
         self.init(uiColor: UIColor { traits in

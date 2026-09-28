@@ -407,20 +407,28 @@ struct BillsPlanView: View {
                     .listRowInsets(EdgeInsets())
                 } else {
                     ForEach(bills, id: \.id) { bill in
-                        Button {
-                            editingBill = bill
-                        } label: {
-                            BillRow(
-                                name: bill.name,
-                                dueDate: bill.nextDueDate,
-                                amount: bill.amount,
-                                currencyCode: currency,
-                                icon: bill.icon,
-                                categoryName: bill.categoryName,
-                                recurrenceLabel: bill.recurrence.displayName
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        let paid = bill.isPaid(asOf: .now)
+                        BillRow(
+                            name: bill.name,
+                            dueDate: bill.nextDueDate,
+                            amount: bill.amount,
+                            currencyCode: currency,
+                            icon: bill.icon,
+                            categoryName: bill.categoryName,
+                            recurrenceLabel: bill.recurrence.displayName,
+                            isPaid: paid,
+                            onTogglePaid: {
+                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
+                                    isCurrentlyPaid: paid,
+                                    recurrence: bill.recurrence,
+                                    asOf: .now
+                                )
+                                try? modelContext.save()
+                                Haptics.selection()
+                            }
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture { editingBill = bill }
                         .listRowBackground(PennyColors.surface)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
@@ -434,12 +442,34 @@ struct BillsPlanView: View {
                                 Label("Edit", systemImage: "pencil")
                             }
                             .tint(PennyColors.brand)
+                            Button {
+                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
+                                    isCurrentlyPaid: paid,
+                                    recurrence: bill.recurrence,
+                                    asOf: .now
+                                )
+                                try? modelContext.save()
+                                Haptics.selection()
+                            } label: {
+                                Label(paid ? "Unpaid" : "Paid", systemImage: paid ? "circle" : "checkmark.circle")
+                            }
+                            .tint(PennyColors.brand)
                         }
                         .contextMenu {
                             Button {
                                 editingBill = bill
                             } label: {
                                 Label("Edit", systemImage: "pencil")
+                            }
+                            Button {
+                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
+                                    isCurrentlyPaid: paid,
+                                    recurrence: bill.recurrence,
+                                    asOf: .now
+                                )
+                                try? modelContext.save()
+                            } label: {
+                                Label(paid ? "Mark unpaid" : "Mark paid", systemImage: paid ? "circle" : "checkmark.circle")
                             }
                             Button(role: .destructive) {
                                 pendingDelete = bill
@@ -956,6 +986,7 @@ struct ForecastPlanView: View {
     @Query private var accounts: [FinancialAccount]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
     @Query private var debts: [Debt]
+    @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Environment(AppSession.self) private var session
@@ -992,13 +1023,22 @@ struct ForecastPlanView: View {
         return FinanceCalculator.average(totals)
     }
 
+    private var plannedSavings: Decimal {
+        FinanceCalculator.effectiveMonthlySavings(
+            goals: goals.map {
+                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            },
+            fallbackPlannedSavings: settingsList.first?.plannedMonthlySavings ?? 0
+        )
+    }
+
     private var projections: [FinanceCalculator.BalanceProjection] {
         FinanceCalculator.projectBalance(
             currentBalance: currentBalance,
             monthlyIncome: settingsList.first?.monthlyIncome ?? 0,
             recurringBills: recurring,
             averageDiscretionary: averageDiscretionary,
-            plannedSavings: settingsList.first?.plannedMonthlySavings ?? 0,
+            plannedSavings: plannedSavings,
             debtPayments: debts.reduce(0) { $0 + $1.plannedMonthlyPayment },
             horizons: horizons
         )

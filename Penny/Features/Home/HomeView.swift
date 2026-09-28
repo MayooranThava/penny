@@ -518,7 +518,7 @@ struct HomeView: View {
 
     private func insightColor(_ kind: PennyInsight.Kind) -> Color {
         switch kind {
-        case .positive: return PennyColors.income
+        case .positive: return PennyColors.brand
         case .caution: return PennyColors.warning
         case .neutral: return PennyColors.savings
         case .tip: return PennyColors.brand

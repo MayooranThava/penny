@@ -8,12 +8,15 @@ import StoreKit
 /// for local testing. Pricing/localized names always come from StoreKit —
 /// never hard-code prices.
 enum PennyProductCatalog {
-    /// Auto-renewing monthly subscription (with an introductory free trial).
-    static let monthlyProductID = "com.penny.app.pro.month"
-    /// One-time, non-consumable lifetime unlock.
+    /// One-time, non-consumable lifetime unlock (current monetization).
     static let lifetimeProductID = "com.penny.app.pro.lifetime"
 
-    static let allProductIDs: Set<String> = [monthlyProductID, lifetimeProductID]
+    /// Retired / do not sell: previously created in ASC as the wrong type (Consumable).
+    /// Kept only so we never treat that ID as a Pro entitlement.
+    static let retiredMonthlyConsumableProductID = "com.penny.app.pro.month"
+
+    /// Product IDs loaded from StoreKit and accepted for Pro entitlement.
+    static let allProductIDs: Set<String> = [lifetimeProductID]
 
     /// Free users can keep this many savings goals; adding more prompts Pro.
     static let freeTierGoalLimit = 3
@@ -51,7 +54,6 @@ final class StoreManager {
         }
     }
 
-    var monthlyProduct: Product? { products.first { $0.id == PennyProductCatalog.monthlyProductID } }
     var lifetimeProduct: Product? { products.first { $0.id == PennyProductCatalog.lifetimeProductID } }
 
     /// Load products and compute the current entitlement. Safe to call repeatedly.
@@ -65,9 +67,9 @@ final class StoreManager {
         defer { isLoadingProducts = false }
         do {
             let loaded = try await Product.products(for: PennyProductCatalog.allProductIDs)
-            products = loaded.sorted { sortRank($0.id) < sortRank($1.id) }
+            products = loaded.sorted { $0.id < $1.id }
             if products.isEmpty {
-                lastErrorMessage = "No products returned from the App Store. Check Paid Applications agreement, product pricing, and that you’re on a build that includes these product IDs."
+                lastErrorMessage = "No products returned from the App Store. Confirm Penny Pro Lifetime (\(PennyProductCatalog.lifetimeProductID)) is a Non-Consumable with a price, Paid Applications is Active, and you’re testing via TestFlight sandbox."
             } else {
                 lastErrorMessage = nil
             }
@@ -77,19 +79,15 @@ final class StoreManager {
         }
     }
 
-    private func sortRank(_ id: String) -> Int {
-        switch id {
-        case PennyProductCatalog.monthlyProductID: return 0
-        case PennyProductCatalog.lifetimeProductID: return 1
-        default: return 2
-        }
-    }
-
     /// Recompute `isPro` from the user's current, non-revoked entitlements.
     func refreshEntitlements() async {
         var entitled = false
         for await result in StoreKit.Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
+            // Never grant Pro for the retired consumable monthly ID.
+            if transaction.productID == PennyProductCatalog.retiredMonthlyConsumableProductID {
+                continue
+            }
             if PennyProductCatalog.allProductIDs.contains(transaction.productID),
                transaction.revocationDate == nil {
                 entitled = true
@@ -127,7 +125,7 @@ final class StoreManager {
         }
     }
 
-    /// Restore previous purchases (subscriptions + lifetime) across devices.
+    /// Restore previous lifetime purchases across devices.
     func restore() async {
         do {
             try await AppStore.sync()

@@ -71,14 +71,14 @@ Chosen because it is the baseline for SwiftData + Observation while remaining a 
 
 ## Monetization
 
-Free app with optional **Penny Pro** (monthly subscription and/or lifetime unlock via StoreKit 2):
+Free app with optional **Penny Pro Lifetime** (one-time Non-Consumable via StoreKit 2):
 
 - Unlimited savings goals (free tier: 3)
 - Longer-range forecasts (6 & 12 months)
 - CSV export of transactions
 - Custom accent themes (mint / ocean / slate / amber)
 
-iCloud sync is **not** included yet and is not marketed as a Pro benefit.
+No subscription in the current release. iCloud sync is **not** included yet and is not marketed as a Pro benefit.
 
 ## Tests
 

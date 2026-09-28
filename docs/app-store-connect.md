@@ -153,7 +153,7 @@ PRIVATE BY DESIGN
 - No bank logins, no analytics, no ads, no accounts
 
 PENNY PRO (optional)
-Unlock unlimited savings goals, 6- and 12-month forecasts, CSV export, and custom accent themes. Available as a monthly subscription with a free trial, or a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync is not included yet.)
+Unlock unlimited savings goals, 6- and 12-month forecasts, CSV export, and custom accent themes with a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync is not included yet. No subscription required.)
 
 IMPORTANT
 Penny is a planning tool, not financial, tax, or investment advice. Figures are estimates from numbers you enter and are not guarantees.
@@ -161,12 +161,12 @@ Penny is a planning tool, not financial, tax, or investment advice. Figures are 
 Penny supports CAD, USD, GBP, EUR, and AUD.
 
 ---
-Penny Pro (Monthly) is an auto-renewing subscription. Payment is charged to your Apple Account at purchase confirmation. It renews automatically unless canceled at least 24 hours before the end of the period. Manage or cancel anytime in your Apple Account settings.
+Penny Pro Lifetime is a one-time In-App Purchase. Payment is charged to your Apple Account at purchase confirmation. Restore purchases anytime from Settings if you reinstall.
 Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use: https://mayooranthava.github.io/penny/terms-of-use.html
 ```
 
-**What's New (1.0.3):** `Legal hardening (Terms, disclaimers), CSV export and accent themes for Penny Pro, longer-range Pro forecasts, and clearer Safe-to-Spend estimates.`
+**What's New (1.0.3):** `Lifetime Penny Pro unlock, legal hardening (Terms, disclaimers), CSV export and accent themes, longer-range Pro forecasts, and clearer Safe-to-Spend estimates.`
 
 **Support URL (required):** `https://mayooranthava.github.io/penny/support.html`
 
@@ -189,45 +189,38 @@ Source files: `docs/index.html`, `docs/privacy-policy.html`, `docs/terms-of-use.
 
 Answer: **"Data is not collected."** This is accurate today — the app has no analytics, tracking, ads, accounts, or network data collection. (If you ever add analytics/crash reporting, you must update this.)
 
-## 5. In-App Purchases (Monetization → In-App Purchases & Subscriptions)
+## 5. In-App Purchases (Monetization → In-App Purchases)
 
 > Product IDs must match the app exactly (`PennyProductCatalog` in `Penny/Services/AppSession.swift`). Your bundle ID is `com.mayooran.penny`. **Product IDs are permanent once created.**
 >
-> ⚠️ Monthly billing must be an **Auto-Renewable Subscription**, not a Non-Consumable. Create it under **Monetization → Subscriptions** (subscription group), not via “Create an In-App Purchase” → Non-Consumable. Product IDs are permanent — the live ID in App Store Connect is `com.penny.app.pro.month`.
+> **Current monetization: lifetime only.** Do **not** sell `com.penny.app.pro.month` — that ID was created as a **Consumable** by mistake and the app ignores it. Cancel the Create Subscription flow if you started one.
 
-**Subscription group:** `Penny Pro`
-
-**Auto-renewable subscription — Penny Pro (Monthly)**
+**Non-consumable — Penny Pro (Lifetime)** *(required)*
 | Field | Value |
 |---|---|
-| Reference Name | `Penny Pro Monthly` |
-| Product ID | `com.penny.app.pro.month` |
-| Duration | **1 Month** |
-| Price | your choice (suggest CAD $4.99/mo) |
-| Introductory Offer | Free trial, 1 week |
-| Display Name | `Penny Pro (Monthly)` |
-| Description | `Unlimited goals, longer forecasts, CSV export, and accent themes. 7-day free trial, then monthly. Cancel anytime.` |
-| Review screenshot | screenshot of the in-app paywall (required) |
-
-**Non-consumable — Penny Pro (Lifetime)** *(optional second option)*
-| Field | Value |
-|---|---|
+| Type | **Non-Consumable** (not Consumable, not Subscription) |
 | Reference Name | `Penny Pro Lifetime` |
 | Product ID | `com.penny.app.pro.lifetime` |
-| Price | your choice (suggest CAD $79.99 one-time) |
+| Price | your choice (suggest CAD $24.99–$39.99 one-time) |
 | Display Name | `Penny Pro (Lifetime)` |
 | Description | `Unlimited goals, longer forecasts, CSV export, and accent themes — forever.` |
 | Review screenshot | screenshot of the in-app paywall (required) |
 
+**Do not use**
+| Product ID | Why |
+|---|---|
+| `com.penny.app.pro.month` | Wrong type (Consumable). Leave unused. |
+| `com.penny.app.pro.monthly` | Draft / wrong. Leave unused or delete if still draft. |
+
 > First-time IAPs must be **submitted together with a new app version**, and **Agreements, Tax, and Banking → Paid Applications** must be active or products won't load.
 >
 > **“Purchases are unavailable right now” in the app** means StoreKit returned no products. Checklist:
-> 1. Paid Applications agreement is **Active** (Agreements, Tax, and Banking).
-> 2. Monthly subscription has a **price** set and localization complete (status not Missing Metadata).
-> 3. Product ID is exactly `com.penny.app.pro.month`.
-> 4. Test via **TestFlight** (or Xcode + StoreKit config). App Store production builds usually won’t show an IAP until that IAP is approved with a version.
-> 5. After creating/editing products, wait a few minutes (sometimes up to a couple of hours) and tap Try again.
-> 6. Lifetime (`com.penny.app.pro.lifetime`) is optional — only monthly is required for the paywall buttons to appear.
+> 1. Paid Applications agreement is **Active**.
+> 2. Lifetime is a **Non-Consumable** with Product ID exactly `com.penny.app.pro.lifetime`.
+> 3. Price + localization complete (not Missing Metadata).
+> 4. Attach the IAP to the app version you submit / test.
+> 5. Test via **TestFlight** with a Sandbox Apple Account (Settings → Developer).
+> 6. After creating/editing products, wait a few minutes and tap Try again.
 
 ## 6. Pricing and Availability
 
@@ -247,7 +240,7 @@ Already handled: `ITSAppUsesNonExemptEncryption = NO`. If prompted, choose **"No
 ```
 No account or login is required. On first launch, choose "Explore with sample data" to see a fully populated example (generic sample data — not a real person).
 
-To review Penny Pro: Settings → Penny Pro → Unlock Penny Pro opens the paywall. Purchases can be validated in the sandbox. The gentle gate also triggers when adding a 4th savings goal on the free tier.
+To review Penny Pro: Settings → Penny Pro → Unlock Penny Pro opens the paywall (one-time lifetime Non-Consumable `com.penny.app.pro.lifetime`). Purchases can be validated in the sandbox. The gentle gate also triggers when adding a 4th savings goal on the free tier.
 
 Penny is 100% on-device: no bank connections, no analytics, no ads, no accounts.
 ```
@@ -273,7 +266,7 @@ Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Fo
    - **Settings → Pages → Build and deployment → Source: GitHub Actions**  
    - **Actions → GitHub Pages → Run workflow** on `main`  
    - Paste the Privacy / Support URLs from section 3 into ASC.
-4. **Create the monthly subscription** (section 5) under Monetization → Subscriptions — not as a Non-Consumable.
+4. **Create/finish Penny Pro Lifetime** (section 5) as a **Non-Consumable** with ID `com.penny.app.pro.lifetime`. Do not use the mistaken Consumable monthly ID.
 5. **Paste** App Information, keywords, promo text, description, What's New (sections 1–2).
 6. **Upload screenshots** (section 10).
 7. **Answer App Privacy** = Data not collected (section 4) and **Age rating** = 4+ (section 7).

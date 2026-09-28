@@ -24,6 +24,8 @@ enum AccentTheme: String, Codable, CaseIterable, Identifiable {
     /// Only Mint is available without Penny Pro.
     var requiresPro: Bool { self != .mint }
 
+    // MARK: - Brand (primary accent)
+
     var brandLight: Color {
         switch self {
         case .mint: return Color(red: 0.12, green: 0.62, blue: 0.48)
@@ -41,6 +43,74 @@ enum AccentTheme: String, Codable, CaseIterable, Identifiable {
         case .amber: return Color(red: 0.96, green: 0.74, blue: 0.32)
         }
     }
+
+    // MARK: - Success / healthy (same family as brand)
+
+    var successLight: Color { brandLight }
+    var successDark: Color { brandDark }
+
+    // MARK: - Caution (near-limit) — distinct from brand within each theme
+
+    var warningLight: Color {
+        switch self {
+        case .mint: return Color(red: 0.86, green: 0.58, blue: 0.12)
+        case .ocean: return Color(red: 0.90, green: 0.55, blue: 0.18)
+        case .slate: return Color(red: 0.82, green: 0.56, blue: 0.22)
+        // Amber brand is already warm — push caution toward deeper orange/coral.
+        case .amber: return Color(red: 0.88, green: 0.38, blue: 0.16)
+        }
+    }
+
+    var warningDark: Color {
+        switch self {
+        case .mint: return Color(red: 0.96, green: 0.72, blue: 0.28)
+        case .ocean: return Color(red: 0.98, green: 0.70, blue: 0.32)
+        case .slate: return Color(red: 0.94, green: 0.70, blue: 0.36)
+        case .amber: return Color(red: 1.00, green: 0.55, blue: 0.32)
+        }
+    }
+
+    // MARK: - Secondary accent (goals / savings bars)
+
+    var secondaryLight: Color {
+        switch self {
+        case .mint: return Color(red: 0.18, green: 0.48, blue: 0.72)
+        case .ocean: return Color(red: 0.22, green: 0.58, blue: 0.68)
+        case .slate: return Color(red: 0.36, green: 0.48, blue: 0.62)
+        case .amber: return Color(red: 0.62, green: 0.40, blue: 0.22)
+        }
+    }
+
+    var secondaryDark: Color {
+        switch self {
+        case .mint: return Color(red: 0.45, green: 0.72, blue: 0.95)
+        case .ocean: return Color(red: 0.48, green: 0.82, blue: 0.90)
+        case .slate: return Color(red: 0.58, green: 0.70, blue: 0.84)
+        case .amber: return Color(red: 0.88, green: 0.62, blue: 0.38)
+        }
+    }
+
+    // MARK: - Soft page wash
+
+    var softWashLight: Color {
+        switch self {
+        case .mint: return Color(red: 0.94, green: 0.96, blue: 0.94)
+        case .ocean: return Color(red: 0.93, green: 0.95, blue: 0.97)
+        case .slate: return Color(red: 0.94, green: 0.94, blue: 0.95)
+        case .amber: return Color(red: 0.97, green: 0.95, blue: 0.91)
+        }
+    }
+
+    var softWashDark: Color {
+        switch self {
+        case .mint: return Color(red: 0.06, green: 0.09, blue: 0.09)
+        case .ocean: return Color(red: 0.06, green: 0.08, blue: 0.11)
+        case .slate: return Color(red: 0.07, green: 0.08, blue: 0.10)
+        case .amber: return Color(red: 0.09, green: 0.07, blue: 0.05)
+        }
+    }
+
+    // MARK: - Hero
 
     var heroStartLight: Color {
         switch self {

@@ -2,7 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Semantic color tokens for Penny's warm modern finance identity.
-/// Brand accents follow `AccentTheme.active` (mint by default; Pro unlocks more).
+/// Brand, healthy/progress, savings, and caution hues follow `AccentTheme.active`.
+/// Expense/debt stay fixed reds so overspending remains unambiguous.
 enum PennyColors {
     private static var theme: AccentTheme { AccentTheme.active }
 
@@ -39,24 +40,35 @@ enum PennyColors {
                                     dark: Color(red: 0.52, green: 0.54, blue: 0.56))
     static let textOnBrand = Color.white
 
-    // MARK: - Semantic finance
+    // MARK: - Semantic finance (theme-aware where it should feel “on brand”)
 
-    static let income = Color(light: Color(red: 0.10, green: 0.55, blue: 0.42),
-                              dark: Color(red: 0.35, green: 0.85, blue: 0.65))
+    /// Positive money / within-budget — same family as the accent.
+    static var income: Color {
+        Color(light: theme.successLight, dark: theme.successDark)
+    }
+
+    /// Overspend stays a fixed red across themes for clarity.
     static let expense = Color(light: Color(red: 0.82, green: 0.32, blue: 0.28),
                                dark: Color(red: 0.95, green: 0.48, blue: 0.42))
-    static let savings = Color(light: Color(red: 0.18, green: 0.48, blue: 0.72),
-                               dark: Color(red: 0.45, green: 0.72, blue: 0.95))
-    static let warning = Color(light: Color(red: 0.86, green: 0.58, blue: 0.12),
-                               dark: Color(red: 0.96, green: 0.72, blue: 0.28))
+
+    /// Goals / secondary progress — complementary hue of the active theme.
+    static var savings: Color {
+        Color(light: theme.secondaryLight, dark: theme.secondaryDark)
+    }
+
+    /// Near-limit caution — theme-tuned so it doesn’t collide with amber brand.
+    static var warning: Color {
+        Color(light: theme.warningLight, dark: theme.warningDark)
+    }
+
     static let debt = Color(light: Color(red: 0.72, green: 0.28, blue: 0.38),
                             dark: Color(red: 0.92, green: 0.48, blue: 0.55))
 
     // MARK: - Status (not color-only; paired with symbols/labels)
 
-    static let healthy = income
-    static let nearLimit = warning
-    static let overBudget = expense
+    static var healthy: Color { income }
+    static var nearLimit: Color { warning }
+    static var overBudget: Color { expense }
 
     // MARK: - Category accents
 
@@ -89,15 +101,16 @@ enum PennyColors {
         )
     }
 
-    static let softBackgroundGradient = LinearGradient(
-        colors: [
-            background,
-            Color(light: Color(red: 0.94, green: 0.96, blue: 0.94),
-                  dark: Color(red: 0.06, green: 0.09, blue: 0.09))
-        ],
-        startPoint: .top,
-        endPoint: .bottom
-    )
+    static var softBackgroundGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                background,
+                Color(light: theme.softWashLight, dark: theme.softWashDark)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 }
 
 // MARK: - Adaptive color helper

@@ -407,20 +407,28 @@ struct BillsPlanView: View {
                     .listRowInsets(EdgeInsets())
                 } else {
                     ForEach(bills, id: \.id) { bill in
-                        Button {
-                            editingBill = bill
-                        } label: {
-                            BillRow(
-                                name: bill.name,
-                                dueDate: bill.nextDueDate,
-                                amount: bill.amount,
-                                currencyCode: currency,
-                                icon: bill.icon,
-                                categoryName: bill.categoryName,
-                                recurrenceLabel: bill.recurrence.displayName
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        let paid = bill.isPaid(asOf: .now)
+                        BillRow(
+                            name: bill.name,
+                            dueDate: bill.nextDueDate,
+                            amount: bill.amount,
+                            currencyCode: currency,
+                            icon: bill.icon,
+                            categoryName: bill.categoryName,
+                            recurrenceLabel: bill.recurrence.displayName,
+                            isPaid: paid,
+                            onTogglePaid: {
+                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
+                                    isCurrentlyPaid: paid,
+                                    recurrence: bill.recurrence,
+                                    asOf: .now
+                                )
+                                try? modelContext.save()
+                                Haptics.selection()
+                            }
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture { editingBill = bill }
                         .listRowBackground(PennyColors.surface)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
@@ -434,12 +442,34 @@ struct BillsPlanView: View {
                                 Label("Edit", systemImage: "pencil")
                             }
                             .tint(PennyColors.brand)
+                            Button {
+                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
+                                    isCurrentlyPaid: paid,
+                                    recurrence: bill.recurrence,
+                                    asOf: .now
+                                )
+                                try? modelContext.save()
+                                Haptics.selection()
+                            } label: {
+                                Label(paid ? "Unpaid" : "Paid", systemImage: paid ? "circle" : "checkmark.circle")
+                            }
+                            .tint(PennyColors.brand)
                         }
                         .contextMenu {
                             Button {
                                 editingBill = bill
                             } label: {
                                 Label("Edit", systemImage: "pencil")
+                            }
+                            Button {
+                                bill.paidCycleKey = BillPaymentCycle.toggledKey(
+                                    isCurrentlyPaid: paid,
+                                    recurrence: bill.recurrence,
+                                    asOf: .now
+                                )
+                                try? modelContext.save()
+                            } label: {
+                                Label(paid ? "Mark unpaid" : "Mark paid", systemImage: paid ? "circle" : "checkmark.circle")
                             }
                             Button(role: .destructive) {
                                 pendingDelete = bill

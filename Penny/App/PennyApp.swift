@@ -164,33 +164,58 @@ struct RootView: View {
 
 struct MainTabView: View {
     @Environment(AppSession.self) private var session
+    @Environment(\.modelContext) private var modelContext
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
     @Query private var settingsList: [UserSettings]
 
+    private var settings: UserSettings? { settingsList.first }
+
     var body: some View {
         @Bindable var session = session
-        TabView {
-            HomeView()
-                .tabItem { Label("Home", systemImage: "house.fill") }
+        ZStack {
+            TabView(selection: $session.selectedTab) {
+                HomeView()
+                    .tabItem { Label("Home", systemImage: "house.fill") }
+                    .tag(AppSession.MainTab.home)
 
-            ActivityView()
-                .tabItem { Label("Activity", systemImage: "arrow.left.arrow.right") }
+                ActivityView()
+                    .tabItem { Label("Activity", systemImage: "arrow.left.arrow.right") }
+                    .tag(AppSession.MainTab.activity)
 
-            BudgetView()
-                .tabItem { Label("Budget", systemImage: "chart.pie.fill") }
+                BudgetView()
+                    .tabItem { Label("Budget", systemImage: "chart.pie.fill") }
+                    .tag(AppSession.MainTab.budget)
 
-            PlanView()
-                .tabItem { Label("Plan", systemImage: "target") }
+                PlanView()
+                    .tabItem { Label("Plan", systemImage: "target") }
+                    .tag(AppSession.MainTab.plan)
 
-            SettingsView()
-                .tabItem { Label("Settings", systemImage: "gearshape.fill") }
-        }
-        .sheet(isPresented: $session.showAddTransaction) {
-            AddTransactionView()
+                SettingsView()
+                    .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+                    .tag(AppSession.MainTab.settings)
+            }
+            .sheet(isPresented: $session.showAddTransaction) {
+                AddTransactionView()
+            }
+
+            if session.showWalkthrough {
+                FeatureWalkthroughView(
+                    isPresented: $session.showWalkthrough,
+                    onSelectTab: { session.selectedTab = $0 },
+                    onFinished: {
+                        settings?.hasCompletedWalkthrough = true
+                        try? modelContext.save()
+                    }
+                )
+                .zIndex(10)
+            }
         }
         .task {
             let enabled = settingsList.first?.billRemindersEnabled ?? false
             await NotificationService.shared.refreshBillReminders(bills: Array(bills), enabled: enabled)
+            if settingsList.first?.hasCompletedWalkthrough == false {
+                session.showWalkthrough = true
+            }
         }
     }
 }

@@ -10,8 +10,9 @@ Penny is a native iOS personal finance planner focused on clarity: safe-to-spend
 - **Home**: “Welcome back {name}”, Safe to Spend hero with bills **and debt targets** deducted, spending progress, upcoming bills/debt, savings goals, insights
 - **Activity**: month selector, search, income/expense/category filters, grouped transactions, add/delete
 - **Budget**: planned vs spent ring, category progress with health states, category detail + edit + trend chart
-- **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date), Debt payoff estimates, Forecast chart
-- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance + Pro accent themes, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, CSV export (Pro), reset/delete data, Privacy / Terms links, Penny Pro paywall
+- **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date, **paid-this-cycle checkmarks**), Debt payoff estimates, Forecast chart
+- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance + Pro accent themes, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, CSV + PDF export (Pro), reset/delete data, Privacy / Terms links, Penny Pro paywall, replay quick tour
+- **Walkthrough**: short skippable spotlight tour after first setup
 - **Widgets**: Safe to Spend (Home + Lock Screen), Upcoming reminder, Upcoming bills, Monthly budget, Savings goal (App Group `group.com.mayooran.penny`)
 - **Design system**: mint/emerald warm identity, light + dark mode, reusable cards/rows/buttons
 - **Local insights**: deterministic rules (no AI APIs)

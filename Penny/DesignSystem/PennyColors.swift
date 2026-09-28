@@ -2,7 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Semantic color tokens for Penny's warm modern finance identity.
-/// Brand accents follow `AccentTheme.active` (mint by default; Pro unlocks more).
+/// Brand, healthy/progress, savings, and caution hues follow `AccentTheme.active`.
+/// Expense/debt stay fixed reds so overspending remains unambiguous.
 enum PennyColors {
     private static var theme: AccentTheme { AccentTheme.active }
 
@@ -14,11 +15,8 @@ enum PennyColors {
         Color(light: theme.brandLight.opacity(0.14), dark: theme.brandDark.opacity(0.18))
     }
 
-    /// Semantic alias used throughout the app
     static var primary: Color { brand }
     static var primarySoft: Color { brandMuted }
-
-    // MARK: - Surfaces
 
     static let background = Color(light: Color(red: 0.97, green: 0.96, blue: 0.94),
                                   dark: Color(red: 0.07, green: 0.08, blue: 0.09))
@@ -29,8 +27,6 @@ enum PennyColors {
     static let elevated = Color(light: .white,
                                 dark: Color(red: 0.18, green: 0.19, blue: 0.22))
 
-    // MARK: - Text
-
     static let textPrimary = Color(light: Color(red: 0.12, green: 0.14, blue: 0.16),
                                    dark: Color(red: 0.96, green: 0.96, blue: 0.95))
     static let textSecondary = Color(light: Color(red: 0.42, green: 0.45, blue: 0.48),
@@ -39,26 +35,27 @@ enum PennyColors {
                                     dark: Color(red: 0.52, green: 0.54, blue: 0.56))
     static let textOnBrand = Color.white
 
-    // MARK: - Semantic finance
+    static var income: Color {
+        Color(light: theme.successLight, dark: theme.successDark)
+    }
 
-    static let income = Color(light: Color(red: 0.10, green: 0.55, blue: 0.42),
-                              dark: Color(red: 0.35, green: 0.85, blue: 0.65))
     static let expense = Color(light: Color(red: 0.82, green: 0.32, blue: 0.28),
                                dark: Color(red: 0.95, green: 0.48, blue: 0.42))
-    static let savings = Color(light: Color(red: 0.18, green: 0.48, blue: 0.72),
-                               dark: Color(red: 0.45, green: 0.72, blue: 0.95))
-    static let warning = Color(light: Color(red: 0.86, green: 0.58, blue: 0.12),
-                               dark: Color(red: 0.96, green: 0.72, blue: 0.28))
+
+    static var savings: Color {
+        Color(light: theme.secondaryLight, dark: theme.secondaryDark)
+    }
+
+    static var warning: Color {
+        Color(light: theme.warningLight, dark: theme.warningDark)
+    }
+
     static let debt = Color(light: Color(red: 0.72, green: 0.28, blue: 0.38),
                             dark: Color(red: 0.92, green: 0.48, blue: 0.55))
 
-    // MARK: - Status (not color-only; paired with symbols/labels)
-
-    static let healthy = income
-    static let nearLimit = warning
-    static let overBudget = expense
-
-    // MARK: - Category accents
+    static var healthy: Color { income }
+    static var nearLimit: Color { warning }
+    static var overBudget: Color { expense }
 
     static func category(_ identifier: String) -> Color {
         switch identifier.lowercased() {
@@ -76,8 +73,6 @@ enum PennyColors {
         }
     }
 
-    // MARK: - Gradients
-
     static var heroGradient: LinearGradient {
         LinearGradient(
             colors: [
@@ -89,18 +84,17 @@ enum PennyColors {
         )
     }
 
-    static let softBackgroundGradient = LinearGradient(
-        colors: [
-            background,
-            Color(light: Color(red: 0.94, green: 0.96, blue: 0.94),
-                  dark: Color(red: 0.06, green: 0.09, blue: 0.09))
-        ],
-        startPoint: .top,
-        endPoint: .bottom
-    )
+    static var softBackgroundGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                background,
+                Color(light: theme.softWashLight, dark: theme.softWashDark)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 }
-
-// MARK: - Adaptive color helper
 
 extension Color {
     init(light: Color, dark: Color) {

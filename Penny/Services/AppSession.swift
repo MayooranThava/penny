@@ -146,8 +146,16 @@ final class StoreManager {
 @Observable
 @MainActor
 final class AppSession {
+    enum MainTab: Int, Hashable, CaseIterable, Identifiable {
+        case home, activity, budget, plan, settings
+        var id: Int { rawValue }
+    }
+
     var selectedMonth: Date = DateHelpers.startOfMonth()
+    var selectedTab: MainTab = .home
     var showAddTransaction: Bool = false
+    /// Drives the post-setup spotlight tour overlay.
+    var showWalkthrough: Bool = false
 
     func resetMonth() {
         selectedMonth = DateHelpers.startOfMonth()

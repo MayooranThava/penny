@@ -270,27 +270,22 @@ struct BillRow: View {
     var categoryName: String = "Other"
     var recurrenceLabel: String? = nil
     var isPaid: Bool = false
-    var onTogglePaid: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: PennySpacing.sm) {
-            if let onTogglePaid {
-                Button(action: onTogglePaid) {
-                    Image(systemName: isPaid ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(isPaid ? PennyColors.brand : PennyColors.textTertiary)
-                        .frame(width: 32, height: 32)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(isPaid ? "Mark \(name) unpaid" : "Mark \(name) paid")
-            } else {
-                CategoryIcon(icon: icon, colourIdentifier: categoryName.lowercased())
-            }
+            CategoryIcon(icon: icon, colourIdentifier: categoryName.lowercased())
             VStack(alignment: .leading, spacing: 2) {
-                Text(name)
-                    .font(PennyTypography.bodyEmphasized)
-                    .foregroundStyle(isPaid ? PennyColors.textSecondary : PennyColors.textPrimary)
-                    .strikethrough(isPaid, color: PennyColors.textTertiary)
+                HStack(spacing: 6) {
+                    Text(name)
+                        .font(PennyTypography.bodyEmphasized)
+                        .foregroundStyle(PennyColors.textPrimary)
+                    if isPaid {
+                        Image(systemName: "checkmark")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(PennyColors.brand)
+                            .accessibilityLabel("Due date passed")
+                    }
+                }
                 Text(subtitle)
                     .font(PennyTypography.caption)
                     .foregroundStyle(PennyColors.textSecondary)
@@ -303,7 +298,7 @@ struct BillRow: View {
 
     private var subtitle: String {
         let due = DateHelpers.shortMonthDay(for: dueDate)
-        let paidLabel = isPaid ? "Paid · " : ""
+        let paidLabel = isPaid ? "Due passed · " : ""
         if let recurrenceLabel, !recurrenceLabel.isEmpty {
             return "\(paidLabel)\(recurrenceLabel) · \(due)"
         }

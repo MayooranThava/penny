@@ -78,7 +78,7 @@ enum MonthlySummaryPDFService {
                 draw("Bills", font: .systemFont(ofSize: 16, weight: .semibold))
                 for line in input.billLines.prefix(16) {
                     let amount = MoneyFormatters.string(from: line.amount, currencyCode: input.currencyCode)
-                    let status = line.paid ? "Paid" : "Unpaid"
+                    let status = line.paid ? "Due passed" : "Upcoming"
                     draw("• \(line.name): \(amount) · \(status)", font: .systemFont(ofSize: 11))
                 }
             }

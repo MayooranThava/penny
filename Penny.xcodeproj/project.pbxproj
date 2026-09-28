@@ -19,6 +19,7 @@
 		C503145147EC458FA3EF9870 /* BudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC2836D0D1D47C49499AEDC /* BudgetView.swift */; };
 		A024121DD4AF4D548A0B309B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60BB7EE47A6844E59A1D9058 /* HomeView.swift */; };
 		4D689FF272A648A7A0A0AA1B /* FeatureWalkthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D11ABAE66C49DDA8F46F22 /* FeatureWalkthroughView.swift */; };
+		3A320AD511754B66907D3A33 /* WalkthroughSpotlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54FF3C69DD14EDDAE871B27 /* WalkthroughSpotlight.swift */; };
 		91FED4D81C394930A252D508 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C12AD7AEC014ECE85FD4336 /* OnboardingView.swift */; };
 		3F758FEA8B6047D2BB4C4DE1 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB48553827940109FE05E05 /* PlanView.swift */; };
 		73327873D52D4D699D43826F /* ApplePayCaptureSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3101394CFD462BAF3F50A4 /* ApplePayCaptureSetupView.swift */; };
@@ -112,6 +113,7 @@
 		BDC2836D0D1D47C49499AEDC /* BudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetView.swift; sourceTree = "<group>"; };
 		60BB7EE47A6844E59A1D9058 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		35D11ABAE66C49DDA8F46F22 /* FeatureWalkthroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureWalkthroughView.swift; sourceTree = "<group>"; };
+		E54FF3C69DD14EDDAE871B27 /* WalkthroughSpotlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkthroughSpotlight.swift; sourceTree = "<group>"; };
 		7C12AD7AEC014ECE85FD4336 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		2EB48553827940109FE05E05 /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
 		9C3101394CFD462BAF3F50A4 /* ApplePayCaptureSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayCaptureSetupView.swift; sourceTree = "<group>"; };
@@ -287,6 +289,7 @@
 			isa = PBXGroup;
 			children = (
 				35D11ABAE66C49DDA8F46F22 /* FeatureWalkthroughView.swift */,
+				E54FF3C69DD14EDDAE871B27 /* WalkthroughSpotlight.swift */,
 				7C12AD7AEC014ECE85FD4336 /* OnboardingView.swift */,
 			);
 			path = Onboarding;
@@ -535,6 +538,7 @@
 				C503145147EC458FA3EF9870 /* BudgetView.swift in Sources */,
 				A024121DD4AF4D548A0B309B /* HomeView.swift in Sources */,
 				4D689FF272A648A7A0A0AA1B /* FeatureWalkthroughView.swift in Sources */,
+				3A320AD511754B66907D3A33 /* WalkthroughSpotlight.swift in Sources */,
 				91FED4D81C394930A252D508 /* OnboardingView.swift in Sources */,
 				3F758FEA8B6047D2BB4C4DE1 /* PlanView.swift in Sources */,
 				73327873D52D4D699D43826F /* ApplePayCaptureSetupView.swift in Sources */,

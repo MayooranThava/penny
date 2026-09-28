@@ -493,8 +493,13 @@ struct SettingsView: View {
                 .reduce(Decimal(0)) { $0 + $1.amount }
             return (cat.name, catSpent, cat.budgetedAmount)
         }
-        let billLines = bills.map {
-            ($0.name, $0.amount, $0.isPaid(asOf: month))
+        let billLines = bills.map { bill -> (String, Decimal, Bool) in
+            let asOf: Date = {
+                if DateHelpers.isSameMonth(month, .now) { return .now }
+                if month < DateHelpers.startOfMonth() { return DateHelpers.endOfMonth(for: month) }
+                return month
+            }()
+            return (bill.name, bill.amount, bill.isPaid(asOf: asOf))
         }
         do {
             exportShareURL = try MonthlySummaryPDFService.exportFile(

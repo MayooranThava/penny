@@ -4,7 +4,6 @@ import WidgetKit
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }, sort: \RecurringBill.nextDueDate)
@@ -105,8 +104,18 @@ struct HomeView: View {
         let isPaid: Bool
     }
 
+    private var paymentAsOf: Date {
+        if DateHelpers.isSameMonth(session.selectedMonth, .now) {
+            return .now
+        }
+        if session.selectedMonth < DateHelpers.startOfMonth() {
+            return DateHelpers.endOfMonth(for: session.selectedMonth)
+        }
+        return session.selectedMonth
+    }
+
     private var upcomingItems: [UpcomingItem] {
-        let asOf = session.selectedMonth
+        let asOf = paymentAsOf
         let billItems = bills.map {
             let paid = $0.isPaid(asOf: asOf)
             return UpcomingItem(
@@ -116,7 +125,7 @@ struct HomeView: View {
                 date: $0.nextDueDate,
                 amount: $0.amount,
                 icon: $0.icon,
-                subtitle: paid ? "Paid · \($0.recurrence.displayName)" : $0.recurrence.displayName,
+                subtitle: paid ? "Due passed · \($0.recurrence.displayName)" : $0.recurrence.displayName,
                 isPaid: paid
             )
         }
@@ -132,26 +141,11 @@ struct HomeView: View {
                 isPaid: false
             )
         }
-        // Unpaid bills first, then by date.
+        // Soonest first; already-due bills stay in date order (not a to-do list).
         return (billItems + debtItems)
-            .sorted {
-                if $0.isPaid != $1.isPaid { return !$0.isPaid && $1.isPaid }
-                return $0.date < $1.date
-            }
+            .sorted { $0.date < $1.date }
             .prefix(5)
             .map { $0 }
-    }
-
-    private func toggleBillPaid(_ bill: RecurringBill) {
-        let asOf = session.selectedMonth
-        let paid = bill.isPaid(asOf: asOf)
-        bill.paidCycleKey = BillPaymentCycle.toggledKey(
-            isCurrentlyPaid: paid,
-            recurrence: bill.recurrence,
-            asOf: asOf
-        )
-        try? modelContext.save()
-        Haptics.selection()
     }
 
     private var insights: [PennyInsight] {
@@ -217,20 +211,29 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: PennySpacing.sectionGap) {
-                    header
-                    safeToSpendCard
-                    spendingSection
-                    upcomingSection
-                    goalsSection
-                    insightsSection
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: PennySpacing.sectionGap) {
+                        header
+                        safeToSpendCard
+                        spendingSection
+                        upcomingSection
+                            .id(WalkthroughAnchorID.upcomingBills)
+                        goalsSection
+                        insightsSection
+                    }
+                    .padding(.horizontal, PennySpacing.screenPadding)
+                    .padding(.bottom, PennySpacing.xxxl)
                 }
-                .padding(.horizontal, PennySpacing.screenPadding)
-                .padding(.bottom, PennySpacing.xxxl)
+                .background(PennyColors.softBackgroundGradient.ignoresSafeArea())
+                .navigationBarTitleDisplayMode(.inline)
+                .onChange(of: session.walkthroughAnchor) { _, anchor in
+                    guard anchor == .upcomingBills else { return }
+                    withAnimation(PennyAnimation.prefer(PennyAnimation.standard, reduceMotion: reduceMotion)) {
+                        proxy.scrollTo(WalkthroughAnchorID.upcomingBills, anchor: .center)
+                    }
+                }
             }
-            .background(PennyColors.softBackgroundGradient.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -422,6 +425,7 @@ struct HomeView: View {
         .accessibilityLabel(
             "Safe to spend \(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency)). Estimate from your entries. See Terms of Use."
         )
+        .walkthroughAnchor(.safeToSpend)
     }
 
     private func breakdownRow(
@@ -489,58 +493,48 @@ struct HomeView: View {
                 PennyCard {
                     VStack(spacing: PennySpacing.md) {
                         ForEach(upcomingItems) { item in
-                            HStack(spacing: PennySpacing.sm) {
-                                if item.kind == .bill,
-                                   let bill = bills.first(where: { "bill-\($0.id.uuidString)" == item.id }) {
-                                    Button {
-                                        toggleBillPaid(bill)
-                                    } label: {
-                                        Image(systemName: item.isPaid ? "checkmark.circle.fill" : "circle")
-                                            .font(.title3)
-                                            .foregroundStyle(item.isPaid ? PennyColors.brand : PennyColors.textTertiary)
-                                            .frame(width: 32, height: 32)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(item.isPaid ? "Mark \(item.name) unpaid" : "Mark \(item.name) paid")
-                                } else {
+                            Button {
+                                switch item.kind {
+                                case .bill:
+                                    editingBill = bills.first { "bill-\($0.id.uuidString)" == item.id }
+                                case .debt:
+                                    editingDebt = debts.first { "debt-\($0.id.uuidString)" == item.id }
+                                }
+                            } label: {
+                                HStack(spacing: PennySpacing.sm) {
                                     CategoryIcon(
                                         icon: item.icon,
                                         colourIdentifier: item.kind == .debt ? "debt" : "subscriptions"
                                     )
-                                }
-
-                                Button {
-                                    switch item.kind {
-                                    case .bill:
-                                        editingBill = bills.first { "bill-\($0.id.uuidString)" == item.id }
-                                    case .debt:
-                                        editingDebt = debts.first { "debt-\($0.id.uuidString)" == item.id }
-                                    }
-                                } label: {
-                                    HStack(spacing: PennySpacing.sm) {
-                                        VStack(alignment: .leading, spacing: 2) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack(spacing: 6) {
                                             Text(item.name)
                                                 .font(PennyTypography.bodyEmphasized)
-                                                .foregroundStyle(item.isPaid ? PennyColors.textSecondary : PennyColors.textPrimary)
-                                                .strikethrough(item.isPaid, color: PennyColors.textTertiary)
-                                            Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
-                                                .font(PennyTypography.caption)
-                                                .foregroundStyle(PennyColors.textSecondary)
+                                                .foregroundStyle(PennyColors.textPrimary)
+                                            if item.isPaid {
+                                                Image(systemName: "checkmark")
+                                                    .font(.caption2.weight(.bold))
+                                                    .foregroundStyle(PennyColors.brand)
+                                            }
                                         }
-                                        Spacer()
-                                        MoneyText(
-                                            amount: item.amount,
-                                            currencyCode: currency,
-                                            font: PennyTypography.smallAmount
-                                        )
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption)
-                                            .foregroundStyle(PennyColors.textTertiary)
+                                        Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
+                                            .font(PennyTypography.caption)
+                                            .foregroundStyle(PennyColors.textSecondary)
                                     }
+                                    Spacer()
+                                    MoneyText(
+                                        amount: item.amount,
+                                        currencyCode: currency,
+                                        font: PennyTypography.smallAmount
+                                    )
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(PennyColors.textTertiary)
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityHint("Double tap to edit")
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityHint("Double tap to edit")
                             if item.id != upcomingItems.last?.id {
                                 Divider()
                             }
@@ -549,6 +543,7 @@ struct HomeView: View {
                 }
             }
         }
+        .walkthroughAnchor(.upcomingBills)
     }
 
     private var goalsSection: some View {

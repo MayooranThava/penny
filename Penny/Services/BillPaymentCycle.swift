@@ -1,6 +1,6 @@
 import Foundation
 
-/// Computes a stable “billing cycle” key so a bill can be marked paid for the current period.
+/// Billing-cycle helpers for recurring bills.
 enum BillPaymentCycle {
     /// Key for the cycle containing `asOf`, based on recurrence.
     static func key(
@@ -28,11 +28,38 @@ enum BillPaymentCycle {
         }
     }
 
+    /// Legacy manual paid-cycle marker (kept for older data / PDF). Prefer `hasDueDatePassed`.
     static func isPaid(paidCycleKey: String, recurrence: BillRecurrence, asOf date: Date) -> Bool {
         !paidCycleKey.isEmpty && paidCycleKey == key(recurrence: recurrence, asOf: date)
     }
 
     static func toggledKey(isCurrentlyPaid: Bool, recurrence: BillRecurrence, asOf date: Date) -> String {
         isCurrentlyPaid ? "" : key(recurrence: recurrence, asOf: date)
+    }
+
+    /// True once this cycle’s due date has arrived (on or after the due day).
+    /// Used to show a small automatic checkmark — not a to-do toggle.
+    static func hasDueDatePassed(
+        dueDay: Int,
+        recurrence: BillRecurrence,
+        nextDueDate: Date,
+        asOf date: Date = .now,
+        calendar: Calendar = .current
+    ) -> Bool {
+        let today = calendar.startOfDay(for: date)
+        let next = calendar.startOfDay(for: nextDueDate)
+
+        switch recurrence {
+        case .monthly:
+            let day = max(1, min(28, dueDay))
+            return calendar.component(.day, from: today) >= day
+        case .yearly:
+            if calendar.component(.year, from: next) > calendar.component(.year, from: today) {
+                return true
+            }
+            return next <= today
+        case .weekly, .biweekly:
+            return next <= today
+        }
     }
 }

@@ -17,6 +17,7 @@ on:
     paths:
       - "docs/index.html"
       - "docs/privacy-policy.html"
+      - "docs/terms-of-use.html"
       - "docs/support.html"
       - "docs/wallet-capture.html"
       - "docs/.nojekyll"
@@ -46,7 +47,7 @@ jobs:
       - name: Stage legal pages
         run: |
           mkdir -p _site
-          cp docs/index.html docs/privacy-policy.html docs/support.html docs/wallet-capture.html docs/.nojekyll _site/
+          cp docs/index.html docs/privacy-policy.html docs/terms-of-use.html docs/support.html docs/wallet-capture.html docs/.nojekyll _site/
 
       # Fails with a clear message if Pages is not enabled yet (see header comment).
       - name: Check Pages is enabled

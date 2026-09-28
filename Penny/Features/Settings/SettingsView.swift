@@ -396,18 +396,18 @@ struct SettingsView: View {
         Section("About Penny") {
             LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
             LabeledContent("Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
-            Text("Personal finance planning that stays on your device. Free to use; Penny Pro is optional.")
+            Text("Personal finance planning that stays on your device. Free to use; Penny Pro Lifetime is an optional one-time unlock.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
-            LegalDisclaimerBanner()
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                .listRowBackground(Color.clear)
         }
     }
 
     private var legalSection: some View {
         Section {
             Text("Penny keeps your financial information on this device. App updates keep your data. Deleting the app, or using Reset/Delete in Data, clears local data. Optional Wallet tap capture uses Shortcuts on your iPhone — amounts stay local. Penny does not connect to banks or send analytics to the developer. Widgets may show a local summary snapshot via an App Group.")
+                .font(PennyTypography.caption)
+                .foregroundStyle(PennyColors.textSecondary)
+            Text("Figures marked with \(LegalCopy.asterisk) are estimates from your entries — not bank balances or financial advice. Full details are in the Terms of Use.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
@@ -545,7 +545,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("Optional upgrades for goals, longer forecasts, CSV export, and accent themes.")
+            Text("One-time unlock for unlimited goals, longer forecasts, CSV export, and accent themes.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -599,19 +599,21 @@ struct PaywallView: View {
                         .buttonStyle(.pennySecondary)
                 }
             }
+        } else if let lifetime = store.lifetimeProduct {
+            productButton(lifetime)
         } else {
             VStack(spacing: PennySpacing.sm) {
-                if let monthly = store.monthlyProduct {
-                    productButton(monthly, primary: true)
-                }
-                if let lifetime = store.lifetimeProduct {
-                    productButton(lifetime, primary: store.monthlyProduct == nil)
-                }
+                Text("Penny Pro Lifetime isn’t available on the App Store yet.")
+                    .font(PennyTypography.callout)
+                    .foregroundStyle(PennyColors.textSecondary)
+                    .multilineTextAlignment(.center)
+                Button("Try again") { Task { await store.loadProducts() } }
+                    .buttonStyle(.pennySecondary)
             }
         }
     }
 
-    private func productButton(_ product: Product, primary: Bool) -> some View {
+    private func productButton(_ product: Product) -> some View {
         Button {
             Task {
                 let ok = await store.purchase(product)
@@ -619,28 +621,14 @@ struct PaywallView: View {
             }
         } label: {
             VStack(spacing: 2) {
-                Text(product.displayName.isEmpty ? defaultTitle(for: product) : product.displayName)
+                Text(product.displayName.isEmpty ? "Penny Pro — Lifetime" : product.displayName)
                     .font(PennyTypography.bodyEmphasized)
-                Text(priceLine(for: product))
+                Text("\(product.displayPrice) once · yours forever")
                     .font(PennyTypography.caption)
             }
         }
-        .buttonStyle(primary ? AnyButtonStyle(PennyPrimaryButtonStyle()) : AnyButtonStyle(PennySecondaryButtonStyle()))
+        .buttonStyle(.pennyPrimary)
         .disabled(store.purchaseInFlight)
-    }
-
-    private func defaultTitle(for product: Product) -> String {
-        product.id == PennyProductCatalog.lifetimeProductID ? "Penny Pro — Lifetime" : "Penny Pro — Monthly"
-    }
-
-    private func priceLine(for product: Product) -> String {
-        if product.id == PennyProductCatalog.lifetimeProductID {
-            return "\(product.displayPrice) once · yours forever"
-        }
-        if product.subscription?.introductoryOffer?.paymentMode == .freeTrial {
-            return "Free trial, then \(product.displayPrice)/month"
-        }
-        return "\(product.displayPrice)/month"
     }
 
     private var footer: some View {
@@ -648,7 +636,7 @@ struct PaywallView: View {
             Button("Restore purchases") { Task { await store.restore() } }
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.brand)
-            Text("Payment is charged to your Apple Account at confirmation. Subscriptions renew automatically unless canceled at least 24 hours before the end of the current period. Manage or cancel anytime in Settings → Apple Account → Subscriptions.")
+            Text("One-time purchase. Payment is charged to your Apple Account at confirmation. Restore purchases anytime if you reinstall.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textTertiary)
                 .multilineTextAlignment(.center)
@@ -657,25 +645,8 @@ struct PaywallView: View {
                 Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
             }
             .font(PennyTypography.caption)
-            Text(LegalCopy.notAdviceShort)
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textTertiary)
-                .multilineTextAlignment(.center)
         }
         .padding(.top, PennySpacing.sm)
-    }
-}
-
-/// Type-erased button style so a single view can choose primary vs. secondary.
-private struct AnyButtonStyle: ButtonStyle {
-    private let makeBodyClosure: (Configuration) -> AnyView
-
-    init<S: ButtonStyle>(_ style: S) {
-        makeBodyClosure = { AnyView(style.makeBody(configuration: $0)) }
-    }
-
-    func makeBody(configuration: Configuration) -> some View {
-        makeBodyClosure(configuration)
     }
 }
 

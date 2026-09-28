@@ -245,10 +245,13 @@ struct HomeView: View {
 
     private var safeToSpendCard: some View {
         VStack(alignment: .leading, spacing: PennySpacing.md) {
-            Text("Safe to Spend")
-                .font(PennyTypography.overline)
-                .foregroundStyle(PennyColors.textOnBrand.opacity(0.85))
-                .textCase(.uppercase)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("Safe to Spend")
+                    .font(PennyTypography.overline)
+                    .foregroundStyle(PennyColors.textOnBrand.opacity(0.85))
+                    .textCase(.uppercase)
+                EstimateAsterisk(onBrand: true)
+            }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency))
@@ -318,10 +321,6 @@ struct HomeView: View {
                     }
                 }
             }
-
-            Text(LegalCopy.safeToSpendFootnote)
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textOnBrand.opacity(0.75))
         }
         .padding(PennySpacing.lg)
         .background(
@@ -331,7 +330,7 @@ struct HomeView: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "Safe to spend \(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency))"
+            "Safe to spend \(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency)). Estimate from your entries. See Terms of Use."
         )
     }
 
@@ -514,9 +513,6 @@ struct HomeView: View {
                         .foregroundStyle(PennyColors.textSecondary)
                 }
             }
-            Text(LegalCopy.insightsFootnote)
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textTertiary)
         }
     }
 

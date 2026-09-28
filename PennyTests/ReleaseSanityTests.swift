@@ -10,11 +10,11 @@ struct ReleaseSanityTests {
 
     // MARK: - Product catalog ↔ StoreKit config
 
-    @Test("Penny Pro product IDs match Penny.storekit")
+    @Test("Penny Pro product IDs match Penny.storekit (lifetime-only)")
     func productCatalogMatchesStoreKit() throws {
-        #expect(PennyProductCatalog.monthlyProductID == "com.penny.app.pro.month")
         #expect(PennyProductCatalog.lifetimeProductID == "com.penny.app.pro.lifetime")
-        #expect(PennyProductCatalog.allProductIDs.count == 2)
+        #expect(PennyProductCatalog.allProductIDs == [PennyProductCatalog.lifetimeProductID])
+        #expect(!PennyProductCatalog.allProductIDs.contains(PennyProductCatalog.retiredMonthlyConsumableProductID))
         #expect(PennyProductCatalog.freeTierGoalLimit == 3)
         #expect(PennyProductCatalog.forecastHorizons(isPro: false) == [0, 1, 3])
         #expect(PennyProductCatalog.forecastHorizons(isPro: true) == [0, 1, 3, 6, 12])
@@ -41,8 +41,6 @@ struct ReleaseSanityTests {
             }
         }
 
-        #expect(ids.contains(PennyProductCatalog.monthlyProductID))
-        #expect(ids.contains(PennyProductCatalog.lifetimeProductID))
         #expect(ids == PennyProductCatalog.allProductIDs)
     }
 

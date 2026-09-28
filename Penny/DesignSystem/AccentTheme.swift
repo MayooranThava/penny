@@ -32,7 +32,7 @@ enum AccentTheme: String, Codable, CaseIterable, Identifiable {
     /// Only Mint is available without Penny Pro.
     var requiresPro: Bool { self != .mint }
 
-    // MARK: - Brand
+    // MARK: - Brand (primary accent)
 
     var brandLight: Color {
         switch self {
@@ -60,26 +60,37 @@ enum AccentTheme: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    // MARK: - Success / healthy (same family as brand)
+
     var successLight: Color { brandLight }
     var successDark: Color { brandDark }
 
+    // MARK: - Caution (near-limit) — distinct from brand within each theme
+
     var warningLight: Color {
         switch self {
-        case .mint, .ocean, .slate, .forest, .graphite, .violet:
-            return Color(red: 0.86, green: 0.58, blue: 0.12)
+        case .mint: return Color(red: 0.86, green: 0.58, blue: 0.12)
+        case .ocean: return Color(red: 0.90, green: 0.55, blue: 0.18)
+        case .slate: return Color(red: 0.82, green: 0.56, blue: 0.22)
+        // Amber brand is already warm — push caution toward deeper orange/coral.
         case .amber: return Color(red: 0.88, green: 0.38, blue: 0.16)
         case .rose: return Color(red: 0.90, green: 0.48, blue: 0.20)
+        case .violet, .forest, .graphite: return Color(red: 0.86, green: 0.58, blue: 0.12)
         }
     }
 
     var warningDark: Color {
         switch self {
-        case .mint, .ocean, .slate, .forest, .graphite, .violet:
-            return Color(red: 0.96, green: 0.72, blue: 0.28)
+        case .mint: return Color(red: 0.96, green: 0.72, blue: 0.28)
+        case .ocean: return Color(red: 0.98, green: 0.70, blue: 0.32)
+        case .slate: return Color(red: 0.94, green: 0.70, blue: 0.36)
         case .amber: return Color(red: 1.00, green: 0.55, blue: 0.32)
         case .rose: return Color(red: 1.00, green: 0.62, blue: 0.36)
+        case .violet, .forest, .graphite: return Color(red: 0.96, green: 0.72, blue: 0.28)
         }
     }
+
+    // MARK: - Secondary accent (goals / savings bars)
 
     var secondaryLight: Color {
         switch self {
@@ -107,6 +118,8 @@ enum AccentTheme: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    // MARK: - Soft page wash
+
     var softWashLight: Color {
         switch self {
         case .mint: return Color(red: 0.94, green: 0.96, blue: 0.94)
@@ -130,6 +143,8 @@ enum AccentTheme: String, Codable, CaseIterable, Identifiable {
         case .forest: return Color(red: 0.06, green: 0.09, blue: 0.07)
         }
     }
+
+    // MARK: - Hero
 
     var heroStartLight: Color {
         switch self {
@@ -183,10 +198,12 @@ enum AccentTheme: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Resolve a stored preference, falling back to mint for unknown values.
     static func resolved(_ raw: String?) -> AccentTheme {
         AccentTheme(rawValue: raw ?? "") ?? .mint
     }
 
+    /// Theme actually applied: non-Pro users always get mint.
     static func effective(storedRaw: String?, isPro: Bool) -> AccentTheme {
         let stored = resolved(storedRaw)
         if stored.requiresPro && !isPro { return .mint }

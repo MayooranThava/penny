@@ -230,7 +230,7 @@ struct GoalProgressView: View {
                         .foregroundStyle(PennyColors.textPrimary)
                     Text("\(Int((progress * 100).rounded()))%")
                         .font(PennyTypography.caption)
-                        .foregroundStyle(PennyColors.savings)
+                        .foregroundStyle(PennyColors.brand)
                 }
                 Spacer(minLength: 0)
             }
@@ -244,7 +244,7 @@ struct GoalProgressView: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(PennyColors.secondarySurface)
                     Capsule()
-                        .fill(PennyColors.savings)
+                        .fill(PennyColors.brand)
                         .frame(width: max(6, geo.size.width * progress))
                 }
             }

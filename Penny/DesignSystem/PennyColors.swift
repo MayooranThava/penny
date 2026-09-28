@@ -15,8 +15,11 @@ enum PennyColors {
         Color(light: theme.brandLight.opacity(0.14), dark: theme.brandDark.opacity(0.18))
     }
 
+    /// Semantic alias used throughout the app
     static var primary: Color { brand }
     static var primarySoft: Color { brandMuted }
+
+    // MARK: - Surfaces
 
     static let background = Color(light: Color(red: 0.97, green: 0.96, blue: 0.94),
                                   dark: Color(red: 0.07, green: 0.08, blue: 0.09))
@@ -27,6 +30,8 @@ enum PennyColors {
     static let elevated = Color(light: .white,
                                 dark: Color(red: 0.18, green: 0.19, blue: 0.22))
 
+    // MARK: - Text
+
     static let textPrimary = Color(light: Color(red: 0.12, green: 0.14, blue: 0.16),
                                    dark: Color(red: 0.96, green: 0.96, blue: 0.95))
     static let textSecondary = Color(light: Color(red: 0.42, green: 0.45, blue: 0.48),
@@ -35,17 +40,23 @@ enum PennyColors {
                                     dark: Color(red: 0.52, green: 0.54, blue: 0.56))
     static let textOnBrand = Color.white
 
+    // MARK: - Semantic finance (theme-aware where it should feel “on brand”)
+
+    /// Positive money / within-budget — same family as the accent.
     static var income: Color {
         Color(light: theme.successLight, dark: theme.successDark)
     }
 
+    /// Overspend stays a fixed red across themes for clarity.
     static let expense = Color(light: Color(red: 0.82, green: 0.32, blue: 0.28),
                                dark: Color(red: 0.95, green: 0.48, blue: 0.42))
 
+    /// Goals / secondary progress — complementary hue of the active theme.
     static var savings: Color {
         Color(light: theme.secondaryLight, dark: theme.secondaryDark)
     }
 
+    /// Near-limit caution — theme-tuned so it doesn’t collide with amber brand.
     static var warning: Color {
         Color(light: theme.warningLight, dark: theme.warningDark)
     }
@@ -53,9 +64,13 @@ enum PennyColors {
     static let debt = Color(light: Color(red: 0.72, green: 0.28, blue: 0.38),
                             dark: Color(red: 0.92, green: 0.48, blue: 0.55))
 
+    // MARK: - Status (not color-only; paired with symbols/labels)
+
     static var healthy: Color { income }
     static var nearLimit: Color { warning }
     static var overBudget: Color { expense }
+
+    // MARK: - Category accents
 
     static func category(_ identifier: String) -> Color {
         switch identifier.lowercased() {
@@ -72,6 +87,8 @@ enum PennyColors {
         default: return Color(red: 0.52, green: 0.54, blue: 0.56)
         }
     }
+
+    // MARK: - Gradients
 
     static var heroGradient: LinearGradient {
         LinearGradient(

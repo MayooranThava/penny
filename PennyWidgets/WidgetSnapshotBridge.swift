@@ -36,13 +36,13 @@ enum WidgetSnapshotBridge {
                 currencyCode: "CAD",
                 monthLabel: "September",
                 nextReminderTitle: "Rent due",
-                nextReminderDetail: "$1,750 · Sep 1",
+                nextReminderDetail: "$1,750 · Oct 1",
                 displayName: "Alex",
                 updatedAt: .now,
                 upcomingItems: [
-                    .init(title: "Rent", detail: "$1,750 · Sep 1", kind: "bill"),
-                    .init(title: "Internet", detail: "$80 · Sep 12", kind: "bill"),
-                    .init(title: "Car loan", detail: "$420 · Sep 15", kind: "debt")
+                    .init(title: "Rent", detail: "$1,750 · Oct 1", kind: "bill"),
+                    .init(title: "Internet", detail: "$75 · Oct 15", kind: "bill"),
+                    .init(title: "Credit Card", detail: "$250 · Oct 15", kind: "debt")
                 ],
                 spentThisMonth: 1_240,
                 plannedSpending: 2_000,

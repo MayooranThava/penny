@@ -10,6 +10,7 @@ enum MonthlySummaryPDFService {
         var income: Decimal
         var spent: Decimal
         var billsMonthly: Decimal
+        var debtMonthly: Decimal = 0
         var safeToSpend: Decimal
         var categoryLines: [(name: String, spent: Decimal, budgeted: Decimal)]
         var billLines: [(name: String, amount: Decimal)]
@@ -61,6 +62,12 @@ enum MonthlySummaryPDFService {
             draw("Income: \(MoneyFormatters.string(from: input.income, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12))
             draw("Spent: \(MoneyFormatters.string(from: input.spent, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12))
             draw("Bills (monthly equiv.): \(MoneyFormatters.string(from: input.billsMonthly, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12))
+            if input.debtMonthly > 0 {
+                draw(
+                    "Debt payments: \(MoneyFormatters.string(from: input.debtMonthly, currencyCode: input.currencyCode))",
+                    font: .systemFont(ofSize: 12)
+                )
+            }
             draw("Safe to Spend*: \(MoneyFormatters.string(from: input.safeToSpend, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12, weight: .semibold))
             y += 10
 

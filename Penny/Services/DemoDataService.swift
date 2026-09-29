@@ -271,20 +271,23 @@ enum DemoDataService {
         let expenseSamples: [(String, Decimal, String, Int)] = [
             ("Rent", 1_750, "Housing", 1),
             ("Loblaws", 92.40, "Food", 2),
-            ("TTC Presto", 156.00, "Transportation", 1),
+            // Titles that match bill names are excluded from discretionary “Spent” on Home.
+            ("TTC Pass", 156.00, "Transportation", 1),
             ("Tim Hortons", 5.85, "Food", 0),
             ("No Frills", 68.20, "Food", 4),
             ("Uber", 21.30, "Transportation", 3),
             ("Cineplex", 28.50, "Entertainment", 6),
-            ("Spotify", 11.99, "Subscriptions", 5),
-            ("Netflix", 20.99, "Subscriptions", 8),
+            ("Streaming", 27.99, "Subscriptions", 8),
             ("Winners", 74.30, "Shopping", 7),
+            ("Gym", 45.00, "Health", 5),
             ("Shoppers Drug Mart", 32.60, "Health", 9),
             ("Dinner - King St", 58.40, "Food", 10),
             ("Indigo", 24.75, "Shopping", 11),
             ("St. Lawrence Market", 46.15, "Food", 12),
             ("Raptors Game", 89.00, "Entertainment", 13),
             ("Internet", 75.00, "Subscriptions", 15),
+            ("Hydro", 85.00, "Housing", 12),
+            ("Phone", 55.00, "Subscriptions", 20),
             ("Lunch - PATH", 15.20, "Food", 14)
         ]
 
@@ -311,7 +314,7 @@ enum DemoDataService {
         let priorExpenses: [(String, Decimal, String, Int)] = [
             ("Rent", 1_750, "Housing", 1),
             ("Groceries", 480, "Food", 5),
-            ("Transit", 156, "Transportation", 3),
+            ("TTC Pass", 156, "Transportation", 3),
             ("Dining", 165, "Food", 12),
             ("Shopping", 190, "Shopping", 15),
             ("Movies", 42, "Entertainment", 18),

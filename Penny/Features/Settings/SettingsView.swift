@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Environment(AppSession.self) private var session
     @Query private var settingsList: [UserSettings]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
+    @Query(sort: \Debt.name) private var debts: [Debt]
     @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
@@ -462,17 +463,18 @@ struct SettingsView: View {
             showPaywall = true
             return
         }
-        let month = session.selectedMonth
+        // Match Home: PDF Safe to Spend uses the current calendar month.
+        let month = DateHelpers.startOfMonth()
         let monthTx = transactions.filter { DateHelpers.isSameMonth($0.date, month) }
         let spent = monthTx.filter { $0.transactionType == .expense }.reduce(Decimal(0)) { $0 + $1.amount }
         let billsMonthly = bills.reduce(Decimal(0)) {
             $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
         }
-        let debtMonthly = Decimal(0) // PDF overview focuses on bills; debt stays in Plan
+        let debtMonthly = debts.reduce(Decimal(0)) { $0 + $1.plannedMonthlyPayment }
+        let reserved = Set(bills.map { $0.name.lowercased() } + debts.map { $0.name.lowercased() })
         let discretionary = monthTx
             .filter {
-                $0.transactionType == .expense
-                    && !Set(bills.map { $0.name.lowercased() }).contains($0.title.lowercased())
+                $0.transactionType == .expense && !reserved.contains($0.title.lowercased())
             }
             .reduce(Decimal(0)) { $0 + $1.amount }
         let plannedSavings = FinanceCalculator.effectiveMonthlySavings(
@@ -503,6 +505,7 @@ struct SettingsView: View {
                     income: settings?.monthlyIncome ?? 0,
                     spent: spent,
                     billsMonthly: billsMonthly,
+                    debtMonthly: debtMonthly,
                     safeToSpend: breakdown.safeToSpend,
                     categoryLines: categoryLines,
                     billLines: billLines

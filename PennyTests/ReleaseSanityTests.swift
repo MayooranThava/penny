@@ -87,6 +87,60 @@ struct ReleaseSanityTests {
         #expect(bills.allSatisfy(\.isActive))
     }
 
+    @Test("Demo expense titles match bill names so Safe to Spend does not double-count")
+    @MainActor
+    func demoSeedBillExpenseTitlesAlign() throws {
+        let container = try PennyPersistence.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        try DemoDataService.seedDemo(
+            in: context,
+            markOnboardingComplete: true,
+            replaceExisting: true
+        )
+
+        let bills = try context.fetch(FetchDescriptor<RecurringBill>())
+        let billNames = Set(bills.map { $0.name.lowercased() })
+        let expenses = try context.fetch(FetchDescriptor<Transaction>())
+            .filter { $0.transactionType == .expense }
+
+        // Transit used to be "TTC Presto" while the bill was "TTC Pass".
+        #expect(expenses.contains { $0.title == "TTC Pass" })
+        #expect(!expenses.contains { $0.title == "TTC Presto" })
+
+        let overlapping = expenses.filter { billNames.contains($0.title.lowercased()) }
+        #expect(overlapping.contains { $0.title == "TTC Pass" })
+        #expect(overlapping.contains { $0.title == "Streaming" })
+    }
+
+    @Test("Rolling bill schedules advances past nextDueDate")
+    @MainActor
+    func billScheduleRollsForward() throws {
+        let container = try PennyPersistence.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        let past = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let bill = RecurringBill(
+            name: "Rent",
+            amount: 1_750,
+            dueDay: 1,
+            categoryName: "Housing",
+            recurrence: .monthly,
+            nextDueDate: past,
+            startDate: past,
+            icon: "house.fill"
+        )
+        context.insert(bill)
+        try context.save()
+
+        let asOf = calendar.date(from: DateComponents(year: 2026, month: 9, day: 28))!
+        let changed = BillScheduleService.rollForwardDueDates(bills: [bill], in: context, asOf: asOf)
+        #expect(changed)
+        #expect(bill.nextDueDate >= calendar.startOfDay(for: asOf))
+        #expect(calendar.component(.month, from: bill.nextDueDate) == 10)
+        #expect(calendar.component(.day, from: bill.nextDueDate) == 1)
+    }
+
     @Test("Seeding without replaceExisting preserves existing content")
     @MainActor
     func demoSeedPreservesExisting() throws {

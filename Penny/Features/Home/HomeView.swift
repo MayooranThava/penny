@@ -101,32 +101,18 @@ struct HomeView: View {
         let amount: Decimal
         let icon: String
         let subtitle: String
-        let isPaid: Bool
-    }
-
-    private var paymentAsOf: Date {
-        if DateHelpers.isSameMonth(session.selectedMonth, .now) {
-            return .now
-        }
-        if session.selectedMonth < DateHelpers.startOfMonth() {
-            return DateHelpers.endOfMonth(for: session.selectedMonth)
-        }
-        return session.selectedMonth
     }
 
     private var upcomingItems: [UpcomingItem] {
-        let asOf = paymentAsOf
         let billItems = bills.map {
-            let paid = $0.isPaid(asOf: asOf)
-            return UpcomingItem(
+            UpcomingItem(
                 id: "bill-\($0.id.uuidString)",
                 kind: .bill,
                 name: $0.name,
                 date: $0.nextDueDate,
                 amount: $0.amount,
                 icon: $0.icon,
-                subtitle: paid ? "Due passed · \($0.recurrence.displayName)" : $0.recurrence.displayName,
-                isPaid: paid
+                subtitle: $0.recurrence.displayName
             )
         }
         let debtItems = debts.map {
@@ -137,11 +123,9 @@ struct HomeView: View {
                 date: DateHelpers.nextDueDate(dueDay: $0.dueDay),
                 amount: $0.plannedMonthlyPayment,
                 icon: $0.icon,
-                subtitle: "Debt payment",
-                isPaid: false
+                subtitle: "Debt payment"
             )
         }
-        // Soonest first; already-due bills stay in date order (not a to-do list).
         return (billItems + debtItems)
             .sorted { $0.date < $1.date }
             .prefix(5)
@@ -507,16 +491,9 @@ struct HomeView: View {
                                         colourIdentifier: item.kind == .debt ? "debt" : "subscriptions"
                                     )
                                     VStack(alignment: .leading, spacing: 2) {
-                                        HStack(spacing: 6) {
-                                            Text(item.name)
-                                                .font(PennyTypography.bodyEmphasized)
-                                                .foregroundStyle(PennyColors.textPrimary)
-                                            if item.isPaid {
-                                                Image(systemName: "checkmark")
-                                                    .font(.caption2.weight(.bold))
-                                                    .foregroundStyle(PennyColors.brand)
-                                            }
-                                        }
+                                        Text(item.name)
+                                            .font(PennyTypography.bodyEmphasized)
+                                            .foregroundStyle(PennyColors.textPrimary)
                                         Text("\(item.subtitle) · \(DateHelpers.shortMonthDay(for: item.date))")
                                             .font(PennyTypography.caption)
                                             .foregroundStyle(PennyColors.textSecondary)

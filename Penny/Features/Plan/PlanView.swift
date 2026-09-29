@@ -418,7 +418,6 @@ struct BillsPlanView: View {
                     .listRowInsets(EdgeInsets())
                 } else {
                     ForEach(bills, id: \.id) { bill in
-                        let paid = bill.isPaid(asOf: .now)
                         BillRow(
                             name: bill.name,
                             dueDate: bill.nextDueDate,
@@ -426,8 +425,7 @@ struct BillsPlanView: View {
                             currencyCode: currency,
                             icon: bill.icon,
                             categoryName: bill.categoryName,
-                            recurrenceLabel: bill.recurrence.displayName,
-                            isPaid: paid
+                            recurrenceLabel: bill.recurrence.displayName
                         )
                         .contentShape(Rectangle())
                         .onTapGesture { editingBill = bill }

@@ -988,14 +988,14 @@ struct ForecastPlanView: View {
 
     private var averageDiscretionary: Decimal {
         let monthStart = DateHelpers.startOfMonth(for: session.selectedMonth)
-        let billNames = Set(bills.map { $0.name.lowercased() })
+        let reserved = Set(bills.map { $0.name.lowercased() } + debts.map { $0.name.lowercased() })
         let recentMonths: [Date] = (0..<3).map { DateHelpers.addingMonths(-$0, to: monthStart) }
         let totals: [Decimal] = recentMonths.map { month in
             transactions
                 .filter {
                     DateHelpers.isSameMonth($0.date, month)
                         && $0.transactionType == .expense
-                        && !billNames.contains($0.title.lowercased())
+                        && !reserved.contains($0.title.lowercased())
                 }
                 .reduce(0) { $0 + $1.amount }
         }

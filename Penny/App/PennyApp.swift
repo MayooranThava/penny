@@ -165,7 +165,12 @@ struct RootView: View {
 struct MainTabView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
+    @Query(sort: \Debt.name) private var debts: [Debt]
+    @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
+    @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
+    @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
 
     private var settings: UserSettings? { settingsList.first }
@@ -219,13 +224,55 @@ struct MainTabView: View {
             .ignoresSafeArea()
             .allowsHitTesting(session.showWalkthrough)
         }
+        .onAppear {
+            refreshSchedulesAndWidgets()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            session.resetMonth()
+            refreshSchedulesAndWidgets()
+        }
+        .onChange(of: session.selectedTab) { _, tab in
+            if tab == .home {
+                session.resetMonth()
+            }
+            // Keep widgets fresh when leaving Plan / Activity after edits.
+            refreshWidgetSnapshot()
+        }
+        .onChange(of: transactions.count) { _, _ in refreshWidgetSnapshot() }
+        .onChange(of: bills.count) { _, _ in refreshSchedulesAndWidgets() }
+        .onChange(of: debts.count) { _, _ in refreshWidgetSnapshot() }
+        .onChange(of: goals.count) { _, _ in refreshWidgetSnapshot() }
         .task {
+            refreshSchedulesAndWidgets()
             let enabled = settingsList.first?.billRemindersEnabled ?? false
             await NotificationService.shared.refreshBillReminders(bills: Array(bills), enabled: enabled)
             if settingsList.first?.hasCompletedWalkthrough == false {
                 session.showWalkthrough = true
             }
         }
+    }
+
+    private func refreshSchedulesAndWidgets() {
+        let rolled = BillScheduleService.rollForwardDueDates(bills: Array(bills), in: modelContext)
+        refreshWidgetSnapshot()
+        if rolled {
+            let enabled = settings?.billRemindersEnabled ?? false
+            Task {
+                await NotificationService.shared.refreshBillReminders(bills: Array(bills), enabled: enabled)
+            }
+        }
+    }
+
+    private func refreshWidgetSnapshot() {
+        WidgetSnapshotPublisher.publish(
+            transactions: Array(transactions),
+            categories: Array(categories),
+            bills: Array(bills),
+            debts: Array(debts),
+            goals: Array(goals),
+            settings: settings
+        )
     }
 }
 

@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import WidgetKit
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -20,12 +19,15 @@ struct HomeView: View {
     private var settings: UserSettings? { settingsList.first }
     private var currency: String { settings?.currencyCode ?? "CAD" }
 
+    /// Home always reflects the current calendar month (Activity/Budget may browse other months).
+    private var homeMonth: Date { DateHelpers.startOfMonth() }
+
     private var monthTransactions: [Transaction] {
-        transactions.filter { DateHelpers.isSameMonth($0.date, session.selectedMonth) }
+        transactions.filter { DateHelpers.isSameMonth($0.date, homeMonth) }
     }
 
     private var priorMonthTransactions: [Transaction] {
-        let prior = DateHelpers.addingMonths(-1, to: session.selectedMonth)
+        let prior = DateHelpers.addingMonths(-1, to: homeMonth)
         return transactions.filter { DateHelpers.isSameMonth($0.date, prior) }
     }
 
@@ -135,7 +137,7 @@ struct HomeView: View {
     private var insights: [PennyInsight] {
         let calendar = Calendar.current
         let day = calendar.component(.day, from: .now)
-        let daysInMonth = calendar.range(of: .day, in: .month, for: session.selectedMonth)?.count ?? 30
+        let daysInMonth = calendar.range(of: .day, in: .month, for: homeMonth)?.count ?? 30
 
         let categorySpends: [InsightEngine.CategorySpend] = categories.map { category in
             let current = monthTransactions
@@ -231,7 +233,10 @@ struct HomeView: View {
                     .accessibilityLabel("Add transaction")
                 }
             }
-            .onAppear { publishWidgetSnapshot() }
+            .onAppear {
+                session.resetMonth()
+                publishWidgetSnapshot()
+            }
             .onChange(of: breakdown.safeToSpend) { _, _ in publishWidgetSnapshot() }
             .onChange(of: upcomingItems.first?.id) { _, _ in publishWidgetSnapshot() }
             .sheet(isPresented: Binding(
@@ -268,7 +273,7 @@ struct HomeView: View {
                     .font(PennyTypography.largeTitle)
                     .foregroundStyle(PennyColors.textPrimary)
                     .accessibilityAddTraits(.isHeader)
-                Text(DateHelpers.monthYear(for: session.selectedMonth))
+                Text(DateHelpers.monthYear(for: homeMonth))
                     .font(PennyTypography.callout)
                     .foregroundStyle(PennyColors.textSecondary)
             }
@@ -314,8 +319,8 @@ struct HomeView: View {
 
             Text(
                 breakdown.isOverBudget
-                ? "You're projected over budget for the rest of \(DateHelpers.monthName(for: session.selectedMonth))"
-                : "Available for the rest of \(DateHelpers.monthName(for: session.selectedMonth))"
+                ? "You're projected over budget for the rest of \(DateHelpers.monthName(for: homeMonth))"
+                : "Available for the rest of \(DateHelpers.monthName(for: homeMonth))"
             )
             .font(PennyTypography.callout)
             .foregroundStyle(PennyColors.textOnBrand.opacity(0.9))
@@ -448,7 +453,7 @@ struct HomeView: View {
                     )
                 } else {
                     ProgressCard(
-                        title: DateHelpers.monthName(for: session.selectedMonth),
+                        title: DateHelpers.monthName(for: homeMonth),
                         spent: monthExpenses,
                         budget: plannedSpending,
                         currencyCode: currency,
@@ -615,53 +620,15 @@ struct HomeView: View {
     }
 
     private func publishWidgetSnapshot() {
-        let next = upcomingItems.first
-        let upcomingLines: [WidgetSnapshotStore.UpcomingLine] = upcomingItems.prefix(5).map { item in
-            .init(
-                title: item.name,
-                detail: "\(MoneyFormatters.compact(from: item.amount, currencyCode: currency)) · \(DateHelpers.shortMonthDay(for: item.date))",
-                kind: item.kind == .debt ? "debt" : "bill"
-            )
-        }
-
-        let spent = NSDecimalNumber(decimal: monthExpenses).doubleValue
-        let planned = NSDecimalNumber(decimal: plannedSpending).doubleValue
-        let health: String = {
-            switch FinanceCalculator.budgetHealth(budgeted: plannedSpending, spent: monthExpenses) {
-            case .overBudget: return "over"
-            case .nearLimit: return "near"
-            case .healthy, .unset: return "healthy"
-            }
-        }()
-
-        let topGoal = goals.first
-        let topProgress = topGoal.map {
-            FinanceCalculator.goalProgressClamped(current: $0.currentAmount, target: $0.targetAmount)
-        }
-        let topDetail = topGoal.map {
-            "\(MoneyFormatters.compact(from: $0.currentAmount, currencyCode: currency)) of \(MoneyFormatters.compact(from: $0.targetAmount, currencyCode: currency))"
-        }
-
-        let snapshot = WidgetSnapshotStore.Snapshot(
-            safeToSpend: NSDecimalNumber(decimal: breakdown.safeToSpend).doubleValue,
-            currencyCode: currency,
-            monthLabel: DateHelpers.monthName(for: session.selectedMonth),
-            nextReminderTitle: next.map { "\($0.name) due" },
-            nextReminderDetail: next.map {
-                "\(MoneyFormatters.compact(from: $0.amount, currencyCode: currency)) · \(DateHelpers.shortMonthDay(for: $0.date))"
-            },
-            displayName: settings?.displayName ?? "",
-            updatedAt: .now,
-            upcomingItems: Array(upcomingLines),
-            spentThisMonth: spent,
-            plannedSpending: planned,
-            budgetHealth: health,
-            topGoalName: topGoal?.name,
-            topGoalProgress: topProgress,
-            topGoalDetail: topDetail
+        WidgetSnapshotPublisher.publish(
+            transactions: Array(transactions),
+            categories: Array(categories),
+            bills: Array(bills),
+            debts: Array(debts),
+            goals: Array(goals),
+            settings: settings,
+            month: homeMonth
         )
-        WidgetSnapshotStore.save(snapshot)
-        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 

@@ -27,7 +27,7 @@ struct FeatureWalkthroughView: View {
                 planSegment: nil,
                 anchor: .upcomingBills,
                 title: "Bills on Home",
-                detail: "Upcoming lists what’s due soon. When a bill’s date passes — like Rent on the 1st — Penny adds a small checkmark automatically. No to-do list to tap."
+                detail: "Upcoming shows what’s due next — like Rent on the 1st — with the date and amount. Tap a row anytime to edit it."
             ),
             .init(
                 tab: .plan,

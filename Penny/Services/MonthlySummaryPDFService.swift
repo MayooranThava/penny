@@ -12,7 +12,7 @@ enum MonthlySummaryPDFService {
         var billsMonthly: Decimal
         var safeToSpend: Decimal
         var categoryLines: [(name: String, spent: Decimal, budgeted: Decimal)]
-        var billLines: [(name: String, amount: Decimal, paid: Bool)]
+        var billLines: [(name: String, amount: Decimal)]
     }
 
     enum ExportError: Error, LocalizedError {
@@ -78,8 +78,7 @@ enum MonthlySummaryPDFService {
                 draw("Bills", font: .systemFont(ofSize: 16, weight: .semibold))
                 for line in input.billLines.prefix(16) {
                     let amount = MoneyFormatters.string(from: line.amount, currencyCode: input.currencyCode)
-                    let status = line.paid ? "Due passed" : "Upcoming"
-                    draw("• \(line.name): \(amount) · \(status)", font: .systemFont(ofSize: 11))
+                    draw("• \(line.name): \(amount)", font: .systemFont(ofSize: 11))
                 }
             }
 

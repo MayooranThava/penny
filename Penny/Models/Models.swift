@@ -178,23 +178,12 @@ final class RecurringBill {
     var reminderDaysBefore: Int
     var isActive: Bool
     var icon: String
-    /// Cycle key from `BillPaymentCycle` when marked paid for the current period; empty when unpaid.
+    /// Reserved for older installs; bills no longer use a paid checklist.
     var paidCycleKey: String = ""
 
     var recurrence: BillRecurrence {
         get { BillRecurrence(rawValue: recurrenceRaw) ?? .monthly }
         set { recurrenceRaw = newValue.rawValue }
-    }
-
-    /// Whether this bill’s due date for the cycle containing `date` has passed.
-    /// Automatic — not a manual to-do toggle.
-    func isPaid(asOf date: Date = .now) -> Bool {
-        BillPaymentCycle.hasDueDatePassed(
-            dueDay: dueDay,
-            recurrence: recurrence,
-            nextDueDate: nextDueDate,
-            asOf: date
-        )
     }
 
     init(

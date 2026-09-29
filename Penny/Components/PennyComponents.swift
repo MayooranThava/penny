@@ -269,23 +269,14 @@ struct BillRow: View {
     var icon: String = "doc.text.fill"
     var categoryName: String = "Other"
     var recurrenceLabel: String? = nil
-    var isPaid: Bool = false
 
     var body: some View {
         HStack(spacing: PennySpacing.sm) {
             CategoryIcon(icon: icon, colourIdentifier: categoryName.lowercased())
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(name)
-                        .font(PennyTypography.bodyEmphasized)
-                        .foregroundStyle(PennyColors.textPrimary)
-                    if isPaid {
-                        Image(systemName: "checkmark")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(PennyColors.brand)
-                            .accessibilityLabel("Due date passed")
-                    }
-                }
+                Text(name)
+                    .font(PennyTypography.bodyEmphasized)
+                    .foregroundStyle(PennyColors.textPrimary)
                 Text(subtitle)
                     .font(PennyTypography.caption)
                     .foregroundStyle(PennyColors.textSecondary)
@@ -298,11 +289,10 @@ struct BillRow: View {
 
     private var subtitle: String {
         let due = DateHelpers.shortMonthDay(for: dueDate)
-        let paidLabel = isPaid ? "Due passed · " : ""
         if let recurrenceLabel, !recurrenceLabel.isEmpty {
-            return "\(paidLabel)\(recurrenceLabel) · \(due)"
+            return "\(recurrenceLabel) · \(due)"
         }
-        return "\(paidLabel)\(due)"
+        return due
     }
 }
 

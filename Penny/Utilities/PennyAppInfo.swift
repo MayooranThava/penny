@@ -6,7 +6,7 @@ enum PennyAppInfo {
     static let marketingVersion = "1.0.3"
     static let buildNumber = "1"
     static let privacySummary =
-        "Penny stores financial data on-device. No bank connections, analytics, or advertising tracking."
+        "Penny stores financial data on-device. No bank connections, analytics, or advertising tracking. Intended for adults; not directed to children under 13."
 
     /// GitHub Pages (same pattern as Void Runner). Keep in sync with `docs/` + App Store Connect.
     static let privacyPolicyURL = URL(string: "https://mayooranthava.github.io/penny/privacy-policy.html")!

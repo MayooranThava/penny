@@ -9,6 +9,7 @@ struct OnboardingView: View {
     @State private var currency = SupportedCurrency.cad
     @State private var displayName = ""
     @State private var incomeText = ""
+    @State private var agreedToTerms = false
     @State private var isWorking = false
 
     var body: some View {
@@ -157,6 +158,33 @@ struct OnboardingView: View {
                 .buttonStyle(.pennyPrimary)
             } else {
                 Button {
+                    agreedToTerms.toggle()
+                    Haptics.light()
+                } label: {
+                    HStack(alignment: .top, spacing: PennySpacing.sm) {
+                        Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(agreedToTerms ? PennyColors.brand : PennyColors.textTertiary)
+                            .accessibilityHidden(true)
+                        Text("I agree to the Terms of Use and Privacy Policy.")
+                            .font(PennyTypography.caption)
+                            .foregroundStyle(PennyColors.textSecondary)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("I agree to the Terms of Use and Privacy Policy.")
+                .accessibilityAddTraits(agreedToTerms ? [.isSelected] : [])
+                .padding(.bottom, PennySpacing.xs)
+
+                HStack(spacing: PennySpacing.md) {
+                    Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
+                    Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
+                }
+                .font(PennyTypography.caption)
+
+                Button {
                     finish(useDemo: true)
                 } label: {
                     if isWorking {
@@ -168,7 +196,7 @@ struct OnboardingView: View {
                     }
                 }
                 .buttonStyle(.pennyPrimary)
-                .disabled(isWorking)
+                .disabled(isWorking || !agreedToTerms)
 
                 Button {
                     finish(useDemo: false)
@@ -176,24 +204,19 @@ struct OnboardingView: View {
                     Text("Start empty")
                 }
                 .buttonStyle(.pennySecondary)
-                .disabled(isWorking)
+                .disabled(isWorking || !agreedToTerms)
 
-                Text("Sample data fills the app with an example household you can delete anytime. Start empty gives you a clean slate. By continuing you agree to the Terms of Use and Privacy Policy.")
+                Text("Sample data fills the app with an example household you can delete anytime. Start empty gives you a clean slate.")
                     .font(PennyTypography.caption)
-                    .foregroundStyle(PennyColors.textSecondary)
+                    .foregroundStyle(PennyColors.textTertiary)
                     .multilineTextAlignment(.center)
                     .padding(.top, PennySpacing.xs)
-
-                HStack(spacing: PennySpacing.md) {
-                    Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
-                    Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
-                }
-                .font(PennyTypography.caption)
             }
         }
     }
 
     private func finish(useDemo: Bool) {
+        guard agreedToTerms, !isWorking else { return }
         Keyboard.dismiss()
         isWorking = true
         let income = Decimal.from(incomeText) ?? (useDemo ? DemoDataService.demoMonthlyIncome : 0)

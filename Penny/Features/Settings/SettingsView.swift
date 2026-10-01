@@ -431,12 +431,12 @@ struct SettingsView: View {
             Text("Penny keeps your financial information on this device. App updates keep your data. Deleting the app, or using Reset/Delete in Data, clears local data. Optional Wallet tap capture uses Shortcuts on your iPhone — amounts stay local. Penny does not connect to banks or send analytics to the developer. Widgets may show a local summary snapshot via an App Group.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
-            Text("Figures marked with \(LegalCopy.asterisk) are estimates from your entries — not bank balances or financial advice. Full details are in the Terms of Use.")
+            Text("Figures marked with \(LegalCopy.asterisk) are estimates from your entries — not bank balances or financial advice. Full details are in the Terms of Use. Penny is intended for adults and is not directed to children under 13.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
             Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
-            Link("Support", destination: PennyAppInfo.supportURL)
+            Link("Support & refunds", destination: PennyAppInfo.supportURL)
         } header: {
             Text("Legal & privacy")
         }
@@ -631,7 +631,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("One-time unlock for unlimited goals, longer forecasts, CSV + PDF export, and extra accent themes.")
+            Text("One-time lifetime unlock for unlimited goals, longer forecasts, CSV + PDF export, and extra accent themes. Cloud sync and bank connections are not included.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -722,7 +722,7 @@ struct PaywallView: View {
             Button("Restore purchases") { Task { await store.restore() } }
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.brand)
-            Text("One-time purchase. Payment is charged to your Apple Account at confirmation. Restore purchases anytime if you reinstall.")
+            Text("One-time purchase. Payment is charged to your Apple Account at confirmation. Restore purchases anytime if you reinstall. Refunds are handled by Apple (reportaproblem.apple.com). Lifetime unlocks the Pro features listed here; see Terms for details.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textTertiary)
                 .multilineTextAlignment(.center)

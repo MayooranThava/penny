@@ -153,20 +153,20 @@ PRIVATE BY DESIGN
 - No bank logins, no analytics, no ads, no accounts
 
 PENNY PRO (optional)
-Unlock unlimited savings goals, 6- and 12-month forecasts, CSV export, and custom accent themes with a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync is not included yet. No subscription required.)
+Unlock unlimited savings goals, 6- and 12-month forecasts, CSV + PDF export, and custom accent themes with a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync and bank connections are not included. No subscription required.)
 
 IMPORTANT
-Penny is a planning tool, not financial, tax, or investment advice. Figures are estimates from numbers you enter and are not guarantees.
+Penny is a planning tool, not financial, tax, or investment advice. Figures are estimates from numbers you enter and are not guarantees. Intended for adults managing personal finances; not directed to children under 13.
 
 Penny supports CAD, USD, GBP, EUR, and AUD.
 
 ---
-Penny Pro Lifetime is a one-time In-App Purchase. Payment is charged to your Apple Account at purchase confirmation. Restore purchases anytime from Settings if you reinstall.
+Penny Pro Lifetime is a one-time In-App Purchase. Payment is charged to your Apple Account at purchase confirmation. Restore purchases anytime from Settings if you reinstall. Refunds are handled by Apple (reportaproblem.apple.com).
 Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use: https://mayooranthava.github.io/penny/terms-of-use.html
 ```
 
-**What's New (1.0.3):** `Lifetime Penny Pro unlock, legal hardening (Terms, disclaimers), CSV export and accent themes, longer-range Pro forecasts, and clearer Safe-to-Spend estimates.`
+**What's New (1.0.3):** `Lifetime Penny Pro unlock, stronger Terms (refunds, lifetime scope, governing law), onboarding consent, CSV export and accent themes, longer-range Pro forecasts, and clearer Safe-to-Spend estimates.`
 
 **Support URL (required):** `https://mayooranthava.github.io/penny/support.html`
 

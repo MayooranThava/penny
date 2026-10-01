@@ -2,6 +2,8 @@
 
 Same pattern as Void Runner (`ApolloX_IOS`). Host these HTML files over HTTPS and paste the URLs into App Store Connect.
 
+Coverage focus (keep these current when product changes): financial-advice disclaimers, lifetime Pro definition, Apple refund path, age/children language, governing law (Ontario/Canada), onboarding acceptance checkbox in-app, and App Store privacy label = Data Not Collected.
+
 ## Enable GitHub Pages (required once)
 
 The Actions token **cannot** create a Pages site. That is why the first run failed on `configure-pages` with `Resource not accessible by integration`.

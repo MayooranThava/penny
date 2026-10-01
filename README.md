@@ -69,6 +69,8 @@ Chosen because it is the baseline for SwiftData + Observation while remaining a 
 - Optional **Wallet tap capture** is documented in Settings only (never required). Users who want it build a Shortcuts personal automation once; amounts never leave the device.
 - Reset demo data / delete all data available in Settings
 - Notification permission is only used for optional bill reminders
+- Onboarding requires accepting Terms of Use + Privacy Policy before first use
+- Legal pages: Privacy, Terms (incl. lifetime Pro definition, refunds via Apple, Ontario governing law), and Support — see `docs/legal-pages.md`
 
 ## Monetization
 

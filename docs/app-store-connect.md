@@ -91,7 +91,7 @@ See [data-persistence.md](./data-persistence.md). Short version: updating TestFl
 
 # App Store submission prep
 
-> **Version note (2026-09-28):** App Store Connect closed the `1.0.2` train (`ITMS-90186` / `ITMS-90062` — `CFBundleShortVersionString` must be higher than the previously approved `1.0.2`). The project marketing version is now **`1.0.3`**. Create an **iOS App Version 1.0.3** in ASC and attach the new build there — do not keep uploading to 1.0.2.
+> **Version note (2026-10-01):** App Store Connect closed the `1.0.3` train (`ITMS-90186` / `ITMS-90062` — `CFBundleShortVersionString` must be higher than the previously approved `1.0.3`). The project marketing version is now **`1.0.4`**. Create an **iOS App Version 1.0.4** in ASC and attach the new build there — do not keep uploading to 1.0.3.
 
 Everything below is ready to paste into App Store Connect. Prices are suggestions — you choose the final tiers. Nothing here is a substitute for the manual steps in the checklist at the end.
 
@@ -106,7 +106,7 @@ Everything below is ready to paste into App Store Connect. Prices are suggestion
 | Content rights | Does **not** contain, show, or access third-party content |
 | Age rating | 4+ (answer every questionnaire item **None/No**) |
 
-## 2. Version metadata — English (Canada) (Version → 1.0.3)
+## 2. Version metadata — English (Canada) (Version → 1.0.4)
 
 **Promotional text (≤170):**
 ```
@@ -166,7 +166,7 @@ Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use: https://mayooranthava.github.io/penny/terms-of-use.html
 ```
 
-**What's New (1.0.3):** `Lifetime Penny Pro unlock, stronger Terms (refunds, lifetime scope, governing law), onboarding consent, CSV export and accent themes, longer-range Pro forecasts, and clearer Safe-to-Spend estimates.`
+**What's New (1.0.4):** `Stronger Terms (refunds, lifetime Pro scope, governing law), onboarding consent checkbox, clearer Safe-to-Spend estimates, and privacy/support polish.`
 
 **Support URL (required):** `https://mayooranthava.github.io/penny/support.html`
 
@@ -272,7 +272,7 @@ Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Fo
 7. **Answer App Privacy** = Data not collected (section 4) and **Age rating** = 4+ (section 7).
 8. **Set pricing** = Free + availability (section 6).
 9. **Run pre-release sanity** (`./scripts/pre-release-sanity.sh --xcode` on a Mac, plus the manual steps in [pre-release-sanity.md](./pre-release-sanity.md)).
-10. **Upload a build** via Xcode Cloud (push to `main`) and **attach it** to version **1.0.3** (not 1.0.2 — that train is closed).
+10. **Upload a build** via Xcode Cloud (push to `main`) and **attach it** to version **1.0.4** (not 1.0.3 — that train is closed).
 11. **Fill App Review Information** (section 9), **attach the IAPs to the version**, then **Submit for Review**.
 
 > Prerequisite: the app must compile. Ensure PR #19 (StoreKit `Transaction` fix) is merged before triggering the Archive/upload build.

@@ -11,7 +11,7 @@ Penny is a native iOS personal finance planner focused on clarity: safe-to-spend
 - **Activity**: month selector, search, income/expense/category filters, grouped transactions, add/delete
 - **Budget**: planned vs spent ring, category progress with health states, category detail + edit + trend chart
 - **Plan**: Goals, Bills (weekly / biweekly / monthly / yearly + start date), Debt payoff estimates, Forecast chart
-- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, appearance + Pro accent themes, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, CSV + PDF export (Pro), reset/delete data, Privacy / Terms links, Penny Pro paywall, replay quick tour
+- **Settings**: display name, currency (CAD/USD/GBP/EUR/AUD), income, planned savings, accounts (add/edit; Pro unlocks more + goal funding), appearance + Pro accent themes, bill reminders, **optional Wallet tap capture instructions (Shortcuts)**, CSV + PDF export (Pro), reset/delete data, Privacy / Terms links, Penny Pro paywall, replay quick tour
 - **Walkthrough**: skippable spotlight tour that highlights Safe to Spend, upcoming bills, and how to add a bill on Plan
 - **Widgets**: Safe to Spend (Home + Lock Screen), Upcoming reminder, Upcoming bills, Monthly budget, Savings goal (App Group `group.com.mayooran.penny`)
 - **Design system**: mint/emerald warm identity, light + dark mode, reusable cards/rows/buttons
@@ -77,6 +77,7 @@ Chosen because it is the baseline for SwiftData + Observation while remaining a 
 Free app with optional **Penny Pro Lifetime** (one-time Non-Consumable via StoreKit 2):
 
 - Unlimited savings goals (free tier: 3)
+- Extra accounts beyond 3, including TFSA / FHSA / RRSP / non-registered, plus goal funding allocations
 - Longer-range forecasts (6 & 12 months)
 - CSV + monthly PDF export
 - Extra accent themes (ocean, slate, amber, rose, violet, forest, graphite)

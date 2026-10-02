@@ -185,6 +185,34 @@ struct FinanceCalculatorTests {
         #expect(points.first(where: { $0.monthsAhead == 12 })?.projectedBalance == 34_000)
     }
 
+    @Test("Goal funding clamps and effective current")
+    func goalFundingFromAccounts() {
+        let tfsa = UUID()
+        let condo = UUID()
+        let vacation = UUID()
+        let links: [FinanceCalculator.GoalFundingLink] = [
+            .init(accountID: tfsa, goalID: vacation, amount: 900),
+            .init(accountID: tfsa, goalID: condo, amount: 3_400)
+        ]
+        #expect(FinanceCalculator.fundedAmount(forGoal: vacation, links: links) == 900)
+        #expect(
+            FinanceCalculator.clampedAllocation(
+                requested: 10_000,
+                accountBalance: 6_800,
+                otherAllocatedOnAccount: 4_300
+            ) == 2_500
+        )
+        #expect(
+            FinanceCalculator.effectiveGoalCurrent(manualCurrent: 500, fundedFromAccounts: 900) == 900
+        )
+        #expect(
+            FinanceCalculator.allocationsFitBalances(
+                accountBalances: [tfsa: 6_800],
+                links: links
+            )
+        )
+    }
+
     @Test("Percent change handles zeros")
     func percentChange() {
         #expect(FinanceCalculator.percentChange(current: 82, previous: 100) == -0.18)

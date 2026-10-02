@@ -153,7 +153,7 @@ PRIVATE BY DESIGN
 - No bank logins, no analytics, no ads, no accounts
 
 PENNY PRO (optional)
-Unlock unlimited savings goals, 6- and 12-month forecasts, CSV + PDF export, and custom accent themes with a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync and bank connections are not included. No subscription required.)
+Unlock unlimited savings goals, extra accounts with goal funding (TFSA / FHSA / more), 6- and 12-month forecasts, CSV + PDF export, and custom accent themes with a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync and bank connections are not included. No subscription required.)
 
 IMPORTANT
 Penny is a planning tool, not financial, tax, or investment advice. Figures are estimates from numbers you enter and are not guarantees. Intended for adults managing personal finances; not directed to children under 13.
@@ -203,7 +203,7 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 | Product ID | `com.penny.app.pro.lifetime` |
 | Price | your choice (suggest CAD $24.99–$39.99 one-time) |
 | Display Name | `Penny Pro (Lifetime)` |
-| Description | `Unlimited goals, longer forecasts, CSV export, and accent themes — forever.` |
+| Description | `Unlimited goals, extra accounts + goal funding, longer forecasts, CSV export, and accent themes — forever.` |
 | Review screenshot | screenshot of the in-app paywall (required) |
 
 **Do not use**
@@ -240,7 +240,7 @@ Already handled: `ITSAppUsesNonExemptEncryption = NO`. If prompted, choose **"No
 ```
 No account or login is required. On first launch, choose "Explore with sample data" to see a fully populated example (generic sample data — not a real person).
 
-To review Penny Pro: Settings → Penny Pro → Unlock Penny Pro opens the paywall (one-time lifetime Non-Consumable `com.penny.app.pro.lifetime`). Purchases can be validated in the sandbox. The gentle gate also triggers when adding a 4th savings goal on the free tier.
+To review Penny Pro: Settings → Penny Pro → Unlock Penny Pro opens the paywall (one-time lifetime Non-Consumable `com.penny.app.pro.lifetime`). Purchases can be validated in the sandbox. The gentle gate also triggers when adding a 4th savings goal or a 4th account on the free tier.
 
 Penny is 100% on-device: no bank connections, no analytics, no ads, no accounts.
 ```

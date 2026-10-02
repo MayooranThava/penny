@@ -23,6 +23,7 @@ enum PennyPersistence {
         SavingsGoal.self,
         Debt.self,
         FinancialAccount.self,
+        GoalFundingAllocation.self,
         UserSettings.self
     ])
 
@@ -128,6 +129,7 @@ enum PennySchemaV1: VersionedSchema {
             SavingsGoal.self,
             Debt.self,
             FinancialAccount.self,
+            GoalFundingAllocation.self,
             UserSettings.self
         ]
     }

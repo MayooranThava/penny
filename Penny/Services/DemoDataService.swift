@@ -49,6 +49,7 @@ enum DemoDataService {
         try context.delete(model: SavingsGoal.self)
         try context.delete(model: Debt.self)
         try context.delete(model: FinancialAccount.self)
+        try context.delete(model: GoalFundingAllocation.self)
         try context.delete(model: UserSettings.self)
         try context.save()
     }
@@ -174,42 +175,51 @@ enum DemoDataService {
 
         context.insert(Budget(monthStart: monthStart, plannedSpending: 3_150))
 
-        // Accounts — typical mix for an average Toronto resident.
-        context.insert(FinancialAccount(name: "Everyday Chequing", accountType: .chequing, balance: 2_140, sortOrder: 0))
-        context.insert(FinancialAccount(name: "TFSA Savings", accountType: .savings, balance: 6_800, sortOrder: 1))
-        context.insert(FinancialAccount(name: "Credit Card", accountType: .creditCard, balance: -3_200, sortOrder: 2))
+        // Accounts — typical mix for an average Toronto resident (free-tier limit = 3).
+        let chequing = FinancialAccount(name: "Everyday Chequing", accountType: .chequing, balance: 2_140, sortOrder: 0)
+        let tfsa = FinancialAccount(name: "TFSA Savings", accountType: .tfsa, balance: 6_800, sortOrder: 1)
+        let creditCard = FinancialAccount(name: "Credit Card", accountType: .creditCard, balance: -3_200, sortOrder: 2)
+        context.insert(chequing)
+        context.insert(tfsa)
+        context.insert(creditCard)
 
         // Goals — realistic monthly targets so demo Safe to Spend stays positive.
         // (~$130 + ~$390 + ~$85 ≈ $605/mo vs the previous ~$2,500/mo).
+        let emergency = SavingsGoal(
+            name: "Emergency Fund",
+            targetAmount: 8_000,
+            currentAmount: 3_400,
+            targetDate: calendar.date(byAdding: .month, value: 36, to: now),
+            icon: "shield.fill",
+            colourIdentifier: "savings"
+        )
+        let condo = SavingsGoal(
+            name: "Condo Down Payment",
+            targetAmount: 40_000,
+            currentAmount: 12_000,
+            targetDate: calendar.date(byAdding: .month, value: 72, to: now),
+            icon: "house.fill",
+            colourIdentifier: "housing"
+        )
+        let vacation = SavingsGoal(
+            name: "Vacation",
+            targetAmount: 2_400,
+            currentAmount: 900,
+            targetDate: calendar.date(byAdding: .month, value: 18, to: now),
+            icon: "airplane",
+            colourIdentifier: "travel"
+        )
+        context.insert(emergency)
+        context.insert(condo)
+        context.insert(vacation)
+
+        // Sample Pro-style earmarks so Forecast / Plan demos show funding links.
+        // Vacation takes a slice of the TFSA; the rest stays unallocated.
         context.insert(
-            SavingsGoal(
-                name: "Emergency Fund",
-                targetAmount: 8_000,
-                currentAmount: 3_400,
-                targetDate: calendar.date(byAdding: .month, value: 36, to: now),
-                icon: "shield.fill",
-                colourIdentifier: "savings"
-            )
+            GoalFundingAllocation(accountID: tfsa.id, goalID: vacation.id, amount: 900)
         )
         context.insert(
-            SavingsGoal(
-                name: "Condo Down Payment",
-                targetAmount: 40_000,
-                currentAmount: 12_000,
-                targetDate: calendar.date(byAdding: .month, value: 72, to: now),
-                icon: "house.fill",
-                colourIdentifier: "housing"
-            )
-        )
-        context.insert(
-            SavingsGoal(
-                name: "Vacation",
-                targetAmount: 2_400,
-                currentAmount: 900,
-                targetDate: calendar.date(byAdding: .month, value: 18, to: now),
-                icon: "airplane",
-                colourIdentifier: "travel"
-            )
+            GoalFundingAllocation(accountID: tfsa.id, goalID: emergency.id, amount: 3_400)
         )
 
         // Debt — a generic credit-card balance. Monthly targets reduce Safe to Spend on Home.

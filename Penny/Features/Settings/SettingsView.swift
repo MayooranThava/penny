@@ -13,18 +13,20 @@ struct SettingsView: View {
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
+    @Query private var allocations: [GoalFundingAllocation]
 
     @State private var confirmReset = false
     @State private var confirmDelete = false
     @State private var incomeText = ""
     @State private var nameText = ""
     @State private var editingAccount: FinancialAccount?
-    @State private var accountBalanceText = ""
+    @State private var showAddAccount = false
     @State private var showPaywall = false
     @State private var showApplePaySetup = false
     @State private var exportShareURL: URL?
     @State private var exportErrorMessage: String?
     @State private var themeRefreshToken = 0
+    @State private var pendingDeleteAccount: FinancialAccount?
 
     private var settings: UserSettings? { settingsList.first }
 
@@ -49,6 +51,17 @@ struct SettingsView: View {
             .id(themeRefreshToken)
             .sheet(isPresented: $showPaywall) { PaywallView() }
             .sheet(isPresented: $showApplePaySetup) { ApplePayCaptureSetupView() }
+            .sheet(isPresented: $showAddAccount) {
+                AccountEditorView()
+            }
+            .sheet(isPresented: Binding(
+                get: { editingAccount != nil },
+                set: { if !$0 { editingAccount = nil } }
+            )) {
+                if let editingAccount {
+                    AccountEditorView(account: editingAccount)
+                }
+            }
             .sheet(isPresented: Binding(
                 get: { exportShareURL != nil },
                 set: { if !$0 { exportShareURL = nil } }
@@ -88,31 +101,24 @@ struct SettingsView: View {
             } message: {
                 Text(exportErrorMessage ?? "")
             }
-            .alert(
-                "Update balance",
+            .confirmationDialog(
+                "Delete account?",
                 isPresented: Binding(
-                    get: { editingAccount != nil },
-                    set: { if !$0 { editingAccount = nil } }
-                )
+                    get: { pendingDeleteAccount != nil },
+                    set: { if !$0 { pendingDeleteAccount = nil } }
+                ),
+                titleVisibility: .visible
             ) {
-                TextField("Balance", text: $accountBalanceText)
-                    .keyboardType(.decimalPad)
-                    .pennyNoAutoFill()
-                Button("Save") {
-                    Keyboard.dismiss()
-                    if let editingAccount, let value = Decimal.from(accountBalanceText) {
-                        editingAccount.balance = value
-                        try? modelContext.save()
-                        Haptics.success()
+                Button("Delete", role: .destructive) {
+                    if let pendingDeleteAccount {
+                        deleteAccount(pendingDeleteAccount)
                     }
-                    editingAccount = nil
+                    pendingDeleteAccount = nil
                 }
-                Button("Cancel", role: .cancel) {
-                    editingAccount = nil
-                }
+                Button("Cancel", role: .cancel) { pendingDeleteAccount = nil }
             } message: {
-                if let editingAccount {
-                    Text("Set the current balance for \(editingAccount.name).")
+                if let pendingDeleteAccount {
+                    Text("Remove “\(pendingDeleteAccount.name)” and any goal funding linked to it?")
                 }
             }
         }
@@ -192,17 +198,29 @@ struct SettingsView: View {
         }
     }
 
+    private var canAddAccount: Bool {
+        store.isPro || accounts.count < PennyProductCatalog.freeTierAccountLimit
+    }
+
+    private func startAddAccount() {
+        if canAddAccount {
+            showAddAccount = true
+        } else {
+            Haptics.light()
+            showPaywall = true
+        }
+    }
+
     private var accountsSection: some View {
         Section {
             if accounts.isEmpty {
-                Text("No accounts yet. Reset demo data or start fresh to create defaults.")
+                Text("No accounts yet. Add chequing, TFSA, FHSA, or other savings to power Forecast.")
                     .font(PennyTypography.caption)
                     .foregroundStyle(PennyColors.textSecondary)
             } else {
                 ForEach(accounts, id: \.id) { account in
                     Button {
                         editingAccount = account
-                        accountBalanceText = NSDecimalNumber(decimal: account.balance).stringValue
                     } label: {
                         HStack {
                             Label(account.name, systemImage: account.accountType.icon)
@@ -221,13 +239,54 @@ struct SettingsView: View {
                                 .foregroundStyle(PennyColors.textTertiary)
                         }
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            pendingDeleteAccount = account
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        Button {
+                            editingAccount = account
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        .tint(PennyColors.brand)
+                    }
                 }
+            }
+
+            Button {
+                startAddAccount()
+            } label: {
+                Label(
+                    canAddAccount ? "Add account" : "Add account (Pro)",
+                    systemImage: canAddAccount ? "plus" : "sparkles"
+                )
             }
         } header: {
             Text("Accounts")
         } footer: {
-            Text("Balances stay on this device and power Forecast. Updating an app build does not erase them.")
+            if store.isPro {
+                Text("Balances stay on this device and power Forecast. Link TFSA, FHSA, and other savings to goals when you edit an account.")
+            } else {
+                Text("Free includes \(PennyProductCatalog.freeTierAccountLimit) accounts. Penny Pro unlocks more accounts (extra TFSAs, FHSA, non-registered) and goal funding.")
+            }
         }
+    }
+
+    private func deleteAccount(_ account: FinancialAccount) {
+        let accountID = account.id
+        let descriptor = FetchDescriptor<GoalFundingAllocation>(
+            predicate: #Predicate { $0.accountID == accountID }
+        )
+        if let rows = try? modelContext.fetch(descriptor) {
+            for row in rows {
+                modelContext.delete(row)
+            }
+        }
+        modelContext.delete(account)
+        try? modelContext.save()
+        Haptics.warning()
     }
 
     private var applePaySection: some View {
@@ -477,9 +536,17 @@ struct SettingsView: View {
                 $0.transactionType == .expense && !reserved.contains($0.title.lowercased())
             }
             .reduce(Decimal(0)) { $0 + $1.amount }
+        let fundingLinks = allocations.map {
+            FinanceCalculator.GoalFundingLink(accountID: $0.accountID, goalID: $0.goalID, amount: $0.amount)
+        }
         let plannedSavings = FinanceCalculator.effectiveMonthlySavings(
-            goals: goals.map {
-                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            goals: goals.map { goal in
+                let funded = FinanceCalculator.fundedAmount(forGoal: goal.id, links: fundingLinks)
+                let current = FinanceCalculator.effectiveGoalCurrent(
+                    manualCurrent: goal.currentAmount,
+                    fundedFromAccounts: funded
+                )
+                return .init(current: current, target: goal.targetAmount, targetDate: goal.targetDate)
             },
             fallbackPlannedSavings: settings?.plannedMonthlySavings ?? 0
         )
@@ -588,6 +655,7 @@ struct PaywallView: View {
 
     private let benefits: [(String, String)] = [
         ("target", "Unlimited savings goals"),
+        ("building.columns.fill", "Extra accounts + goal funding (TFSA, FHSA, more)"),
         ("chart.line.uptrend.xyaxis", "Longer-range forecasts (6 & 12 months)"),
         ("square.and.arrow.up", "CSV export of your transactions"),
         ("doc.richtext", "Monthly summary PDF"),
@@ -631,7 +699,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("One-time lifetime unlock for unlimited goals, longer forecasts, CSV + PDF export, and extra accent themes. Cloud sync and bank connections are not included.")
+            Text("One-time lifetime unlock for unlimited goals, extra accounts with goal funding, longer forecasts, CSV + PDF export, and extra accent themes. Cloud sync and bank connections are not included.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)

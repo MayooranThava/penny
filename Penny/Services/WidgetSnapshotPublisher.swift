@@ -18,6 +18,7 @@ enum WidgetSnapshotPublisher {
         bills: [RecurringBill],
         debts: [Debt],
         goals: [SavingsGoal],
+        allocations: [GoalFundingAllocation] = [],
         settings: UserSettings?,
         month: Date = DateHelpers.startOfMonth()
     ) {
@@ -32,9 +33,17 @@ enum WidgetSnapshotPublisher {
         let discretionary = monthTransactions
             .filter { $0.transactionType == .expense && !reserved.contains($0.title.lowercased()) }
             .reduce(Decimal(0)) { $0 + $1.amount }
+        let fundingLinks = allocations.map {
+            FinanceCalculator.GoalFundingLink(accountID: $0.accountID, goalID: $0.goalID, amount: $0.amount)
+        }
         let plannedSavings = FinanceCalculator.effectiveMonthlySavings(
-            goals: goals.map {
-                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+            goals: goals.map { goal in
+                let funded = FinanceCalculator.fundedAmount(forGoal: goal.id, links: fundingLinks)
+                let current = FinanceCalculator.effectiveGoalCurrent(
+                    manualCurrent: goal.currentAmount,
+                    fundedFromAccounts: funded
+                )
+                return .init(current: current, target: goal.targetAmount, targetDate: goal.targetDate)
             },
             fallbackPlannedSavings: settings?.plannedMonthlySavings ?? 0
         )
@@ -69,11 +78,22 @@ enum WidgetSnapshotPublisher {
         }()
 
         let topGoal = goals.first
-        let topProgress = topGoal.map {
-            FinanceCalculator.goalProgressClamped(current: $0.currentAmount, target: $0.targetAmount)
+        let topCurrent = topGoal.map { goal -> Decimal in
+            let funded = FinanceCalculator.fundedAmount(forGoal: goal.id, links: fundingLinks)
+            return FinanceCalculator.effectiveGoalCurrent(
+                manualCurrent: goal.currentAmount,
+                fundedFromAccounts: funded
+            )
         }
-        let topDetail = topGoal.map {
-            "\(MoneyFormatters.compact(from: $0.currentAmount, currencyCode: currency)) of \(MoneyFormatters.compact(from: $0.targetAmount, currencyCode: currency))"
+        let topProgress = topGoal.flatMap { goal in
+            topCurrent.map {
+                FinanceCalculator.goalProgressClamped(current: $0, target: goal.targetAmount)
+            }
+        }
+        let topDetail = topGoal.flatMap { goal in
+            topCurrent.map {
+                "\(MoneyFormatters.compact(from: $0, currencyCode: currency)) of \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency))"
+            }
         }
 
         let snapshot = WidgetSnapshotStore.Snapshot(

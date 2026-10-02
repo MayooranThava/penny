@@ -226,6 +226,72 @@ enum FinanceCalculator {
         return calendar.date(byAdding: .month, value: months, to: date)
     }
 
+    // MARK: - Goal funding from accounts
+
+    public struct GoalFundingLink: Equatable, Sendable {
+        public let accountID: UUID
+        public let goalID: UUID
+        public let amount: Decimal
+
+        public init(accountID: UUID, goalID: UUID, amount: Decimal) {
+            self.accountID = accountID
+            self.goalID = goalID
+            self.amount = amount
+        }
+    }
+
+    /// Sum of positive allocation amounts.
+    public static func totalAllocated(amounts: [Decimal]) -> Decimal {
+        amounts.reduce(Decimal(0)) { $0 + max(0, $1) }
+    }
+
+    /// Balance left after earmarking allocations toward goals.
+    public static func unallocatedBalance(accountBalance: Decimal, allocatedAmounts: [Decimal]) -> Decimal {
+        max(0, accountBalance - totalAllocated(amounts: allocatedAmounts))
+    }
+
+    /// Clamp a requested earmark so it never exceeds remaining room on the account.
+    public static func clampedAllocation(
+        requested: Decimal,
+        accountBalance: Decimal,
+        otherAllocatedOnAccount: Decimal
+    ) -> Decimal {
+        let room = max(0, accountBalance - max(0, otherAllocatedOnAccount))
+        return min(max(0, requested), room).rounded(scale: 2)
+    }
+
+    /// Total earmarked toward one goal across all accounts.
+    public static func fundedAmount(
+        forGoal goalID: UUID,
+        links: [GoalFundingLink]
+    ) -> Decimal {
+        totalAllocated(amounts: links.filter { $0.goalID == goalID }.map(\.amount))
+    }
+
+    /// Effective goal progress current: manual entry wins unless accounts fund more.
+    public static func effectiveGoalCurrent(
+        manualCurrent: Decimal,
+        fundedFromAccounts: Decimal
+    ) -> Decimal {
+        max(max(0, manualCurrent), max(0, fundedFromAccounts))
+    }
+
+    /// Soft validation: true when every account’s allocations fit within its balance.
+    public static func allocationsFitBalances(
+        accountBalances: [UUID: Decimal],
+        links: [GoalFundingLink]
+    ) -> Bool {
+        var byAccount: [UUID: Decimal] = [:]
+        for link in links {
+            byAccount[link.accountID, default: 0] += max(0, link.amount)
+        }
+        for (accountID, allocated) in byAccount {
+            let balance = accountBalances[accountID] ?? 0
+            if allocated > balance { return false }
+        }
+        return true
+    }
+
     // MARK: - Debt payoff (amortization)
 
     enum DebtPayoffResult: Equatable {

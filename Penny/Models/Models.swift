@@ -293,6 +293,10 @@ final class Debt {
 enum AccountType: String, Codable, CaseIterable, Identifiable {
     case chequing
     case savings
+    case tfsa
+    case fhsa
+    case rrsp
+    case nonRegistered
     case investment
     case creditCard
     case loan
@@ -305,6 +309,10 @@ enum AccountType: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .chequing: return "Chequing"
         case .savings: return "Savings"
+        case .tfsa: return "TFSA"
+        case .fhsa: return "FHSA"
+        case .rrsp: return "RRSP"
+        case .nonRegistered: return "Non-registered"
         case .investment: return "Investment"
         case .creditCard: return "Credit Card"
         case .loan: return "Loan"
@@ -317,11 +325,52 @@ enum AccountType: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .chequing: return "building.columns.fill"
         case .savings: return "banknote.fill"
+        case .tfsa: return "leaf.fill"
+        case .fhsa: return "house.fill"
+        case .rrsp: return "chart.line.uptrend.xyaxis"
+        case .nonRegistered: return "tray.full.fill"
         case .investment: return "chart.line.uptrend.xyaxis"
         case .creditCard: return "creditcard.fill"
         case .loan: return "doc.text.fill"
         case .cash: return "dollarsign.circle.fill"
         case .other: return "wallet.pass.fill"
+        }
+    }
+
+    /// Asset balances that feed Forecast’s liquid starting point.
+    var countsTowardLiquidForecast: Bool {
+        switch self {
+        case .chequing, .savings, .tfsa, .fhsa, .rrsp, .nonRegistered, .investment, .cash:
+            return true
+        case .creditCard, .loan, .other:
+            return false
+        }
+    }
+
+    /// Types that typically fund long-term savings goals.
+    var isGoalFundingEligible: Bool {
+        switch self {
+        case .savings, .tfsa, .fhsa, .rrsp, .nonRegistered, .investment, .cash, .other:
+            return true
+        case .chequing, .creditCard, .loan:
+            return false
+        }
+    }
+
+    /// Suggested default name when creating an account of this type.
+    var suggestedName: String {
+        switch self {
+        case .chequing: return "Everyday Chequing"
+        case .savings: return "Savings"
+        case .tfsa: return "TFSA"
+        case .fhsa: return "FHSA"
+        case .rrsp: return "RRSP"
+        case .nonRegistered: return "Non-registered"
+        case .investment: return "Investment"
+        case .creditCard: return "Credit Card"
+        case .loan: return "Loan"
+        case .cash: return "Cash"
+        case .other: return "Account"
         }
     }
 }
@@ -354,6 +403,33 @@ final class FinancialAccount {
         self.balance = balance
         self.isIncludedInNetWorth = isIncludedInNetWorth
         self.sortOrder = sortOrder
+    }
+}
+
+// MARK: - Goal funding from accounts (Pro)
+
+/// Earmarks part of an account balance toward a savings goal.
+/// One account can fund several goals; allocations on an account should not exceed its balance.
+@Model
+final class GoalFundingAllocation {
+    @Attribute(.unique) var id: UUID
+    var accountID: UUID
+    var goalID: UUID
+    var amount: Decimal
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        accountID: UUID,
+        goalID: UUID,
+        amount: Decimal,
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.accountID = accountID
+        self.goalID = goalID
+        self.amount = max(0, amount)
+        self.createdAt = createdAt
     }
 }
 

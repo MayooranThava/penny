@@ -16,6 +16,7 @@ struct ReleaseSanityTests {
         #expect(PennyProductCatalog.allProductIDs == [PennyProductCatalog.lifetimeProductID])
         #expect(!PennyProductCatalog.allProductIDs.contains(PennyProductCatalog.retiredMonthlyConsumableProductID))
         #expect(PennyProductCatalog.freeTierGoalLimit == 3)
+        #expect(PennyProductCatalog.freeTierAccountLimit == 3)
         #expect(PennyProductCatalog.forecastHorizons(isPro: false) == [0, 1, 3])
         #expect(PennyProductCatalog.forecastHorizons(isPro: true) == [0, 1, 3, 6, 12])
         #expect(AccentTheme.effective(storedRaw: "ocean", isPro: false) == .mint)
@@ -50,7 +51,7 @@ struct ReleaseSanityTests {
     func persistenceIdentityVital() {
         #expect(PennyPersistence.storeName == "Penny")
         #expect(PennySchemaV1.versionIdentifier == Schema.Version(1, 0, 0))
-        #expect(PennySchemaV1.models.count == 8)
+        #expect(PennySchemaV1.models.count == 9)
         #expect(PennyMigrationPlan.schemas.count == 1)
         #expect(PennyMigrationPlan.stages.isEmpty)
     }
@@ -78,6 +79,8 @@ struct ReleaseSanityTests {
         let debts = try context.fetch(FetchDescriptor<Debt>())
         let categories = try context.fetch(FetchDescriptor<BudgetCategory>())
         let transactions = try context.fetch(FetchDescriptor<Transaction>())
+        let accounts = try context.fetch(FetchDescriptor<FinancialAccount>())
+        let allocations = try context.fetch(FetchDescriptor<GoalFundingAllocation>())
 
         #expect(!bills.isEmpty)
         #expect(!goals.isEmpty)
@@ -85,6 +88,17 @@ struct ReleaseSanityTests {
         #expect(categories.count >= CategoryCatalog.defaults.count)
         #expect(!transactions.isEmpty)
         #expect(bills.allSatisfy(\.isActive))
+        #expect(accounts.count == PennyProductCatalog.freeTierAccountLimit)
+        #expect(accounts.contains { $0.accountType == .tfsa })
+        #expect(!allocations.isEmpty)
+        #expect(
+            FinanceCalculator.allocationsFitBalances(
+                accountBalances: Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.balance) }),
+                links: allocations.map {
+                    .init(accountID: $0.accountID, goalID: $0.goalID, amount: $0.amount)
+                }
+            )
+        )
     }
 
     @Test("Demo expense titles match bill names so Safe to Spend does not double-count")

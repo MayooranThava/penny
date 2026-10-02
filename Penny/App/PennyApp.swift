@@ -171,6 +171,7 @@ struct MainTabView: View {
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Query(sort: \BudgetCategory.sortOrder) private var categories: [BudgetCategory]
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
+    @Query private var allocations: [GoalFundingAllocation]
     @Query private var settingsList: [UserSettings]
 
     private var settings: UserSettings? { settingsList.first }
@@ -271,6 +272,7 @@ struct MainTabView: View {
             bills: Array(bills),
             debts: Array(debts),
             goals: Array(goals),
+            allocations: Array(allocations),
             settings: settings
         )
     }

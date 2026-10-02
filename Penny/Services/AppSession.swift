@@ -21,6 +21,9 @@ enum PennyProductCatalog {
     /// Free users can keep this many savings goals; adding more prompts Pro.
     static let freeTierGoalLimit = 3
 
+    /// Free users can keep this many financial accounts; adding more prompts Pro.
+    static let freeTierAccountLimit = 3
+
     /// Forecast months ahead available without Pro.
     static let freeTierForecastHorizons = [0, 1, 3]
     /// Forecast months ahead with Penny Pro (includes longer-range projections).

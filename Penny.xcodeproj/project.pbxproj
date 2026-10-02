@@ -62,6 +62,8 @@
 		D17F6A302DA540C9B2031144 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 60CFD9610B054D9BB2F830B5 /* Assets.xcassets */; };
 		08010789DCAC4A5F80E00D89 /* Penny.app in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* Penny.app */; };
 		A10000000000000000000026 /* PennyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* PennyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B8D5F02C3E9E5B2F0C7D4E6F /* AccountEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C4E91B2F8D4A1E9B6C3D5E /* AccountEditorView.swift */; };
+		D0F7B24E5A1A7D4B2E9F6A8B /* GoalFundingLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6A13D4F0F6C3A1D8E5F7A /* GoalFundingLogicTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -156,6 +158,8 @@
 		94DD3DDDDD8C41F5A57714C7 /* UpcomingReminderWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpcomingReminderWidget.swift; sourceTree = "<group>"; };
 		7E5047AF21724173856260C8 /* WidgetSnapshotBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotBridge.swift; sourceTree = "<group>"; };
 		60CFD9610B054D9BB2F830B5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A7C4E91B2F8D4A1E9B6C3D5E /* AccountEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountEditorView.swift; sourceTree = "<group>"; };
+		C9E6A13D4F0F6C3A1D8E5F7A /* GoalFundingLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalFundingLogicTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -310,6 +314,7 @@
 		783A5EB302094A74AFBA7F62 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				A7C4E91B2F8D4A1E9B6C3D5E /* AccountEditorView.swift */,
 				9C3101394CFD462BAF3F50A4 /* ApplePayCaptureSetupView.swift */,
 				ECEF15A623E6461E95C68A1B /* SettingsView.swift */,
 			);
@@ -389,6 +394,7 @@
 				0065B6F6EE354553957CA64E /* ApplePayCaptureServiceTests.swift */,
 				EB66E8F324AB4218B7CE9EB3 /* ApplePayShortcutsGuideTests.swift */,
 				F7B141586D31429EA05B5059 /* FinanceCalculatorTests.swift */,
+				C9E6A13D4F0F6C3A1D8E5F7A /* GoalFundingLogicTests.swift */,
 				47E3DEDDA6F8447A85883F35 /* ReleaseSanityTests.swift */,
 			);
 			path = PennyTests;
@@ -549,6 +555,7 @@
 				3F758FEA8B6047D2BB4C4DE1 /* PlanView.swift in Sources */,
 				73327873D52D4D699D43826F /* ApplePayCaptureSetupView.swift in Sources */,
 				9852EF14949C48E5AE4FCC34 /* SettingsView.swift in Sources */,
+				B8D5F02C3E9E5B2F0C7D4E6F /* AccountEditorView.swift in Sources */,
 				DF39A678E8D944EFB3820F9C /* LogApplePayPurchaseIntent.swift in Sources */,
 				294C6B68C0D8423A9D017C1C /* Models.swift in Sources */,
 				F548DB86304A48A59A075F63 /* PennyPersistence.swift in Sources */,
@@ -597,6 +604,7 @@
 				54ACDFC038934A8F94D7B231 /* ApplePayCaptureServiceTests.swift in Sources */,
 				68F16C7B206B49A5A4315008 /* ApplePayShortcutsGuideTests.swift in Sources */,
 				484C6504FC5B4E6183DED961 /* FinanceCalculatorTests.swift in Sources */,
+				D0F7B24E5A1A7D4B2E9F6A8B /* GoalFundingLogicTests.swift in Sources */,
 				D3A83197737D4B55B5B19A73 /* ReleaseSanityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

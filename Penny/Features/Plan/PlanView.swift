@@ -64,6 +64,8 @@ struct GoalsPlanView: View {
     @Environment(StoreManager.self) private var store
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var settingsList: [UserSettings]
+    @Query private var allocations: [GoalFundingAllocation]
+    @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
     @State private var showAdd = false
     @State private var editingGoal: SavingsGoal?
     @State private var pendingDelete: SavingsGoal?
@@ -84,6 +86,31 @@ struct GoalsPlanView: View {
     }
 
     private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
+
+    private var fundingLinks: [FinanceCalculator.GoalFundingLink] {
+        allocations.map {
+            .init(accountID: $0.accountID, goalID: $0.goalID, amount: $0.amount)
+        }
+    }
+
+    private func effectiveCurrent(for goal: SavingsGoal) -> Decimal {
+        let funded = FinanceCalculator.fundedAmount(forGoal: goal.id, links: fundingLinks)
+        return FinanceCalculator.effectiveGoalCurrent(
+            manualCurrent: goal.currentAmount,
+            fundedFromAccounts: funded
+        )
+    }
+
+    private func fundingCaption(for goal: SavingsGoal) -> String? {
+        let rows = allocations.filter { $0.goalID == goal.id && $0.amount > 0 }
+        guard !rows.isEmpty else { return nil }
+        let names = rows.compactMap { row in
+            accounts.first(where: { $0.id == row.accountID })?.name
+        }
+        let funded = FinanceCalculator.totalAllocated(amounts: rows.map(\.amount))
+        let source = names.isEmpty ? "accounts" : names.joined(separator: " · ")
+        return "From \(source) · \(MoneyFormatters.compact(from: funded, currencyCode: currency))"
+    }
 
     var body: some View {
         List {
@@ -107,20 +134,25 @@ struct GoalsPlanView: View {
                             VStack(alignment: .leading, spacing: PennySpacing.sm) {
                                 GoalProgressView(
                                     name: goal.name,
-                                    current: goal.currentAmount,
+                                    current: effectiveCurrent(for: goal),
                                     target: goal.targetAmount,
                                     currencyCode: currency,
                                     icon: goal.icon,
                                     colourIdentifier: goal.colourIdentifier,
                                     estimatedCompletion: goal.targetDate ?? FinanceCalculator.estimatedCompletionDate(
-                                        current: goal.currentAmount,
+                                        current: effectiveCurrent(for: goal),
                                         target: goal.targetAmount,
                                         monthlyContribution: (settingsList.first?.plannedMonthlySavings ?? 500) / Decimal(max(goals.count, 1))
                                     )
                                 )
+                                if let caption = fundingCaption(for: goal) {
+                                    Text(caption)
+                                        .font(PennyTypography.caption)
+                                        .foregroundStyle(PennyColors.brand)
+                                }
                                 if let target = goal.targetDate,
                                    let required = FinanceCalculator.requiredMonthlySavings(
-                                    current: goal.currentAmount,
+                                    current: effectiveCurrent(for: goal),
                                     target: goal.targetAmount,
                                     targetDate: target
                                    ), required > 0 {
@@ -200,9 +232,7 @@ struct GoalsPlanView: View {
         ) {
             Button("Delete", role: .destructive) {
                 if let pendingDelete {
-                    modelContext.delete(pendingDelete)
-                    try? modelContext.save()
-                    Haptics.warning()
+                    deleteGoal(pendingDelete)
                 }
                 pendingDelete = nil
             }
@@ -213,13 +243,28 @@ struct GoalsPlanView: View {
             }
         }
     }
+
+    private func deleteGoal(_ goal: SavingsGoal) {
+        let goalID = goal.id
+        for row in allocations where row.goalID == goalID {
+            modelContext.delete(row)
+        }
+        modelContext.delete(goal)
+        try? modelContext.save()
+        Haptics.warning()
+    }
 }
 
 struct AddGoalView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(StoreManager.self) private var store
 
     var goal: SavingsGoal? = nil
+
+    @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
+    @Query private var allocations: [GoalFundingAllocation]
+    @Query private var settingsList: [UserSettings]
 
     @State private var name = ""
     @State private var targetText = ""
@@ -230,6 +275,8 @@ struct AddGoalView: View {
     @State private var selectedPreset: String?
     @State private var didLoadExisting = false
     @State private var showDeleteConfirm = false
+    @State private var showPaywall = false
+    @State private var fundingTexts: [UUID: String] = [:]
 
     private let presets: [(String, String)] = [
         ("Emergency Fund", "shield.fill"),
@@ -241,6 +288,11 @@ struct AddGoalView: View {
     ]
 
     private var isEditing: Bool { goal != nil }
+    private var currency: String { settingsList.first?.currencyCode ?? "CAD" }
+
+    private var fundingAccounts: [FinancialAccount] {
+        accounts.filter { $0.accountType.isGoalFundingEligible }
+    }
 
     var body: some View {
         NavigationStack {
@@ -283,6 +335,20 @@ struct AddGoalView: View {
                         DatePicker("Reach by", selection: $targetDate, in: Date.now..., displayedComponents: .date)
                     }
                 }
+                if store.isPro {
+                    goalFundingSection
+                } else if isEditing || !fundingAccounts.isEmpty {
+                    Section {
+                        Button {
+                            Haptics.light()
+                            showPaywall = true
+                        } label: {
+                            Label("Fund from TFSA / FHSA accounts (Pro)", systemImage: "sparkles")
+                        }
+                    } footer: {
+                        Text("Penny Pro lets you earmark balances from TFSA, FHSA, and other savings toward this goal.")
+                    }
+                }
                 if isEditing {
                     Section {
                         Button("Delete Goal", role: .destructive) {
@@ -307,6 +373,7 @@ struct AddGoalView: View {
                 }
             }
             .onAppear { loadExistingIfNeeded() }
+            .sheet(isPresented: $showPaywall) { PaywallView() }
             .confirmationDialog(
                 "Delete goal?",
                 isPresented: $showDeleteConfirm,
@@ -320,16 +387,72 @@ struct AddGoalView: View {
         }
     }
 
+    @ViewBuilder
+    private var goalFundingSection: some View {
+        Section {
+            if fundingAccounts.isEmpty {
+                Text("Add a TFSA, FHSA, or savings account in Settings to earmark funds here.")
+                    .font(PennyTypography.caption)
+                    .foregroundStyle(PennyColors.textSecondary)
+            } else {
+                ForEach(fundingAccounts, id: \.id) { account in
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Label(account.name, systemImage: account.accountType.icon)
+                                .font(PennyTypography.bodyEmphasized)
+                                .lineLimit(1)
+                            Text("\(account.accountType.displayName) · \(MoneyFormatters.compact(from: account.balance, currencyCode: currency))")
+                                .font(PennyTypography.caption)
+                                .foregroundStyle(PennyColors.textTertiary)
+                        }
+                        Spacer(minLength: PennySpacing.sm)
+                        TextField("0", text: fundingBinding(for: account.id))
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 96)
+                            .pennyNoAutoFill()
+                            .monospacedDigit()
+                    }
+                }
+            }
+        } header: {
+            Text("Funded from accounts")
+        } footer: {
+            Text("Choose how much of each account counts toward this goal. Remaining room on each account stays available for other goals.")
+        }
+    }
+
+    private func fundingBinding(for accountID: UUID) -> Binding<String> {
+        Binding(
+            get: { fundingTexts[accountID] ?? "0" },
+            set: { fundingTexts[accountID] = $0 }
+        )
+    }
+
     private func loadExistingIfNeeded() {
-        guard !didLoadExisting, let goal else { return }
+        guard !didLoadExisting else { return }
         didLoadExisting = true
-        name = goal.name
-        targetText = NSDecimalNumber(decimal: goal.targetAmount).stringValue
-        currentText = NSDecimalNumber(decimal: goal.currentAmount).stringValue
-        hasTargetDate = goal.targetDate != nil
-        targetDate = goal.targetDate ?? targetDate
-        icon = goal.icon
-        selectedPreset = presets.first { $0.1 == goal.icon }?.0
+        if let goal {
+            name = goal.name
+            targetText = NSDecimalNumber(decimal: goal.targetAmount).stringValue
+            currentText = NSDecimalNumber(decimal: goal.currentAmount).stringValue
+            hasTargetDate = goal.targetDate != nil
+            targetDate = goal.targetDate ?? targetDate
+            icon = goal.icon
+            selectedPreset = presets.first { $0.1 == goal.icon }?.0
+            let existing = allocations.filter { $0.goalID == goal.id }
+            for account in fundingAccounts {
+                if let row = existing.first(where: { $0.accountID == account.id }) {
+                    fundingTexts[account.id] = NSDecimalNumber(decimal: row.amount).stringValue
+                } else {
+                    fundingTexts[account.id] = ""
+                }
+            }
+        } else {
+            for account in fundingAccounts {
+                fundingTexts[account.id] = ""
+            }
+        }
     }
 
     private func save() {
@@ -338,30 +461,80 @@ struct AddGoalView: View {
         let current = Decimal.from(currentText) ?? 0
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
 
+        let savedGoal: SavingsGoal
         if let goal {
             goal.name = trimmed
             goal.targetAmount = target
             goal.currentAmount = max(0, current)
             goal.targetDate = hasTargetDate ? targetDate : nil
             goal.icon = icon
+            savedGoal = goal
         } else {
-            let goal = SavingsGoal(
+            let created = SavingsGoal(
                 name: trimmed,
                 targetAmount: target,
                 currentAmount: max(0, current),
                 targetDate: hasTargetDate ? targetDate : nil,
                 icon: icon
             )
-            modelContext.insert(goal)
+            modelContext.insert(created)
+            savedGoal = created
         }
+
+        if store.isPro {
+            persistFunding(for: savedGoal)
+            let funded = fundingAccounts.reduce(Decimal(0)) { partial, account in
+                partial + max(0, Decimal.from(fundingTexts[account.id] ?? "") ?? 0)
+            }
+            if funded > savedGoal.currentAmount {
+                savedGoal.currentAmount = funded
+            }
+        }
+
         try? modelContext.save()
         Haptics.success()
         dismiss()
     }
 
+    private func persistFunding(for goal: SavingsGoal) {
+        let existing = allocations.filter { $0.goalID == goal.id }
+
+        for account in fundingAccounts {
+            let requested = max(0, Decimal.from(fundingTexts[account.id] ?? "") ?? 0)
+            let otherOnAccount = allocations
+                .filter { $0.accountID == account.id && $0.goalID != goal.id }
+                .reduce(Decimal(0)) { $0 + max(0, $1.amount) }
+            let applied = FinanceCalculator.clampedAllocation(
+                requested: requested,
+                accountBalance: max(0, account.balance),
+                otherAllocatedOnAccount: otherOnAccount
+            )
+
+            if applied > 0 {
+                if let row = existing.first(where: { $0.accountID == account.id }) {
+                    row.amount = applied
+                } else {
+                    modelContext.insert(
+                        GoalFundingAllocation(
+                            accountID: account.id,
+                            goalID: goal.id,
+                            amount: applied
+                        )
+                    )
+                }
+            } else if let row = existing.first(where: { $0.accountID == account.id }) {
+                modelContext.delete(row)
+            }
+        }
+    }
+
     private func deleteGoal() {
         guard let goal else { return }
         Keyboard.dismiss()
+        let goalID = goal.id
+        for row in allocations where row.goalID == goalID {
+            modelContext.delete(row)
+        }
         modelContext.delete(goal)
         try? modelContext.save()
         Haptics.warning()
@@ -966,6 +1139,7 @@ struct ForecastPlanView: View {
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
     @Query private var debts: [Debt]
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
+    @Query private var allocations: [GoalFundingAllocation]
     @Query private var settingsList: [UserSettings]
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
     @Environment(AppSession.self) private var session
@@ -976,7 +1150,8 @@ struct ForecastPlanView: View {
     private var horizons: [Int] { PennyProductCatalog.forecastHorizons(isPro: store.isPro) }
 
     private var currentBalance: Decimal {
-        accounts.filter { $0.accountType == .chequing || $0.accountType == .savings || $0.accountType == .cash }
+        accounts
+            .filter { $0.accountType.countsTowardLiquidForecast }
             .reduce(0) { $0 + $1.balance }
     }
 
@@ -1003,9 +1178,17 @@ struct ForecastPlanView: View {
     }
 
     private var plannedSavings: Decimal {
-        FinanceCalculator.effectiveMonthlySavings(
-            goals: goals.map {
-                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+        let links = allocations.map {
+            FinanceCalculator.GoalFundingLink(accountID: $0.accountID, goalID: $0.goalID, amount: $0.amount)
+        }
+        return FinanceCalculator.effectiveMonthlySavings(
+            goals: goals.map { goal in
+                let funded = FinanceCalculator.fundedAmount(forGoal: goal.id, links: links)
+                let current = FinanceCalculator.effectiveGoalCurrent(
+                    manualCurrent: goal.currentAmount,
+                    fundedFromAccounts: funded
+                )
+                return .init(current: current, target: goal.targetAmount, targetDate: goal.targetDate)
             },
             fallbackPlannedSavings: settingsList.first?.plannedMonthlySavings ?? 0
         )

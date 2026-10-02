@@ -9,6 +9,7 @@ struct HomeView: View {
     private var bills: [RecurringBill]
     @Query(sort: \Debt.name) private var debts: [Debt]
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
+    @Query private var allocations: [GoalFundingAllocation]
     @Query private var settingsList: [UserSettings]
 
     @Environment(AppSession.self) private var session
@@ -21,6 +22,19 @@ struct HomeView: View {
 
     /// Home always reflects the current calendar month (Activity/Budget may browse other months).
     private var homeMonth: Date { DateHelpers.startOfMonth() }
+
+    private var fundingLinks: [FinanceCalculator.GoalFundingLink] {
+        allocations.map {
+            .init(accountID: $0.accountID, goalID: $0.goalID, amount: $0.amount)
+        }
+    }
+
+    private func effectiveGoalCurrent(_ goal: SavingsGoal) -> Decimal {
+        FinanceCalculator.effectiveGoalCurrent(
+            manualCurrent: goal.currentAmount,
+            fundedFromAccounts: FinanceCalculator.fundedAmount(forGoal: goal.id, links: fundingLinks)
+        )
+    }
 
     private var monthTransactions: [Transaction] {
         transactions.filter { DateHelpers.isSameMonth($0.date, homeMonth) }
@@ -55,7 +69,7 @@ struct HomeView: View {
     private var plannedSavings: Decimal {
         FinanceCalculator.effectiveMonthlySavings(
             goals: goals.map {
-                .init(current: $0.currentAmount, target: $0.targetAmount, targetDate: $0.targetDate)
+                .init(current: effectiveGoalCurrent($0), target: $0.targetAmount, targetDate: $0.targetDate)
             },
             fallbackPlannedSavings: settings?.plannedMonthlySavings ?? 0
         )
@@ -65,7 +79,7 @@ struct HomeView: View {
         goals.contains { goal in
             guard let targetDate = goal.targetDate else { return false }
             guard let required = FinanceCalculator.requiredMonthlySavings(
-                current: goal.currentAmount,
+                current: effectiveGoalCurrent(goal),
                 target: goal.targetAmount,
                 targetDate: targetDate
             ) else { return false }
@@ -159,10 +173,11 @@ struct HomeView: View {
         }
 
         let goalSnapshots: [InsightEngine.GoalSnapshot] = goals.map { goal in
+            let current = effectiveGoalCurrent(goal)
             let perGoal: Decimal = {
                 if let target = goal.targetDate,
                    let required = FinanceCalculator.requiredMonthlySavings(
-                    current: goal.currentAmount,
+                    current: current,
                     target: goal.targetAmount,
                     targetDate: target
                    ) {
@@ -172,7 +187,7 @@ struct HomeView: View {
             }()
             return .init(
                 name: goal.name,
-                current: goal.currentAmount,
+                current: current,
                 target: goal.targetAmount,
                 targetDate: goal.targetDate,
                 monthlyContributionEstimate: perGoal
@@ -382,7 +397,7 @@ struct HomeView: View {
                     ForEach(goals, id: \.id) { goal in
                         if let targetDate = goal.targetDate,
                            let required = FinanceCalculator.requiredMonthlySavings(
-                            current: goal.currentAmount,
+                            current: effectiveGoalCurrent(goal),
                             target: goal.targetAmount,
                             targetDate: targetDate
                            ),
@@ -549,7 +564,7 @@ struct HomeView: View {
                                 PennyCard {
                                     GoalProgressView(
                                         name: goal.name,
-                                        current: goal.currentAmount,
+                                        current: effectiveGoalCurrent(goal),
                                         target: goal.targetAmount,
                                         currencyCode: currency,
                                         icon: goal.icon,
@@ -613,7 +628,7 @@ struct HomeView: View {
         if let target = goal.targetDate { return target }
         let monthly = plannedSavings / Decimal(max(goals.count, 1))
         return FinanceCalculator.estimatedCompletionDate(
-            current: goal.currentAmount,
+            current: effectiveGoalCurrent(goal),
             target: goal.targetAmount,
             monthlyContribution: monthly
         )
@@ -626,6 +641,7 @@ struct HomeView: View {
             bills: Array(bills),
             debts: Array(debts),
             goals: Array(goals),
+            allocations: Array(allocations),
             settings: settings,
             month: homeMonth
         )
@@ -635,12 +651,14 @@ struct HomeView: View {
 #Preview("Home Light") {
     HomeView()
         .environment(AppSession())
+        .environment(StoreManager())
         .modelContainer(PennyPersistence.previewContainer())
 }
 
 #Preview("Home Dark") {
     HomeView()
         .environment(AppSession())
+        .environment(StoreManager())
         .modelContainer(PennyPersistence.previewContainer())
         .preferredColorScheme(.dark)
 }

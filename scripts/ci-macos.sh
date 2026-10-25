@@ -97,6 +97,36 @@ xcodebuild build-for-testing \
   "${SIGNING[@]}" \
   | tee "$ROOT/artifacts/xcodebuild-build.log"
 
+verify_compiled_app_icon() {
+  local app=""
+  local line
+  local icon_name
+  while IFS= read -r line; do
+    app="$line"
+    break
+  done < <(find "$DD/Build/Products" -type d -name "Penny.app" -print)
+  if [[ -z "$app" || ! -f "$app/Info.plist" ]]; then
+    echo "Built Penny.app Info.plist not found under $DD/Build/Products" >&2
+    exit 1
+  fi
+  if ! icon_name="$(plutil -extract CFBundleIconName raw -o - "$app/Info.plist" 2>/dev/null)"; then
+    echo "Penny.app Info.plist is missing CFBundleIconName ($app/Info.plist)" >&2
+    plutil -convert xml1 -o - "$app/Info.plist" >&2 || true
+    exit 1
+  fi
+  icon_name="${icon_name//$'\n'/}"
+  icon_name="${icon_name//\"/}"
+  if [[ "$icon_name" != "AppIcon" ]]; then
+    echo "Penny.app Info.plist CFBundleIconName is '$icon_name', expected AppIcon" >&2
+    exit 1
+  fi
+  if [[ ! -f "$app/Assets.car" ]]; then
+    echo "Penny.app is missing Assets.car ($app/Assets.car). The asset catalog was not compiled." >&2
+    exit 1
+  fi
+  echo "Verified $app has CFBundleIconName=AppIcon and Assets.car"
+}
+
 require_product() {
   local name="$1"
   local found=""
@@ -114,6 +144,7 @@ require_product() {
 }
 
 require_product "Penny.app"
+verify_compiled_app_icon
 require_product "PennyWidgets.appex"
 while IFS= read -r product; do
   [[ -n "$product" ]] || continue

@@ -270,6 +270,8 @@ for path, fid in file_refs.items():
     if path in (app_entitlements, widget_entitlements, widget_info_plist):
         continue
     if path.suffix == ".xcassets":
+        # Catalogs are directories. Classify them before the folder branch so
+        # regeneration keeps lastKnownFileType = folder.assetcatalog.
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = {path.name}; sourceTree = "<group>"; }};')
     elif path.is_dir():
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder; path = {path.name}; sourceTree = "<group>"; }};')
@@ -581,6 +583,7 @@ app_settings = """
 				DEVELOPMENT_TEAM = 2YJ478267N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Penny/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Penny;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";

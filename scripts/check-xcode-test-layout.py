@@ -6,6 +6,10 @@
   (so a v1.0.4 store can land there without another project edit).
 - Every @Suite opts into isolated SwiftData / UserDefaults.
 - The macOS test script does not filter PennyTests (MigrationTests must run).
+- Every .xcassets PBXFileReference (app and widgets) is folder.assetcatalog,
+  ASSETCATALOG_COMPILER_APPICON_NAME stays AppIcon, and Penny/Info.plist
+  supplies CFBundleIconName. Xcode ignores a user-defined
+  INFOPLIST_KEY_CFBundleIconName.
 """
 
 from __future__ import annotations
@@ -89,6 +93,65 @@ def phase_is_resources(project: str, phase_id: str) -> bool:
     )
 
 
+def asset_catalog_failures(project: str) -> list[str]:
+    """Fail when an .xcassets file reference would be copied instead of compiled.
+
+    A PBXFileReference with lastKnownFileType = folder copies the catalog raw.
+    App Store Connect then rejects the build (ITMS-90022, ITMS-90713) because
+    actool never emits Assets.car or CFBundleIconName.
+    """
+    failures: list[str] = []
+    catalogs = 0
+    for match in re.finditer(
+        r"isa = PBXFileReference;(?P<body>.*?)\};",
+        project,
+        re.S,
+    ):
+        body = match.group("body")
+        path_match = re.search(r"\bpath = ([^;]+);", body)
+        if not path_match:
+            continue
+        path = path_match.group(1).strip().strip('"')
+        if not path.endswith(".xcassets"):
+            continue
+        catalogs += 1
+        type_match = re.search(
+            r"\b(?:lastKnownFileType|explicitFileType) = ([^;]+);",
+            body,
+        )
+        file_type = type_match.group(1).strip().strip('"') if type_match else ""
+        if file_type != "folder.assetcatalog":
+            shown = file_type or "missing"
+            failures.append(
+                f"{path} PBXFileReference type is {shown}; expected folder.assetcatalog"
+            )
+    if catalogs == 0:
+        failures.append("project.pbxproj has no .xcassets PBXFileReference")
+
+    icon_names = re.findall(r"ASSETCATALOG_COMPILER_APPICON_NAME = ([^;]+);", project)
+    if not icon_names:
+        failures.append("ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon is missing")
+    for value in icon_names:
+        cleaned = value.strip().strip('"')
+        if cleaned != "AppIcon":
+            failures.append(
+                f"ASSETCATALOG_COMPILER_APPICON_NAME is {cleaned}; expected AppIcon"
+            )
+
+    # Xcode does not copy a user-defined INFOPLIST_KEY_CFBundleIconName into
+    # the generated Info.plist. The app target merges Penny/Info.plist instead.
+    if project.count("INFOPLIST_FILE = Penny/Info.plist;") < 2:
+        failures.append("App target is missing INFOPLIST_FILE = Penny/Info.plist for Debug and Release")
+    icon_plist = ROOT / "Penny" / "Info.plist"
+    if not icon_plist.is_file():
+        failures.append("Penny/Info.plist is missing")
+    else:
+        plist_text = icon_plist.read_text()
+        if "<key>CFBundleIconName</key>" not in plist_text or "<string>AppIcon</string>" not in plist_text:
+            failures.append("Penny/Info.plist must set CFBundleIconName to AppIcon")
+    return failures
+
+
 def filtered_lines(path: Path) -> list[str]:
     bad: list[str] = []
     if not path.is_file():
@@ -168,6 +231,8 @@ def main() -> int:
         for line in filtered_lines(path):
             failures.append(f"test filter would skip MigrationTests: {line}")
 
+    failures.extend(asset_catalog_failures(project))
+
     if failures:
         print("Xcode test layout check failed:", file=sys.stderr)
         for message in failures:
@@ -178,6 +243,9 @@ def main() -> int:
     print("[pass] PennyTests bundles Migration/Fixtures", file=sys.stderr)
     print("[pass] every suite isolates SwiftData and UserDefaults", file=sys.stderr)
     print("[pass] macOS CI does not filter PennyTests", file=sys.stderr)
+    print("[pass] every .xcassets reference is folder.assetcatalog", file=sys.stderr)
+    print("[pass] ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon", file=sys.stderr)
+    print("[pass] Penny/Info.plist sets CFBundleIconName to AppIcon", file=sys.stderr)
     if list_products:
         for target in test_targets:
             print(target["product"])

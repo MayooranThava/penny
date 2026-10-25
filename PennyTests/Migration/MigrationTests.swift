@@ -583,8 +583,8 @@ struct MigrationTests {
         let snapshot = try #require(WidgetSnapshotStore.load())
         #expect(snapshot.currencyCode == "CAD")
         #expect(snapshot.displayName == "Avery")
-        #expect(abs(snapshot.safeToSpend - NSDecimalNumber(decimal: expected).doubleValue) < 0.001)
+        #expect(snapshot.safeToSpend == expected)
         let planned = try #require(snapshot.plannedSpending)
-        #expect(abs(planned - NSDecimalNumber(decimal: money("1900.10")).doubleValue) < 0.001)
+        #expect(planned == money("1900.10"))
     }
 }

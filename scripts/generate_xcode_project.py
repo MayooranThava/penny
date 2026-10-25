@@ -270,6 +270,8 @@ for path, fid in file_refs.items():
     if path in (app_entitlements, widget_entitlements, widget_info_plist):
         continue
     if path.suffix == ".xcassets":
+        # Catalogs are directories. Classify them before the folder branch so
+        # regeneration keeps lastKnownFileType = folder.assetcatalog.
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = {path.name}; sourceTree = "<group>"; }};')
     elif path.is_dir():
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder; path = {path.name}; sourceTree = "<group>"; }};')

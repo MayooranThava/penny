@@ -2,6 +2,17 @@ import Foundation
 import os
 import SwiftData
 
+/// Thrown only from tests. SwiftData updates a row when a second insert reuses its
+/// unique id, so a duplicate insert does not fail `save()`.
+struct PennyForcedSaveFailure: Error, Sendable, LocalizedError {
+    var errorDescription: String? { "The save could not be written." }
+}
+
+enum PennySaveTesting {
+    /// When set, `saveOrSurfaceError()` throws this and does not call `save()`.
+    @TaskLocal static var forcedError: PennyForcedSaveFailure?
+}
+
 /// One app-wide message when a SwiftData save fails. Views show it as a banner.
 @MainActor
 @Observable
@@ -31,6 +42,9 @@ extension ModelContext {
     @MainActor
     func saveOrSurfaceError() -> Bool {
         do {
+            if let forced = PennySaveTesting.forcedError {
+                throw forced
+            }
             try save()
             return true
         } catch {

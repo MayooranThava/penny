@@ -5,31 +5,31 @@ import Testing
 
 @Suite("Save errors", .serialized, .isolatedTestResources)
 struct SaveErrorTests {
-    @Test("duplicate save failure is shown instead of swallowed")
+    @Test("a failed save is shown instead of swallowed")
     @MainActor
-    func duplicateSaveFailureIsShown() throws {
+    func failedSaveIsShown() throws {
         PennySaveReporter.shared.dismiss()
         let container = try PennyPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
-        let id = UUID()
         context.insert(Transaction(
-            id: id,
-            title: "First",
-            amount: Decimal(string: "1.25")!,
+            title: "Coffee",
+            amount: Decimal(string: "4.75")!,
             transactionType: .expense,
             categoryName: "Food"
         ))
-        try context.save()
-        context.insert(Transaction(
-            id: id,
-            title: "Duplicate",
-            amount: Decimal(string: "2.50")!,
-            transactionType: .expense,
-            categoryName: "Food"
-        ))
-        let saved = context.saveOrSurfaceError()
-        #expect(saved == false)
+
+        // A second insert with the same id does not throw on this SDK (the row is updated).
+        // Force the failure path the banner is built for.
+        try PennySaveTesting.$forcedError.withValue(PennyForcedSaveFailure()) {
+            let saved = context.saveOrSurfaceError()
+            #expect(saved == false)
+        }
+
         let message = try #require(PennySaveReporter.shared.message)
         #expect(message.contains("Couldn’t save"))
+        #expect(context.saveOrSurfaceError() == true)
+        let rows = try context.fetch(FetchDescriptor<Transaction>())
+        #expect(rows.count == 1)
+        #expect(rows.first?.amount == Decimal(string: "4.75"))
     }
 }

@@ -562,11 +562,13 @@ struct MigrationTests {
         let settings = try #require(context.fetch(FetchDescriptor<UserSettings>()).first)
         let month = sampleDate()
 
-        let weekly = (money("12.50") * 26 / 12).rounded(scale: 2)
+        // Weekly bills use 52 weeks / 12 months (54.17), not the biweekly 26/12 figure.
+        let weekly = FinanceCalculator.monthlyEquivalent(amount: money("12.50"), recurrence: .weekly)
         let committed = money("1500.10") + weekly + money("50.00")
         let expected = money("5000.55") - committed - money("4.76") - money("200.00")
-        #expect(weekly == money("27.08"))
-        #expect(expected == money("3218.61"))
+        #expect(weekly == money("54.17"))
+        #expect(committed == money("1604.27"))
+        #expect(expected == money("3191.52"))
 
         WidgetSnapshotPublisher.publish(
             transactions: transactions,

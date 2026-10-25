@@ -7,7 +7,8 @@
 - Every @Suite opts into isolated SwiftData / UserDefaults.
 - The macOS test script does not filter PennyTests (MigrationTests must run).
 - Every .xcassets PBXFileReference (app and widgets) is folder.assetcatalog,
-  and ASSETCATALOG_COMPILER_APPICON_NAME stays AppIcon.
+  ASSETCATALOG_COMPILER_APPICON_NAME stays AppIcon, and the generated
+  Info.plist key CFBundleIconName stays AppIcon.
 """
 
 from __future__ import annotations
@@ -135,6 +136,18 @@ def asset_catalog_failures(project: str) -> list[str]:
             failures.append(
                 f"ASSETCATALOG_COMPILER_APPICON_NAME is {cleaned}; expected AppIcon"
             )
+
+    # actool compiles the catalog but does not always write the top-level
+    # CFBundleIconName that App Store Connect requires (ITMS-90713).
+    plist_icons = re.findall(r"INFOPLIST_KEY_CFBundleIconName = ([^;]+);", project)
+    if not plist_icons:
+        failures.append("INFOPLIST_KEY_CFBundleIconName = AppIcon is missing")
+    for value in plist_icons:
+        cleaned = value.strip().strip('"')
+        if cleaned != "AppIcon":
+            failures.append(
+                f"INFOPLIST_KEY_CFBundleIconName is {cleaned}; expected AppIcon"
+            )
     return failures
 
 
@@ -231,6 +244,7 @@ def main() -> int:
     print("[pass] macOS CI does not filter PennyTests", file=sys.stderr)
     print("[pass] every .xcassets reference is folder.assetcatalog", file=sys.stderr)
     print("[pass] ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon", file=sys.stderr)
+    print("[pass] INFOPLIST_KEY_CFBundleIconName = AppIcon", file=sys.stderr)
     if list_products:
         for target in test_targets:
             print(target["product"])

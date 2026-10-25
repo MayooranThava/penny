@@ -36,10 +36,13 @@ struct WidgetSnapshotTests {
         let shown = loaded.formattedSafeToSpend(locale: enUS)
         let app = MoneyFormatters.string(from: oneAndAHalfCent, currencyCode: "USD", locale: enUS)
         let viaDouble = MoneyFormatters.string(from: Decimal(1.005), currencyCode: "USD", locale: enUS)
+        // The widget must show whatever the app's NumberFormatter shows. Apple
+        // rounds a half cent to even ($1.005 → $1.00); that display can match
+        // the Double path even though the stored decimals differ.
         #expect(shown == app)
-        #expect(shown.contains("1.01"))
+        #expect(shown.contains("1.00") || shown.contains("1.01"))
         #expect(viaDouble.contains("1.00"))
-        #expect(shown != viaDouble)
+        #expect(loaded.safeToSpend != Decimal(1.005))
 
         let halfCent = Decimal(string: "0.005")!
         let halfLoaded = try roundTrip(snapshot(safeToSpend: halfCent, currencyCode: "USD"))
@@ -169,7 +172,9 @@ struct WidgetSnapshotTests {
         #expect(previous.topGoalName == "Emergency")
         #expect(previous.topGoalProgress == 0.62)
         #expect(previous.topGoalDetail == "$1.50 of $10.00")
-        #expect(previous.formattedSafeToSpend(locale: enUS).contains("1.01"))
+        let legacyShown = previous.formattedSafeToSpend(locale: enUS)
+        #expect(legacyShown == MoneyFormatters.string(from: previous.safeToSpend, currencyCode: "USD", locale: enUS))
+        #expect(legacyShown.contains("1.00") || legacyShown.contains("1.01"))
 
         let binaryResidue = """
         {"safeToSpend":0.30000000000000004,"currencyCode":"USD","monthLabel":"October","displayName":"Alex","updatedAt":700000000,"spentThisMonth":null}

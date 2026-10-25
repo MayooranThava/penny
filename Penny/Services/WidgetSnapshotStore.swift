@@ -5,6 +5,13 @@ enum WidgetSnapshotStore {
     static let appGroupID = "group.com.mayooran.penny"
     static let snapshotKey = "penny.widget.snapshot"
 
+    /// Set only by PennyTests. Nil in the app, so widgets keep using the App Group.
+    @TaskLocal static var defaultsSuiteOverride: String?
+
+    static var activeDefaultsSuite: String {
+        defaultsSuiteOverride ?? appGroupID
+    }
+
     struct UpcomingLine: Codable, Equatable {
         var title: String
         var detail: String
@@ -32,13 +39,13 @@ enum WidgetSnapshotStore {
     }
 
     static func save(_ snapshot: Snapshot) {
-        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
+        guard let defaults = UserDefaults(suiteName: activeDefaultsSuite) else { return }
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         defaults.set(data, forKey: snapshotKey)
     }
 
     static func load() -> Snapshot? {
-        guard let defaults = UserDefaults(suiteName: appGroupID),
+        guard let defaults = UserDefaults(suiteName: activeDefaultsSuite),
               let data = defaults.data(forKey: snapshotKey) else { return nil }
         return try? JSONDecoder().decode(Snapshot.self, from: data)
     }

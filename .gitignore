@@ -1,5 +1,7 @@
 # Xcode / macOS
 DerivedData/
+.derivedData/
+artifacts/
 build/
 *.xcuserstate
 xcuserdata/

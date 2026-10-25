@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Penny
 
-@Suite("ApplePayShortcutsGuide")
+@Suite("ApplePayShortcutsGuide", .isolatedTestResources)
 struct ApplePayShortcutsGuideTests {
 
     @Test("Cheat sheet includes action name and every field map")

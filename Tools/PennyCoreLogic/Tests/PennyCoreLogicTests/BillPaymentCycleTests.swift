@@ -10,8 +10,26 @@ struct BillPaymentCycleTests {
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let date = calendar.date(from: DateComponents(year: 2026, month: 9, day: 15))!
         #expect(BillPaymentCycle.key(recurrence: .monthly, asOf: date, calendar: calendar) == "m:2026-09")
-        #expect(BillPaymentCycle.isPaid(paidCycleKey: "m:2026-09", recurrence: .monthly, asOf: date))
-        #expect(!BillPaymentCycle.isPaid(paidCycleKey: "m:2026-08", recurrence: .monthly, asOf: date))
+    }
+
+    @Test("Deleting a bill drops it from committed spend")
+    func inactiveBillIsOmittedFromCommittedSpend() {
+        // Same rule as Plan → Delete Bill: isActive = false, then only active
+        // bills are passed into totalMonthlyCommitted.
+        let rent = (amount: Decimal(2_000), recurrence: BillRecurrence.monthly, isActive: false)
+        let gym = (amount: Decimal(45), recurrence: BillRecurrence.monthly, isActive: true)
+        #expect(!BillPaymentCycle.includesInCommittedSpend(isActive: rent.isActive))
+        #expect(BillPaymentCycle.includesInCommittedSpend(isActive: gym.isActive))
+
+        let included = [rent, gym].filter {
+            BillPaymentCycle.includesInCommittedSpend(isActive: $0.isActive)
+        }
+        let committed = FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: included.map { ($0.amount, $0.recurrence) },
+            debtPayments: []
+        )
+        #expect(included.map(\.amount) == [45])
+        #expect(committed == 45)
     }
 
     @Test("Weekly key changes across weeks")

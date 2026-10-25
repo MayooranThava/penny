@@ -97,23 +97,17 @@ Business-logic coverage in `PennyTests/` plus a mirrored Linux package:
 **Before every release:**
 
 ```bash
-./scripts/pre-release-sanity.sh          # product IDs + Linux core suite
-./scripts/pre-release-sanity.sh --xcode  # Mac: also runs PennyTests
+./scripts/pre-release-sanity.sh          # product IDs, drift check, Linux core suite
+./scripts/ci-macos.sh                    # Mac: build-for-testing + every PennyTests case
 ```
 
-The same Linux gate runs automatically in GitHub Actions (**Actions → Pre-release Sanity**) on every push and pull request.
+GitHub Actions workflow **CI** runs the Linux gate and the macOS simulator job on every pull request and every push to `main`. The required check is **`ci-gate`**. How to run it locally, including the upgrade-test rule for SwiftData changes: **[docs/ci.md](./docs/ci.md)**.
 
-See **[docs/pre-release-sanity.md](./docs/pre-release-sanity.md)** for the full automated + manual checklist.
+See **[docs/pre-release-sanity.md](./docs/pre-release-sanity.md)** for the manual checklist.
 
-In Xcode: **⌘U**, or:
+In Xcode: **⌘U** (runs the whole PennyTests target, including Migration).
 
-```bash
-xcodebuild test -scheme Penny -destination 'platform=iOS Simulator,name=iPhone 16'
-```
-
-(Adjust simulator name to one installed on your Mac.)
-
-Core calculation logic also validates on Linux via `Tools/PennyCoreLogic`.
+Core calculation logic also validates on Linux via `Tools/PennyCoreLogic`. `./scripts/check-core-logic-drift.py` fails if that package drifts from `Penny/Services` (and the mirrored utilities).
 
 ## How to open and run
 

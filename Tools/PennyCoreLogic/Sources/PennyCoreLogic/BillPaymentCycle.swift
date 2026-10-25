@@ -30,7 +30,10 @@ public enum BillPaymentCycle {
         }
     }
 
-    public static func isPaid(paidCycleKey: String, recurrence: Recurrence, asOf date: Date) -> Bool {
-        !paidCycleKey.isEmpty && paidCycleKey == key(recurrence: recurrence, asOf: date)
+    /// Plan → Delete Bill sets `isActive` to false. Committed spend includes
+    /// only bills that are still active. The old paid-cycle checklist
+    /// (`paidCycleKey` equal to `key`) is not how a bill is marked paid.
+    public static func includesInCommittedSpend(isActive: Bool) -> Bool {
+        isActive
     }
 }

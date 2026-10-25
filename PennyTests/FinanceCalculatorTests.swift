@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Penny
 
-@Suite("FinanceCalculator")
+@Suite("FinanceCalculator", .isolatedTestResources)
 struct FinanceCalculatorTests {
 
     @Test("Safe to spend subtracts commitments, spending, and savings")
@@ -224,7 +224,7 @@ struct FinanceCalculatorTests {
     }
 }
 
-@Suite("MoneyFormatters")
+@Suite("MoneyFormatters", .isolatedTestResources)
 struct MoneyFormatterTests {
     @Test("Formats CAD without manual concatenation")
     func formatsCAD() {
@@ -268,7 +268,7 @@ struct MoneyFormatterTests {
     }
 }
 
-@Suite("DateHelpers")
+@Suite("DateHelpers", .isolatedTestResources)
 struct DateHelperTests {
     @Test("Next due date rolls to following month when needed")
     func nextDueDate() {
@@ -316,7 +316,7 @@ struct DateHelperTests {
     }
 }
 
-@Suite("InsightEngine")
+@Suite("InsightEngine", .isolatedTestResources)
 struct InsightEngineTests {
     @Test("Generates lower-spending insight")
     func lowerSpending() {

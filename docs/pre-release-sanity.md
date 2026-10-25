@@ -8,27 +8,29 @@ Use this before every App Store / TestFlight release. Automated checks catch cal
 # Linux CI / Cloud Agent / any Mac with Swift
 ./scripts/pre-release-sanity.sh
 
-# Mac with Xcode — also runs PennyTests (SwiftData, soft-delete, StoreKit ID lock)
+# Mac with Xcode — build-for-testing and every PennyTests case, including Migration
+./scripts/ci-macos.sh
+# or
 ./scripts/pre-release-sanity.sh --xcode
 ```
 
 ### GitHub Actions
 
-Every push and pull request runs **Pre-release Sanity** on Ubuntu (product IDs + `PennyCoreLogic` Release Sanity + full core suite).
+Every pull request and every push to `main` runs workflow **CI**:
 
-- Open the repo → **Actions** → **Pre-release Sanity**
-- PR checks show the same job on the pull request
-- Re-run anytime via **Actions** → **Pre-release Sanity** → **Run workflow**
+- **Product IDs + core logic** on Ubuntu (product IDs, drift check, `PennyCoreLogic`)
+- **macOS build and PennyTests** on the newest stable Xcode (`build-for-testing`, then the full PennyTests target with no filter)
+- **`ci-gate`**, which fails unless both jobs succeeded (a skipped macOS job fails the gate)
 
-Mac-only checks (SwiftData soft-delete, demo seed, `PennyTests`) are **not** in Actions (no iOS Simulator on `ubuntu-latest`). Run those with `--xcode` or **⌘U** before App Store submission.
+Require `ci-gate` on `main`. Local commands and the SwiftData upgrade rule (no data lost, timing on about 5,000 transactions) are in **[docs/ci.md](./ci.md)**.
 
 Override the simulator if needed:
 
 ```bash
-PENNY_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 16 Pro' ./scripts/pre-release-sanity.sh --xcode
+PENNY_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 16 Pro' ./scripts/ci-macos.sh
 ```
 
-Or in Xcode: open `Penny.xcodeproj` → select the **Penny** scheme → **Product → Test (⌘U)**. The suite named **Release Sanity** is the smoke gate.
+Or in Xcode: open `Penny.xcodeproj` → select the **Penny** scheme → **Product → Test (⌘U)**. That runs every PennyTests suite, including **Migration**. **Release Sanity** is the smoke gate.
 
 ## What the automated suite covers
 
@@ -42,9 +44,10 @@ Or in Xcode: open `Penny.xcodeproj` → select the **Penny** scheme → **Produc
 | Apple Pay capture draft / IDs | ✓ | service insert/dedupe |
 | Product IDs ↔ `Penny.storekit` | script | ✓ |
 | Demo seed + non-destructive re-seed | — | ✓ |
-| Bill soft-delete (`isActive`) | — | ✓ |
+| Bill delete drops committed spend (`isActive`) | ✓ | ✓ |
 | Persistence store name / schema V1 | — | ✓ |
 | Settings repair when content exists | — | ✓ |
+| Upgrade / no data lost, including ~5,000 transaction timing | — | reserved in `PennyTests/Migration` (fixture in PR 2). Required for SwiftData model changes. See `docs/ci.md`. |
 
 ## Manual smoke (≈5 minutes on Simulator or TestFlight)
 
@@ -72,7 +75,8 @@ Ship only when:
 
 1. Prefer pure logic in `Tools/PennyCoreLogic/Tests/.../ReleaseSanityTests.swift` so Linux CI can run it.
 2. Persistence / SwiftData / StoreKit file checks go in `PennyTests/ReleaseSanityTests.swift`.
-3. After adding a `PennyTests` file, regenerate the Xcode project:
+3. Upgrade fixtures belong in `PennyTests/Migration/Fixtures/` (a folder reference on PennyTests, so a `Penny-v1.0.4.store` is bundled without a new Copy Bundle Resources row). Model changes must pass that upgrade test, including the timing check on about 5,000 transactions (`docs/ci.md`).
+4. After adding a `PennyTests` Swift file, regenerate the Xcode project:
 
 ```bash
 python3 scripts/generate_xcode_project.py

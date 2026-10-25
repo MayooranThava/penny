@@ -294,6 +294,9 @@ enum FinanceCalculator {
 
     // MARK: - Debt payoff (amortization)
 
+    /// One cent as an exact decimal. `Decimal(0.01)` is a Double and is not 0.01.
+    private static let oneCent = Decimal(sign: .plus, exponent: -2, significand: 1)
+
     enum DebtPayoffResult: Equatable {
         case paidOff(date: Date, months: Int, totalInterest: Decimal)
         case alreadyPaid
@@ -329,7 +332,7 @@ enum FinanceCalculator {
         // First month interest — payment must exceed it to ever pay off.
         let firstInterest = (balance * r).rounded(scale: 2)
         if r > 0 && monthlyPayment <= firstInterest {
-            let minimum = (firstInterest + Decimal(0.01)).rounded(scale: 2)
+            let minimum = (firstInterest + oneCent).rounded(scale: 2)
             return .paymentTooLow(minimumNeeded: minimum)
         }
 
@@ -352,7 +355,7 @@ enum FinanceCalculator {
             totalInterest += interest
             let principal = monthlyPayment - interest
             if principal <= 0 {
-                return .paymentTooLow(minimumNeeded: (interest + Decimal(0.01)).rounded(scale: 2))
+                return .paymentTooLow(minimumNeeded: (interest + oneCent).rounded(scale: 2))
             }
             remaining = (remaining - principal).rounded(scale: 2)
             if remaining < 0 { remaining = 0 }

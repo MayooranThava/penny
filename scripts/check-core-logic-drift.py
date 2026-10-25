@@ -41,45 +41,9 @@ PAIRS: list[tuple[str, str]] = [
     ("MoneyFormatters.swift", "Penny/Utilities/MoneyFormatters.swift"),
 ]
 
-# Pre-existing app behaviour this CI PR does not copy into PennyCoreLogic.
-# The data-safety PR should apply these and delete the matching entry.
-# Any other difference, including a change to one of these diffs, still fails.
-DEFERRED_DIFFS: dict[str, str] = {
-    "ApplePayCaptureLogic.swift": (
-        "--- Penny/Services/ApplePayCaptureLogic.swift\n"
-        "+++ Tools/PennyCoreLogic/Sources/PennyCoreLogic/ApplePayCaptureLogic.swift\n"
-        "@@ -19,7 +19,7 @@\n"
-        " date: Date = .now,\n"
-        " calendar: Calendar = .current\n"
-        " ) -> Draft? {\n"
-        '-let decimalAmount = Decimal(string: String(format: "%.2f", amount))?.rounded(scale: 2) ?? 0\n'
-        "+let decimalAmount = Decimal(amount).rounded(scale: 2)\n"
-        " guard decimalAmount > 0 else { return nil }\n"
-        " let cleanedMerchant = cleaned(merchant)\n"
-        " let cleanedCard = cleaned(cardName)"
-    ),
-    "MoneyFormatters.swift": (
-        "--- Penny/Utilities/MoneyFormatters.swift\n"
-        "+++ Tools/PennyCoreLogic/Sources/PennyCoreLogic/MoneyFormatters.swift\n"
-        "@@ -48,13 +48,10 @@\n"
-        " NSDecimalNumber(decimal: self).doubleValue\n"
-        " }\n"
-        " static func from(_ string: String) -> Decimal? {\n"
-        "-var cleaned = string.trimmingCharacters(in: .whitespacesAndNewlines)\n"
-        "-cleaned = cleaned\n"
-        "+let cleaned = string\n"
-        ' .replacingOccurrences(of: ",", with: "")\n'
-        '-.replacingOccurrences(of: "$", with: "")\n'
-        '-.replacingOccurrences(of: " ", with: "")\n'
-        '-cleaned = cleaned.filter { $0.isNumber || $0 == "." || $0 == "-" }\n'
-        '-guard !cleaned.isEmpty, cleaned != "-", cleaned != "." else { return nil }\n'
-        "+.trimmingCharacters(in: .whitespacesAndNewlines)\n"
-        "+guard !cleaned.isEmpty else { return nil }\n"
-        " return Decimal(string: cleaned)\n"
-        " }\n"
-        " }"
-    ),
-}
+# Intentionally empty. Decimal.from and Apple Pay cent rounding now match the app.
+# A new difference still fails. Do not reintroduce a deferred entry to hide one.
+DEFERRED_DIFFS: dict[str, str] = {}
 
 
 def strip_comments(text: str) -> str:
@@ -304,8 +268,8 @@ def main() -> int:
     print()
     deferred = sum(1 for name, _ in PAIRS if name in DEFERRED_DIFFS)
     print(
-        f"No new logic drift across {len(PAIRS)} shared files "
-        f"({deferred} pre-existing diff(s) deferred to the data-safety PR)."
+        f"No logic drift across {len(PAIRS)} shared files "
+        f"({deferred} deferred diff(s))."
     )
     return 0
 

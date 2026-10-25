@@ -5,6 +5,17 @@ import Testing
 @Suite("ApplePayCaptureLogic", .isolatedTestResources)
 struct ApplePayCaptureLogicTests {
 
+    @Test("Rounds Wallet doubles to exact cents")
+    func roundsWalletDoublesToCents() {
+        #expect(ApplePayCaptureLogic.money(fromApplePayAmount: 0.1 + 0.2) == Decimal(string: "0.30"))
+        #expect(ApplePayCaptureLogic.money(fromApplePayAmount: 19.99) == Decimal(string: "19.99"))
+        #expect(ApplePayCaptureLogic.money(fromApplePayAmount: 0.01) == Decimal(string: "0.01"))
+        #expect(ApplePayCaptureLogic.money(fromApplePayAmount: 10.2) == Decimal(string: "10.20"))
+        #expect(ApplePayCaptureLogic.money(fromApplePayAmount: .nan) == 0)
+        let draft = ApplePayCaptureLogic.makeDraft(amount: 0.1 + 0.2, merchant: "Cafe", currencyCode: "CAD", cardName: nil)
+        #expect(draft?.amount == Decimal(string: "0.30"))
+    }
+
     @Test("Rejects non-positive amounts")
     func rejectsInvalidAmount() {
         #expect(ApplePayCaptureLogic.makeDraft(amount: 0, merchant: "Cafe", currencyCode: "CAD", cardName: nil) == nil)

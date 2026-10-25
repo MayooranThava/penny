@@ -149,6 +149,16 @@ struct FinanceCalculatorTests {
             return
         }
         #expect(minimum > 50)
+        let exact = FinanceCalculator.debtPayoff(
+            balance: 100,
+            aprPercent: 12,
+            monthlyPayment: 1
+        )
+        guard case .paymentTooLow(let exactMinimum) = exact else {
+            Issue.record("Expected paymentTooLow for a one-cent gap")
+            return
+        }
+        #expect(exactMinimum == Decimal(string: "1.01"))
     }
 
     @Test("Interest-bearing debt eventually pays off")
@@ -261,7 +271,13 @@ struct MoneyFormatterTests {
     func parsing() {
         #expect(Decimal.from("1234.56") == Decimal(string: "1234.56"))
         #expect(Decimal.from("1,234.56") == Decimal(string: "1234.56"))
+        #expect(Decimal.from("$100") == 100)
+        #expect(Decimal.from("  $10.00  ") == 10)
+        #expect(Decimal.from("CAD 12.5") == Decimal(string: "12.5"))
         #expect(Decimal.from("") == nil)
+        #expect(Decimal.from("1.2.3") == nil)
+        #expect(Decimal.from("12-3") == nil)
+        #expect(Decimal.from("--5") == nil)
     }
 }
 

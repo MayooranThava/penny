@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import re
 import uuid
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +16,35 @@ WIDGETS_ROOT = ROOT / "PennyWidgets"
 
 def uid() -> str:
     return uuid.uuid4().hex[:24].upper()
+
+
+def load_existing_ids(text: str) -> dict[str, list[str]]:
+    """Reuse IDs from the current project so adding a file does not rewrite every row."""
+    found: dict[str, list[str]] = defaultdict(list)
+    for match in re.finditer(
+        r"^\t\t([A-F0-9]{24}) /\* ([^*]+) \*/ = \{isa = (?:PBXFileReference|PBXBuildFile);",
+        text,
+        re.M,
+    ):
+        found[match.group(2)].append(match.group(1))
+    for match in re.finditer(
+        r"^\t\t([A-F0-9]{24}) /\* ([^*]+) \*/ = \{\n\t\t\tisa = PBXGroup;",
+        text,
+        re.M,
+    ):
+        found[f"group:{match.group(2)}"].append(match.group(1))
+    return found
+
+
+_EXISTING_PBX = PROJECT / "project.pbxproj"
+_existing_ids = load_existing_ids(_EXISTING_PBX.read_text()) if _EXISTING_PBX.is_file() else defaultdict(list)
+
+
+def reuse(comment: str) -> str:
+    pool = _existing_ids.get(comment)
+    if pool:
+        return pool.pop(0)
+    return uid()
 
 # Stable-ish IDs for core objects
 PROJECT_ID = "A10000000000000000000001"
@@ -82,6 +113,12 @@ test_docs: list[Path] = sorted(
 )
 test_folder_resources: list[Path] = [FIXTURES_DIR] if FIXTURES_DIR.is_dir() else []
 widget_files: list[Path] = sorted(WIDGETS_ROOT.rglob("*.swift"))
+# Compiled into the widget as well as the app so stored cents and currency
+# strings cannot drift. File references stay in the Penny group.
+WIDGET_SHARED_SOURCES = [
+    SOURCE_ROOT / "Utilities" / "MoneyFormatters.swift",
+    SOURCE_ROOT / "Services" / "WidgetSnapshotStore.swift",
+]
 asset_catalogs: list[Path] = sorted(SOURCE_ROOT.rglob("*.xcassets"))
 
 app_entitlements = SOURCE_ROOT / "Penny.entitlements"
@@ -92,11 +129,20 @@ file_refs: dict[Path, str] = {}
 build_files: dict[Path, str] = {}
 
 for path in swift_files + test_files + widget_files + asset_catalogs + test_folder_resources:
-    file_refs[path] = uid()
-    build_files[path] = uid()
+    phase = "Sources" if path.suffix == ".swift" else "Resources"
+    file_refs[path] = reuse(path.name)
+    build_files[path] = reuse(f"{path.name} in {phase}")
+
+for path in WIDGET_SHARED_SOURCES:
+    if path not in file_refs:
+        raise SystemExit(f"Widget shared source missing from the app target: {path}")
+
+widget_shared_build_files: dict[Path, str] = {
+    path: reuse(f"{path.name} in Sources") for path in WIDGET_SHARED_SOURCES
+}
 
 for path in test_docs:
-    file_refs[path] = uid()
+    file_refs[path] = reuse(path.name)
 
 file_refs[app_entitlements] = APP_ENTITLEMENTS_REF
 file_refs[widget_entitlements] = WIDGET_ENTITLEMENTS_REF
@@ -113,7 +159,7 @@ group_ids: dict[Path, str] = {
 def ensure_group(path: Path) -> str:
     if path in group_ids:
         return group_ids[path]
-    group_ids[path] = uid()
+    group_ids[path] = reuse(f"group:{path.name}")
     parent = path.parent
     roots = (SOURCE_ROOT, TESTS_ROOT, WIDGETS_ROOT)
     if parent != ROOT and parent not in group_ids and any(
@@ -166,8 +212,11 @@ for path, bid in build_files.items():
     fid = file_refs[path]
     phase = "Sources" if path.suffix == ".swift" else "Resources"
     lines.append(f"\t\t{bid} /* {path.name} in {phase} */ = {{isa = PBXBuildFile; fileRef = {fid} /* {path.name} */; }};")
+for path, bid in widget_shared_build_files.items():
+    fid = file_refs[path]
+    lines.append(f"\t\t{bid} /* {path.name} in Sources */ = {{isa = PBXBuildFile; fileRef = {fid} /* {path.name} */; }};")
 # Link Penny.app into tests
-TEST_HOST_BF = uid()
+TEST_HOST_BF = reuse("Penny.app in Frameworks")
 lines.append(f"\t\t{TEST_HOST_BF} /* Penny.app in Frameworks */ = {{isa = PBXBuildFile; fileRef = {APP_PRODUCT} /* Penny.app */; }};")
 # Embed widget extension in app
 lines.append(f"\t\t{WIDGET_EMBED_BF} /* PennyWidgets.appex in Embed Foundation Extensions */ = {{isa = PBXBuildFile; fileRef = {WIDGET_PRODUCT} /* PennyWidgets.appex */; settings = {{ATTRIBUTES = (RemoveHeadersOnCopy, ); }}; }};")
@@ -220,10 +269,10 @@ lines.append(f'\t\t{WIDGET_INFOPLIST_REF} /* Info.plist */ = {{isa = PBXFileRefe
 for path, fid in file_refs.items():
     if path in (app_entitlements, widget_entitlements, widget_info_plist):
         continue
-    if path.is_dir():
-        lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder; path = {path.name}; sourceTree = "<group>"; }};')
-    elif path.suffix == ".xcassets":
+    if path.suffix == ".xcassets":
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = {path.name}; sourceTree = "<group>"; }};')
+    elif path.is_dir():
+        lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder; path = {path.name}; sourceTree = "<group>"; }};')
     elif path.suffix == ".md":
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = {path.name}; sourceTree = "<group>"; }};')
     elif path.suffix == ".swift":
@@ -457,6 +506,8 @@ lines.append("\t\t\tbuildActionMask = 2147483647;")
 lines.append("\t\t\tfiles = (")
 for path in widget_files:
     lines.append(f"\t\t\t\t{build_files[path]} /* {path.name} in Sources */,")
+for path in WIDGET_SHARED_SOURCES:
+    lines.append(f"\t\t\t\t{widget_shared_build_files[path]} /* {path.name} in Sources */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
 lines.append("\t\t};")

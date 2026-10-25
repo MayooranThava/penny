@@ -97,7 +97,7 @@ enum WidgetSnapshotPublisher {
         }
 
         let snapshot = WidgetSnapshotStore.Snapshot(
-            safeToSpend: NSDecimalNumber(decimal: breakdown.safeToSpend).doubleValue,
+            safeToSpend: breakdown.safeToSpend,
             currencyCode: currency,
             monthLabel: DateHelpers.monthName(for: month),
             nextReminderTitle: next.map { "\($0.name) due" },
@@ -107,8 +107,8 @@ enum WidgetSnapshotPublisher {
             displayName: settings?.displayName ?? "",
             updatedAt: .now,
             upcomingItems: Array(upcomingLines),
-            spentThisMonth: NSDecimalNumber(decimal: monthExpenses).doubleValue,
-            plannedSpending: NSDecimalNumber(decimal: plannedSpending).doubleValue,
+            spentThisMonth: monthExpenses,
+            plannedSpending: plannedSpending,
             budgetHealth: health,
             topGoalName: topGoal?.name,
             topGoalProgress: topProgress,

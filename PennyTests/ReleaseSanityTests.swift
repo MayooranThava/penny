@@ -87,7 +87,9 @@ struct ReleaseSanityTests {
         #expect(!debts.isEmpty)
         #expect(categories.count >= CategoryCatalog.defaults.count)
         #expect(!transactions.isEmpty)
-        #expect(bills.allSatisfy(\.isActive))
+        // Direct property access: Xcode 26 treats SwiftData key paths as throwing,
+        // so `\.isActive` cannot be passed to `allSatisfy` inside `#expect`.
+        #expect(bills.allSatisfy { $0.isActive })
         #expect(accounts.count == PennyProductCatalog.freeTierAccountLimit)
         #expect(accounts.contains { $0.accountType == .tfsa })
         #expect(!allocations.isEmpty)
@@ -191,8 +193,8 @@ struct ReleaseSanityTests {
             recurrence: .monthly,
             nextDueDate: .now,
             startDate: .now,
-            icon: "house.fill",
-            isActive: true
+            isActive: true,
+            icon: "house.fill"
         )
         let gym = RecurringBill(
             name: "Gym",
@@ -202,8 +204,8 @@ struct ReleaseSanityTests {
             recurrence: .monthly,
             nextDueDate: .now,
             startDate: .now,
-            icon: "figure.run",
-            isActive: true
+            isActive: true,
+            icon: "figure.run"
         )
         context.insert(rent)
         context.insert(gym)
@@ -249,8 +251,8 @@ struct ReleaseSanityTests {
                 recurrence: .monthly,
                 nextDueDate: .now,
                 startDate: .now,
-                icon: "wifi",
-                isActive: true
+                isActive: true,
+                icon: "wifi"
             )
         )
         try context.save()

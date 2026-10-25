@@ -7,8 +7,9 @@
 - Every @Suite opts into isolated SwiftData / UserDefaults.
 - The macOS test script does not filter PennyTests (MigrationTests must run).
 - Every .xcassets PBXFileReference (app and widgets) is folder.assetcatalog,
-  ASSETCATALOG_COMPILER_APPICON_NAME stays AppIcon, and the generated
-  Info.plist key CFBundleIconName stays AppIcon.
+  ASSETCATALOG_COMPILER_APPICON_NAME stays AppIcon, and Penny/Info.plist
+  supplies CFBundleIconName. Xcode ignores a user-defined
+  INFOPLIST_KEY_CFBundleIconName.
 """
 
 from __future__ import annotations
@@ -137,17 +138,17 @@ def asset_catalog_failures(project: str) -> list[str]:
                 f"ASSETCATALOG_COMPILER_APPICON_NAME is {cleaned}; expected AppIcon"
             )
 
-    # actool compiles the catalog but does not always write the top-level
-    # CFBundleIconName that App Store Connect requires (ITMS-90713).
-    plist_icons = re.findall(r"INFOPLIST_KEY_CFBundleIconName = ([^;]+);", project)
-    if not plist_icons:
-        failures.append("INFOPLIST_KEY_CFBundleIconName = AppIcon is missing")
-    for value in plist_icons:
-        cleaned = value.strip().strip('"')
-        if cleaned != "AppIcon":
-            failures.append(
-                f"INFOPLIST_KEY_CFBundleIconName is {cleaned}; expected AppIcon"
-            )
+    # Xcode does not copy a user-defined INFOPLIST_KEY_CFBundleIconName into
+    # the generated Info.plist. The app target merges Penny/Info.plist instead.
+    if project.count("INFOPLIST_FILE = Penny/Info.plist;") < 2:
+        failures.append("App target is missing INFOPLIST_FILE = Penny/Info.plist for Debug and Release")
+    icon_plist = ROOT / "Penny" / "Info.plist"
+    if not icon_plist.is_file():
+        failures.append("Penny/Info.plist is missing")
+    else:
+        plist_text = icon_plist.read_text()
+        if "<key>CFBundleIconName</key>" not in plist_text or "<string>AppIcon</string>" not in plist_text:
+            failures.append("Penny/Info.plist must set CFBundleIconName to AppIcon")
     return failures
 
 
@@ -244,7 +245,7 @@ def main() -> int:
     print("[pass] macOS CI does not filter PennyTests", file=sys.stderr)
     print("[pass] every .xcassets reference is folder.assetcatalog", file=sys.stderr)
     print("[pass] ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon", file=sys.stderr)
-    print("[pass] INFOPLIST_KEY_CFBundleIconName = AppIcon", file=sys.stderr)
+    print("[pass] Penny/Info.plist sets CFBundleIconName to AppIcon", file=sys.stderr)
     if list_products:
         for target in test_targets:
             print(target["product"])

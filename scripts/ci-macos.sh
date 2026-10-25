@@ -109,8 +109,9 @@ verify_compiled_app_icon() {
     echo "Built Penny.app Info.plist not found under $DD/Build/Products" >&2
     exit 1
   fi
-  if ! icon_name="$(plutil -extract CFBundleIconName raw -o - "$app/Info.plist")"; then
+  if ! icon_name="$(plutil -extract CFBundleIconName raw -o - "$app/Info.plist" 2>/dev/null)"; then
     echo "Penny.app Info.plist is missing CFBundleIconName ($app/Info.plist)" >&2
+    plutil -convert xml1 -o - "$app/Info.plist" >&2 || true
     exit 1
   fi
   icon_name="${icon_name//$'\n'/}"

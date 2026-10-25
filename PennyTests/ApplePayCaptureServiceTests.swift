@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import Penny
 
-@Suite("ApplePayCaptureService")
+@Suite("ApplePayCaptureService", .serialized, .isolatedTestResources)
 @MainActor
 struct ApplePayCaptureServiceTests {
 

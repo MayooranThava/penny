@@ -26,4 +26,7 @@ From the repo root, preferred gate:
 
 ```bash
 ./scripts/pre-release-sanity.sh
+./scripts/check-core-logic-drift.py
 ```
+
+The drift script fails when these sources diverge from `Penny/Services` and `Penny/Utilities`. It ignores `public`, `Sendable`, and memberwise initializers required by the Linux package. See `docs/ci.md`.

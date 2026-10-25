@@ -23,7 +23,8 @@ enum ApplePayCaptureLogic {
         date: Date = .now,
         calendar: Calendar = .current
     ) -> Draft? {
-        let decimalAmount = Decimal(amount).rounded(scale: 2)
+        // Format through a fixed 2-dp string so Double binary noise does not poison money math.
+        let decimalAmount = Decimal(string: String(format: "%.2f", amount))?.rounded(scale: 2) ?? 0
         guard decimalAmount > 0 else { return nil }
 
         let cleanedMerchant = cleaned(merchant)

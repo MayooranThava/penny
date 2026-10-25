@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Penny
 
-@Suite("Goal funding from accounts")
+@Suite("Goal funding from accounts", .isolatedTestResources)
 struct GoalFundingLogicTests {
 
     @Test("Unallocated balance and clamps never exceed account room")

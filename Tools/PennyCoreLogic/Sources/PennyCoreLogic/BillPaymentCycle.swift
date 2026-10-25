@@ -29,8 +29,4 @@ public enum BillPaymentCycle {
             return "b:\(fortnights)"
         }
     }
-
-    public static func isPaid(paidCycleKey: String, recurrence: Recurrence, asOf date: Date) -> Bool {
-        !paidCycleKey.isEmpty && paidCycleKey == key(recurrence: recurrence, asOf: date)
-    }
 }

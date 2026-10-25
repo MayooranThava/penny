@@ -2,8 +2,8 @@
 # Pre-release sanity checks for Penny.
 #
 # Usage:
-#   ./scripts/pre-release-sanity.sh           # Linux/core logic + product IDs
-#   ./scripts/pre-release-sanity.sh --xcode   # Also run PennyTests (Mac only)
+#   ./scripts/pre-release-sanity.sh           # Linux/core logic + product IDs + drift
+#   ./scripts/pre-release-sanity.sh --xcode   # Also build and run every PennyTests case (Mac)
 #   ./scripts/pre-release-sanity.sh --help
 #
 # Exit 0 = automated gate green. Still complete docs/pre-release-sanity.md manual steps.
@@ -32,11 +32,19 @@ pass() { printf '[pass] %s\n' "$1"; }
 fail() { printf '[fail] %s\n' "$1" >&2; exit 1; }
 header() { printf '\n== %s ==\n' "$1"; }
 
-header "1. Product IDs (catalog <-> Penny.storekit)"
+header "1. Core logic drift (PennyCoreLogic vs Penny/Services)"
+python3 "$ROOT/scripts/check-core-logic-drift.py"
+pass "Shared logic matches"
+
+header "2. Xcode test layout (scheme, fixtures, isolation, no PennyTests filter)"
+python3 "$ROOT/scripts/check-xcode-test-layout.py"
+pass "Test layout matches CI"
+
+header "3. Product IDs (catalog <-> Penny.storekit)"
 "$ROOT/scripts/check-product-ids.sh"
 pass "Product IDs match"
 
-header "2. Core logic release sanity (Linux / Mac)"
+header "4. Core logic release sanity (Linux / Mac)"
 if ! command -v swift >/dev/null 2>&1; then
   fail "swift toolchain not found - install Swift or run on a machine with Xcode/Swift"
 fi
@@ -54,27 +62,20 @@ fi
 rm -f "$SANITY_LOG"
 pass "PennyCoreLogic Release Sanity passed"
 
-header "3. Full PennyCoreLogic suite"
+header "5. Full PennyCoreLogic suite"
 (cd "$ROOT/Tools/PennyCoreLogic" && swift test)
 pass "PennyCoreLogic full suite passed"
 
 if [[ "$RUN_XCODE" -eq 1 ]]; then
-  header "4. Xcode PennyTests (includes Release Sanity + persistence)"
+  header "6. Xcode build-for-testing and the full PennyTests target"
   if ! command -v xcodebuild >/dev/null 2>&1; then
     fail "xcodebuild not found - run without --xcode on Linux, or use a Mac with Xcode"
   fi
-
-  DESTINATION="${PENNY_TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 16}"
-  xcodebuild test \
-    -project "$ROOT/Penny.xcodeproj" \
-    -scheme Penny \
-    -destination "$DESTINATION" \
-    -only-testing:PennyTests \
-    CODE_SIGNING_ALLOWED=NO
+  "$ROOT/scripts/ci-macos.sh"
   pass "Xcode PennyTests passed"
 else
-  header "4. Xcode PennyTests (skipped)"
-  echo "On a Mac, re-run with --xcode (or press Cmd+U in Xcode) before App Store submission."
+  header "6. Xcode PennyTests (skipped)"
+  echo "On a Mac, re-run with --xcode (or ./scripts/ci-macos.sh). GitHub Actions runs that job on every PR."
 fi
 
 header "Done"

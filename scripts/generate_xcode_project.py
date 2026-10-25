@@ -59,9 +59,28 @@ WIDGET_EMBED_BF = "A10000000000000000000026"
 APP_ENTITLEMENTS_REF = "A10000000000000000000027"
 WIDGET_ENTITLEMENTS_REF = "A10000000000000000000028"
 WIDGET_INFOPLIST_REF = "A10000000000000000000029"
+RESOURCES_TEST = "A1000000000000000000002A"
+
+# Folder reference bundled into PennyTests. Drop a v1.0.4 store here for upgrade tests.
+FIXTURES_DIR = TESTS_ROOT / "Migration" / "Fixtures"
+
+
+def under_fixtures(path: Path) -> bool:
+    try:
+        path.relative_to(FIXTURES_DIR)
+        return True
+    except ValueError:
+        return False
+
 
 swift_files: list[Path] = sorted(SOURCE_ROOT.rglob("*.swift"))
-test_files: list[Path] = sorted(TESTS_ROOT.rglob("*.swift"))
+test_files: list[Path] = sorted(
+    path for path in TESTS_ROOT.rglob("*.swift") if not under_fixtures(path)
+)
+test_docs: list[Path] = sorted(
+    path for path in TESTS_ROOT.rglob("*.md") if not under_fixtures(path)
+)
+test_folder_resources: list[Path] = [FIXTURES_DIR] if FIXTURES_DIR.is_dir() else []
 widget_files: list[Path] = sorted(WIDGETS_ROOT.rglob("*.swift"))
 asset_catalogs: list[Path] = sorted(SOURCE_ROOT.rglob("*.xcassets"))
 
@@ -72,9 +91,12 @@ widget_info_plist = WIDGETS_ROOT / "Info.plist"
 file_refs: dict[Path, str] = {}
 build_files: dict[Path, str] = {}
 
-for path in swift_files + test_files + widget_files + asset_catalogs:
+for path in swift_files + test_files + widget_files + asset_catalogs + test_folder_resources:
     file_refs[path] = uid()
     build_files[path] = uid()
+
+for path in test_docs:
+    file_refs[path] = uid()
 
 file_refs[app_entitlements] = APP_ENTITLEMENTS_REF
 file_refs[widget_entitlements] = WIDGET_ENTITLEMENTS_REF
@@ -102,7 +124,7 @@ def ensure_group(path: Path) -> str:
 
 for path in list(swift_files) + list(asset_catalogs):
     ensure_group(path.parent)
-for path in test_files:
+for path in test_files + test_docs + test_folder_resources:
     ensure_group(path.parent)
 for path in widget_files:
     ensure_group(path.parent)
@@ -142,7 +164,7 @@ lines.append("")
 lines.append("/* Begin PBXBuildFile section */")
 for path, bid in build_files.items():
     fid = file_refs[path]
-    phase = "Resources" if path.suffix == ".xcassets" else "Sources"
+    phase = "Sources" if path.suffix == ".swift" else "Resources"
     lines.append(f"\t\t{bid} /* {path.name} in {phase} */ = {{isa = PBXBuildFile; fileRef = {fid} /* {path.name} */; }};")
 # Link Penny.app into tests
 TEST_HOST_BF = uid()
@@ -198,10 +220,16 @@ lines.append(f'\t\t{WIDGET_INFOPLIST_REF} /* Info.plist */ = {{isa = PBXFileRefe
 for path, fid in file_refs.items():
     if path in (app_entitlements, widget_entitlements, widget_info_plist):
         continue
-    if path.suffix == ".xcassets":
+    if path.is_dir():
+        lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder; path = {path.name}; sourceTree = "<group>"; }};')
+    elif path.suffix == ".xcassets":
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = {path.name}; sourceTree = "<group>"; }};')
-    else:
+    elif path.suffix == ".md":
+        lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = {path.name}; sourceTree = "<group>"; }};')
+    elif path.suffix == ".swift":
         lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = {path.name}; sourceTree = "<group>"; }};')
+    else:
+        lines.append(f'\t\t{fid} /* {path.name} */ = {{isa = PBXFileReference; lastKnownFileType = file; path = {path.name}; sourceTree = "<group>"; }};')
 lines.append("/* End PBXFileReference section */")
 lines.append("")
 
@@ -325,6 +353,7 @@ lines.append("\t\t\tbuildConfigurationList = " + TEST_CONFIGS + " /* Build confi
 lines.append("\t\t\tbuildPhases = (")
 lines.append(f"\t\t\t\t{SOURCES_TEST} /* Sources */,")
 lines.append(f"\t\t\t\t{FRAMEWORKS_TEST} /* Frameworks */,")
+lines.append(f"\t\t\t\t{RESOURCES_TEST} /* Resources */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\tbuildRules = (")
 lines.append("\t\t\t);")
@@ -396,6 +425,15 @@ lines.append(f"\t\t{RESOURCES_WIDGET} /* Resources */ = {{")
 lines.append("\t\t\tisa = PBXResourcesBuildPhase;")
 lines.append("\t\t\tbuildActionMask = 2147483647;")
 lines.append("\t\t\tfiles = (")
+lines.append("\t\t\t);")
+lines.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
+lines.append("\t\t};")
+lines.append(f"\t\t{RESOURCES_TEST} /* Resources */ = {{")
+lines.append("\t\t\tisa = PBXResourcesBuildPhase;")
+lines.append("\t\t\tbuildActionMask = 2147483647;")
+lines.append("\t\t\tfiles = (")
+for path in test_folder_resources:
+    lines.append(f"\t\t\t\t{build_files[path]} /* {path.name} in Resources */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
 lines.append("\t\t};")

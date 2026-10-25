@@ -12,6 +12,15 @@ enum PennyPersistence {
     /// Stable store name — do not rename; renaming would create a new empty database.
     static let storeName = "Penny"
 
+    /// Set only by PennyTests. Nil in the app, so production and previews keep
+    /// the in-memory or on-disk store named `Penny`.
+    @TaskLocal static var isolatedStoreName: String?
+
+    /// Directory name for the test-only store override, when one is set.
+    static var activeIsolatedStoreName: String? { isolatedStoreName }
+
+    private static let isolatedStoreLock = NSLock()
+
     /// On-disk schema. Keep model types stable across builds; additive fields are OK.
     /// When a breaking model change is needed, introduce `PennySchemaV2` + a migration stage
     /// in `PennyMigrationPlan` and pass that plan into `ModelContainer`.
@@ -39,6 +48,11 @@ enum PennyPersistence {
     }
 
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
+        // PennyTests sets `isolatedStoreName` so parallel cases do not share a store.
+        // The app never sets it: on-disk and preview containers stay named `Penny`.
+        if inMemory, let override = isolatedStoreName, !override.isEmpty {
+            return try makeIsolatedTestContainer(directoryName: override)
+        }
         let configuration = ModelConfiguration(
             storeName,
             schema: schema,
@@ -51,6 +65,22 @@ enum PennyPersistence {
         } catch {
             // Never fall back to an empty in-memory store. That would look like a
             // data wipe after an app update if the on-disk open failed.
+            throw ContainerError.unavailable(underlying: error)
+        }
+    }
+
+    /// Temp-file store used by tests. Unique directories isolate SwiftData even
+    /// when in-memory configurations would otherwise alias inside one process.
+    private static func makeIsolatedTestContainer(directoryName: String) throws -> ModelContainer {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent(directoryName, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let configuration = ModelConfiguration(url: directory.appendingPathComponent("Penny.store"))
+        isolatedStoreLock.lock()
+        defer { isolatedStoreLock.unlock() }
+        do {
+            return try ModelContainer(for: schema, configurations: [configuration])
+        } catch {
             throw ContainerError.unavailable(underlying: error)
         }
     }

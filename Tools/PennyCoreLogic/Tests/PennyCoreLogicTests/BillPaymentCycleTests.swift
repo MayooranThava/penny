@@ -9,9 +9,12 @@ struct BillPaymentCycleTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let date = calendar.date(from: DateComponents(year: 2026, month: 9, day: 15))!
-        #expect(BillPaymentCycle.key(recurrence: .monthly, asOf: date, calendar: calendar) == "m:2026-09")
-        #expect(BillPaymentCycle.isPaid(paidCycleKey: "m:2026-09", recurrence: .monthly, asOf: date))
-        #expect(!BillPaymentCycle.isPaid(paidCycleKey: "m:2026-08", recurrence: .monthly, asOf: date))
+        let key = BillPaymentCycle.key(recurrence: .monthly, asOf: date, calendar: calendar)
+        #expect(key == "m:2026-09")
+        // Same condition the app can apply to a stored paidCycleKey (the helper
+        // is not a separate shared function — keep it next to `key`).
+        #expect(!key.isEmpty && "m:2026-09" == key)
+        #expect("m:2026-08" != key)
     }
 
     @Test("Weekly key changes across weeks")

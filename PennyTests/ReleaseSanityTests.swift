@@ -5,7 +5,7 @@ import Testing
 
 /// Mac / Xcode pre-release sanity for persistence, soft-delete, catalog, and demo seed.
 /// Run with ⌘U or `./scripts/pre-release-sanity.sh --xcode` on a Mac.
-@Suite("Release Sanity")
+@Suite("Release Sanity", .serialized, .isolatedTestResources)
 struct ReleaseSanityTests {
 
     // MARK: - Product catalog ↔ StoreKit config

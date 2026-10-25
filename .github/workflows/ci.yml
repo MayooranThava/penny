@@ -1,0 +1,143 @@
+# Penny CI.
+# Ubuntu: product IDs, PennyCoreLogic, and the source drift check.
+# macOS: build the app, PennyWidgets, and every test target, then run PennyTests.
+# ci-gate is the single check to require on main. It fails unless every job succeeded
+# (a skipped or cancelled macOS job is not success).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  sanity:
+    name: Product IDs + core logic
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Swift version
+        id: swift-version
+        run: |
+          # Keep CI on the Package.swift tools version floor (5.10+).
+          echo "version=6.0.3" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: ${{ steps.swift-version.outputs.version }}
+
+      - name: Show Swift
+        run: swift --version
+
+      - name: Run pre-release sanity
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          ./scripts/pre-release-sanity.sh 2>&1 | tee artifacts/pre-release-sanity.log
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Pre-release Sanity"
+            echo ""
+            if [[ -f artifacts/pre-release-sanity.log ]]; then
+              echo '```'
+              tail -n 40 artifacts/pre-release-sanity.log
+              echo '```'
+            else
+              echo "_No log produced._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload sanity log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-release-sanity-log
+          path: artifacts/pre-release-sanity.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  macos:
+    name: macOS build and PennyTests
+    runs-on: macos-latest
+    timeout-minutes: 50
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        id: xcode
+        run: ./scripts/select-stable-xcode.sh
+
+      - name: Cache SPM and DerivedData
+        uses: actions/cache@v4
+        with:
+          path: |
+            .derivedData
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}-penny-${{ steps.xcode.outputs.version }}-${{ hashFiles('Penny.xcodeproj/project.pbxproj', 'Penny/**/*.swift', 'PennyWidgets/**/*.swift', 'PennyTests/**/*.swift', 'PennyTests/**/Fixtures/**', 'Tools/PennyCoreLogic/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-penny-${{ steps.xcode.outputs.version }}-
+
+      - name: Build for testing and run PennyTests
+        run: ./scripts/ci-macos.sh
+
+      - name: Job summary
+        if: always()
+        run: |
+          if [[ -f artifacts/ci-macos-summary.md ]]; then
+            cat artifacts/ci-macos-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload macOS logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-ci-logs
+          path: |
+            artifacts/*.log
+            artifacts/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
+
+  ci-gate:
+    name: ci-gate
+    needs: [sanity, macos]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every CI job to succeed
+        env:
+          SANITY_RESULT: ${{ needs.sanity.result }}
+          MACOS_RESULT: ${{ needs.macos.result }}
+        run: |
+          set -euo pipefail
+          echo "sanity=$SANITY_RESULT"
+          echo "macos=$MACOS_RESULT"
+          # success is the only passing result. skipped and cancelled fail this check
+          # so branch protection can require ci-gate alone.
+          if [[ "$SANITY_RESULT" != "success" || "$MACOS_RESULT" != "success" ]]; then
+            echo "ci-gate failed because a required job did not succeed."
+            exit 1
+          fi
+          echo "ci-gate passed"

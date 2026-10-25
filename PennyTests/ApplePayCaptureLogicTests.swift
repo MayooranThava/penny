@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Penny
 
-@Suite("ApplePayCaptureLogic")
+@Suite("ApplePayCaptureLogic", .isolatedTestResources)
 struct ApplePayCaptureLogicTests {
 
     @Test("Rejects non-positive amounts")

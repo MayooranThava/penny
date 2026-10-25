@@ -59,14 +59,10 @@ extension Decimal {
     }
 
     static func from(_ string: String) -> Decimal? {
-        var cleaned = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        cleaned = cleaned
+        let cleaned = string
             .replacingOccurrences(of: ",", with: "")
-            .replacingOccurrences(of: "$", with: "")
-            .replacingOccurrences(of: " ", with: "")
-        // Strip common currency letters users may paste (CAD, USD, etc.).
-        cleaned = cleaned.filter { $0.isNumber || $0 == "." || $0 == "-" }
-        guard !cleaned.isEmpty, cleaned != "-", cleaned != "." else { return nil }
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return nil }
         return Decimal(string: cleaned)
     }
 }

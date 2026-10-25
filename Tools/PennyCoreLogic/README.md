@@ -29,4 +29,4 @@ From the repo root, preferred gate:
 ./scripts/check-core-logic-drift.py
 ```
 
-The drift script fails when these sources diverge from `Penny/Services` and `Penny/Utilities`. It ignores `public`, `Sendable`, and memberwise initializers required by the Linux package. See `docs/ci.md`.
+The drift script fails when these sources diverge from `Penny/Services` and `Penny/Utilities`. It ignores `public`, `Sendable`, and memberwise initializers required by the Linux package. Two pre-existing diffs (`Decimal.from` stripping and Apple Pay `%.2f` rounding) stay in the app only until the data-safety PR; the script fails if those diffs change. See `docs/ci.md`.

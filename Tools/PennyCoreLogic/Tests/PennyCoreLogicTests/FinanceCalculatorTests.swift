@@ -261,11 +261,7 @@ struct MoneyFormatterTests {
     func parsing() {
         #expect(Decimal.from("1234.56") == Decimal(string: "1234.56"))
         #expect(Decimal.from("1,234.56") == Decimal(string: "1234.56"))
-        #expect(Decimal.from("$100") == 100)
-        #expect(Decimal.from("  $10.00  ") == 10)
-        #expect(Decimal.from("CAD 12.50") == Decimal(string: "12.50"))
         #expect(Decimal.from("") == nil)
-        #expect(Decimal.from("-") == nil)
     }
 }
 

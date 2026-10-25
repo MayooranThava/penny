@@ -50,7 +50,16 @@ SPM caches and DerivedData are cached in Actions under `.derivedData` plus `~/Li
 
 Symlinks or a shared Xcode source list would not work: the package has to be `public`, it cannot import SwiftData, and `BillRecurrence` lives on the app model with UI helpers. The package keeps a case-only stand-in, plus explicit public initializers.
 
-`scripts/check-core-logic-drift.py` diffs the logic after ignoring `public`, `Sendable`, memberwise initializers, comments, and that recurrence shim. The shim's cases still have to match `Penny/Models`. It covers:
+`scripts/check-core-logic-drift.py` diffs the logic after ignoring `public`, `Sendable`, memberwise initializers, comments, and that recurrence shim. The shim's cases still have to match `Penny/Models`. Any new difference fails the check.
+
+Two differences already exist in the app and are **not** copied into `PennyCoreLogic` by this PR (they belong with the data-safety work). The script records those exact diffs as deferred and fails if either diff changes:
+
+- `Decimal.from` in `Penny/Utilities/MoneyFormatters.swift` strips `$`, spaces, and currency letters. The package still only strips commas and surrounding whitespace.
+- `ApplePayCaptureLogic.makeDraft` in the app rounds through `String(format: "%.2f", amount)`. The package still uses `Decimal(amount).rounded(scale: 2)`.
+
+Deleting a bill sets `RecurringBill.isActive` to false. `BillPaymentCycle.includesInCommittedSpend(isActive:)` is that rule in both copies. The app UI still assigns `isActive` directly and does not call the helper. The old `paidCycleKey == key` checklist is not how a bill is marked paid.
+
+It covers:
 
 - `Penny/Services/FinanceCalculator.swift`
 - `Penny/Services/InsightEngine.swift`

@@ -27,4 +27,11 @@ enum BillPaymentCycle {
             return "b:\(fortnights)"
         }
     }
+
+    /// Plan → Delete Bill sets `isActive` to false. Committed spend includes
+    /// only bills that are still active. The old paid-cycle checklist
+    /// (`paidCycleKey` equal to `key`) is not how a bill is marked paid.
+    static func includesInCommittedSpend(isActive: Bool) -> Bool {
+        isActive
+    }
 }

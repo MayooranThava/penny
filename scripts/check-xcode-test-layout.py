@@ -163,10 +163,10 @@ def main() -> int:
             fail(message)
         return 1
 
-    print(f"[pass] {len(test_targets)} test target(s) on the Penny scheme, unskipped")
-    print("[pass] PennyTests bundles Migration/Fixtures")
-    print("[pass] every suite isolates SwiftData and UserDefaults")
-    print("[pass] macOS CI does not filter PennyTests")
+    print(f"[pass] {len(test_targets)} test target(s) on the Penny scheme, unskipped", file=sys.stderr)
+    print("[pass] PennyTests bundles Migration/Fixtures", file=sys.stderr)
+    print("[pass] every suite isolates SwiftData and UserDefaults", file=sys.stderr)
+    print("[pass] macOS CI does not filter PennyTests", file=sys.stderr)
     if list_products:
         for target in test_targets:
             print(target["product"])

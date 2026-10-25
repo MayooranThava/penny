@@ -44,7 +44,7 @@ Or in Xcode: open `Penny.xcodeproj` → select the **Penny** scheme → **Produc
 | Apple Pay capture draft / IDs | ✓ | service insert/dedupe |
 | Product IDs ↔ `Penny.storekit` | script | ✓ |
 | Demo seed + non-destructive re-seed | — | ✓ |
-| Bill soft-delete (`isActive`) | — | ✓ |
+| Bill delete drops committed spend (`isActive`) | ✓ | ✓ |
 | Persistence store name / schema V1 | — | ✓ |
 | Settings repair when content exists | — | ✓ |
 | Upgrade / no data lost, including ~5,000 transaction timing | — | reserved in `PennyTests/Migration` (fixture in PR 2). Required for SwiftData model changes. See `docs/ci.md`. |

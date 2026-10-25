@@ -36,7 +36,7 @@ Void Runner (`ApolloX_IOS`) already has Xcode Cloud. Penny needs a one-time enab
 
 ### Build numbers
 
-App Store Connect already has builds **1** and **2** from Mac uploads. The project starts at build **3**, and `ci_scripts/ci_post_clone.sh` bumps `CURRENT_PROJECT_VERSION` on each Xcode Cloud run so uploads never collide.
+App Store Connect already has builds **1** and **2** from Mac uploads. The project starts at build **4**, and `ci_scripts/ci_post_clone.sh` bumps `CURRENT_PROJECT_VERSION` on each Xcode Cloud run so uploads never collide.
 
 ### External testing
 
@@ -91,7 +91,7 @@ See [data-persistence.md](./data-persistence.md). Short version: updating TestFl
 
 # App Store submission prep
 
-> **Version note (2026-10-02):** App Store Connect closed the `1.0.3` train (`ITMS-90186` / `ITMS-90062` — `CFBundleShortVersionString` must be higher than the previously approved `1.0.3`). The project marketing version is now **`1.0.4`**. Create an **iOS App Version 1.0.4** in ASC and attach the new build there — do not keep uploading to 1.0.3.
+> **Version note (2026-10-25):** `1.0.4` is already released, so App Store Connect rejects new uploads to that train (`CFBundleShortVersionString` must be higher than the previously approved `1.0.4`). The project marketing version is now **`1.1`** (build **4**). Create an **iOS App Version 1.1** in ASC and attach the new build there — do not keep uploading to 1.0.4.
 
 Everything below is ready to paste into App Store Connect. Prices are suggestions — you choose the final tiers. Nothing here is a substitute for the manual steps in the checklist at the end.
 
@@ -106,7 +106,7 @@ Everything below is ready to paste into App Store Connect. Prices are suggestion
 | Content rights | Does **not** contain, show, or access third-party content |
 | Age rating | 4+ (answer every questionnaire item **None/No**) |
 
-## 2. Version metadata — English (Canada) (Version → 1.0.4)
+## 2. Version metadata — English (Canada) (Version → 1.1)
 
 **Promotional text (≤170):**
 ```
@@ -274,7 +274,7 @@ Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Fo
 7. **Answer App Privacy** = Data not collected (section 4) and **Age rating** = 4+ (section 7).
 8. **Set pricing** = Free + availability (section 6).
 9. **Run pre-release sanity** (`./scripts/pre-release-sanity.sh --xcode` on a Mac, plus the manual steps in [pre-release-sanity.md](./pre-release-sanity.md)).
-10. **Upload a build** via Xcode Cloud (push to `main`) and **attach it** to version **1.0.4** (not 1.0.3 — that train is closed).
+10. **Upload a build** via Xcode Cloud (push to `main`) and **attach it** to version **1.1** (not 1.0.4 — that version is already released).
 11. **Fill App Review Information** (section 9), **attach the IAPs to the version**, then **Submit for Review**.
 
 > Prerequisite: the app must compile. Ensure PR #19 (StoreKit `Transaction` fix) is merged before triggering the Archive/upload build.

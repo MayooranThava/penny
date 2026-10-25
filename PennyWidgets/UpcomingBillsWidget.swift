@@ -3,7 +3,7 @@ import SwiftUI
 
 struct UpcomingBillsEntry: TimelineEntry {
     let date: Date
-    let snapshot: WidgetSnapshotBridge.Snapshot
+    let snapshot: WidgetSnapshotStore.Snapshot
 }
 
 struct UpcomingBillsProvider: TimelineProvider {
@@ -12,11 +12,11 @@ struct UpcomingBillsProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (UpcomingBillsEntry) -> Void) {
-        completion(UpcomingBillsEntry(date: .now, snapshot: WidgetSnapshotBridge.load() ?? .placeholder))
+        completion(UpcomingBillsEntry(date: .now, snapshot: WidgetSnapshotStore.load() ?? .placeholder))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UpcomingBillsEntry>) -> Void) {
-        let entry = UpcomingBillsEntry(date: .now, snapshot: WidgetSnapshotBridge.load() ?? .placeholder)
+        let entry = UpcomingBillsEntry(date: .now, snapshot: WidgetSnapshotStore.load() ?? .placeholder)
         let next = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now.addingTimeInterval(1_800)
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
@@ -26,7 +26,7 @@ struct UpcomingBillsWidgetView: View {
     @Environment(\.widgetFamily) private var family
     var entry: UpcomingBillsEntry
 
-    private var items: [WidgetSnapshotBridge.UpcomingLine] {
+    private var items: [WidgetSnapshotStore.UpcomingLine] {
         Array(entry.snapshot.upcomingList.prefix(family == .systemSmall ? 2 : 4))
     }
 

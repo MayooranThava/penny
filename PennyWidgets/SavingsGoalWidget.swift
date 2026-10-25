@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SavingsGoalEntry: TimelineEntry {
     let date: Date
-    let snapshot: WidgetSnapshotBridge.Snapshot
+    let snapshot: WidgetSnapshotStore.Snapshot
 }
 
 struct SavingsGoalProvider: TimelineProvider {
@@ -12,11 +12,11 @@ struct SavingsGoalProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SavingsGoalEntry) -> Void) {
-        completion(SavingsGoalEntry(date: .now, snapshot: WidgetSnapshotBridge.load() ?? .placeholder))
+        completion(SavingsGoalEntry(date: .now, snapshot: WidgetSnapshotStore.load() ?? .placeholder))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SavingsGoalEntry>) -> Void) {
-        let entry = SavingsGoalEntry(date: .now, snapshot: WidgetSnapshotBridge.load() ?? .placeholder)
+        let entry = SavingsGoalEntry(date: .now, snapshot: WidgetSnapshotStore.load() ?? .placeholder)
         let next = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now.addingTimeInterval(1_800)
         completion(Timeline(entries: [entry], policy: .after(next)))
     }

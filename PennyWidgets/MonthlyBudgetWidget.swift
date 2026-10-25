@@ -3,7 +3,7 @@ import SwiftUI
 
 struct MonthlyBudgetEntry: TimelineEntry {
     let date: Date
-    let snapshot: WidgetSnapshotBridge.Snapshot
+    let snapshot: WidgetSnapshotStore.Snapshot
 }
 
 struct MonthlyBudgetProvider: TimelineProvider {
@@ -12,11 +12,11 @@ struct MonthlyBudgetProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (MonthlyBudgetEntry) -> Void) {
-        completion(MonthlyBudgetEntry(date: .now, snapshot: WidgetSnapshotBridge.load() ?? .placeholder))
+        completion(MonthlyBudgetEntry(date: .now, snapshot: WidgetSnapshotStore.load() ?? .placeholder))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<MonthlyBudgetEntry>) -> Void) {
-        let entry = MonthlyBudgetEntry(date: .now, snapshot: WidgetSnapshotBridge.load() ?? .placeholder)
+        let entry = MonthlyBudgetEntry(date: .now, snapshot: WidgetSnapshotStore.load() ?? .placeholder)
         let next = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now.addingTimeInterval(1_800)
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
@@ -25,11 +25,11 @@ struct MonthlyBudgetProvider: TimelineProvider {
 struct MonthlyBudgetWidgetView: View {
     var entry: MonthlyBudgetEntry
 
-    private var spent: Double { entry.snapshot.spentThisMonth ?? 0 }
-    private var planned: Double { max(entry.snapshot.plannedSpending ?? 0, 0) }
+    private var spent: Decimal { entry.snapshot.spentThisMonth ?? 0 }
+    private var planned: Decimal { max(entry.snapshot.plannedSpending ?? 0, 0) }
     private var progress: Double {
         guard planned > 0 else { return spent > 0 ? 1 : 0 }
-        return min(max(spent / planned, 0), 1.25)
+        return min(max((spent / planned).doubleValue, 0), 1.25)
     }
 
     private var healthColor: Color {
@@ -54,12 +54,12 @@ struct MonthlyBudgetWidgetView: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text(entry.snapshot.money(spent))
+            Text(entry.snapshot.formattedBudgetAmount(spent))
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
 
-            Text("of \(entry.snapshot.money(planned)) planned")
+            Text("of \(entry.snapshot.formattedBudgetAmount(planned)) planned")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 

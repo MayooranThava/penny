@@ -59,10 +59,26 @@ extension Decimal {
     }
 
     static func from(_ string: String) -> Decimal? {
-        let cleaned = string
+        var cleaned = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        cleaned = cleaned
             .replacingOccurrences(of: ",", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleaned.isEmpty else { return nil }
-        return Decimal(string: cleaned)
+            .replacingOccurrences(of: "$", with: "")
+            .replacingOccurrences(of: " ", with: "")
+        // Strip common currency letters users may paste (CAD, USD, etc.).
+        cleaned = cleaned.filter { $0.isNumber || $0 == "." || $0 == "-" }
+        guard !cleaned.isEmpty, cleaned != "-", cleaned != "." else { return nil }
+        // One leading minus, and a single decimal point. Rejects "1.2.3", "12-3", "--5".
+        let unsigned: Substring
+        if cleaned.hasPrefix("-") {
+            unsigned = cleaned.dropFirst()
+            guard !unsigned.isEmpty, !unsigned.contains("-") else { return nil }
+        } else if cleaned.contains("-") {
+            return nil
+        } else {
+            unsigned = Substring(cleaned)
+        }
+        guard unsigned.filter({ $0 == "." }).count <= 1 else { return nil }
+        // POSIX so a comma-decimal locale cannot misread a cleaned "10.50".
+        return Decimal(string: cleaned, locale: Locale(identifier: "en_US_POSIX"))
     }
 }

@@ -154,16 +154,29 @@ xcodebuild "${TEST_ARGS[@]}" | tee "$ROOT/artifacts/xcodebuild-test.log"
 status=${PIPESTATUS[0]}
 set -e
 
+require_test_token() {
+  local token="$1"
+  if grep -q "$token" "$ROOT/artifacts/xcodebuild-test.log"; then
+    return 0
+  fi
+  if [[ -d "$ROOT/artifacts/PennyTests.xcresult" ]]; then
+    if xcrun xcresulttool get test-results tests --path "$ROOT/artifacts/PennyTests.xcresult" 2>/dev/null | grep -q "$token"; then
+      return 0
+    fi
+    if xcrun xcresulttool get --legacy --format json --path "$ROOT/artifacts/PennyTests.xcresult" 2>/dev/null | grep -q "$token"; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
 migration_seen=0
-if grep -q "reservedUpgradeCheckRunsInCI" "$ROOT/artifacts/xcodebuild-test.log"; then
+timing_seen=0
+if require_test_token "v103StoreOpensOnCurrentSchemaWithoutLosingACent"; then
   migration_seen=1
 fi
-if [[ "$migration_seen" -eq 0 && -d "$ROOT/artifacts/PennyTests.xcresult" ]]; then
-  if xcrun xcresulttool get test-results tests --path "$ROOT/artifacts/PennyTests.xcresult" 2>/dev/null | grep -q "reservedUpgradeCheckRunsInCI"; then
-    migration_seen=1
-  elif xcrun xcresulttool get --legacy --format json --path "$ROOT/artifacts/PennyTests.xcresult" 2>/dev/null | grep -q "reservedUpgradeCheckRunsInCI"; then
-    migration_seen=1
-  fi
+if require_test_token "fiveThousandTransactionUpgradeFinishesWithinAFewSeconds"; then
+  timing_seen=1
 fi
 
 {
@@ -171,15 +184,17 @@ fi
   echo "- PennyTests filter: none (Migration suite is required)"
   echo "- parallel-testing-enabled: YES"
   echo "- xcodebuild exit: $status"
-  echo "- reservedUpgradeCheckRunsInCI seen: $migration_seen"
+  echo "- v103 upgrade test seen: $migration_seen"
+  echo "- 5,000-transaction timing test seen: $timing_seen"
 } >> "$SUMMARY"
 
 if [[ "$status" -ne 0 ]]; then
   echo "PennyTests failed (exit $status). See artifacts/xcodebuild-test.log" >&2
   exit "$status"
 fi
-if [[ "$migration_seen" -ne 1 ]]; then
-  echo "PennyTests exited 0 but reservedUpgradeCheckRunsInCI did not run." >&2
+if [[ "$migration_seen" -ne 1 || "$timing_seen" -ne 1 ]]; then
+  echo "PennyTests exited 0 but the upgrade tests did not run." >&2
+  echo "Required: v103StoreOpensOnCurrentSchemaWithoutLosingACent and fiveThousandTransactionUpgradeFinishesWithinAFewSeconds." >&2
   echo "Do not filter the PennyTests target." >&2
   exit 1
 fi

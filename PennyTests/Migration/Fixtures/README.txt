@@ -1,8 +1,3 @@
 PennyTests migration fixtures.
 
-PR 2 adds Penny-v1.0.4.store here (a store written by the shipping app).
-The PennyTests target bundles this folder, so the file is copied into the test bundle
-without another Xcode project edit.
-
-The upgrade test must open that store and prove no data is lost, including a timing
-check that migrates about 5,000 transactions.
+The upgrade tests write SwiftData stores at runtime from PennySchemaV103 (v1.0.3, commit dca913c) and from the unversioned v1.0.4 model list (commit 92c6746). This environment cannot run those App Store builds, so there is no checked-in .store binary. The folder stays a bundled resource for a future device-captured store. See PennyTests/Migration/README.md.

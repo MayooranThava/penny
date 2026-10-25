@@ -594,7 +594,7 @@ struct ApplePayCaptureSetupView: View {
 
     private func markConfiguredAndClose() {
         settings?.applePayCaptureConfigured = true
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.success()
         dismiss()
     }

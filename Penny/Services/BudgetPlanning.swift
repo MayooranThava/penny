@@ -30,6 +30,6 @@ enum BudgetPlanning {
         } else {
             context.insert(Budget(monthStart: monthStart, plannedSpending: planned))
         }
-        try? context.save()
+        context.saveOrSurfaceError()
     }
 }

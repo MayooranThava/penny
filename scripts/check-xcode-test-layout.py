@@ -148,6 +148,17 @@ def main() -> int:
         if not bundled:
             failures.append("PennyTests Resources phase does not copy Migration/Fixtures")
 
+    swallow = re.compile(
+        r"try\?\s+(modelContext|context)\.save\(\)|try\?\s+PennyPersistence\.repairIfNeeded"
+    )
+    for path in sorted((ROOT / "Penny").rglob("*.swift")):
+        for index, line in enumerate(path.read_text().splitlines(), start=1):
+            stripped = line.split("//", 1)[0]
+            if swallow.search(stripped):
+                failures.append(
+                    f"{path.relative_to(ROOT)}:{index} swallows a save or repair error"
+                )
+
     for path in sorted((ROOT / "PennyTests").rglob("*.swift")):
         for block in suite_blocks(path.read_text()):
             if "isolatedTestResources" not in block:

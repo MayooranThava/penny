@@ -14,6 +14,18 @@ enum ApplePayCaptureLogic {
         var note: String
     }
 
+    /// Cents from a Wallet `Double`. `Decimal(amount)` keeps binary noise, and
+    /// `String(format: "%.2f", amount)` follows the user's locale (so "10.2" can become "10,20").
+    static func money(fromApplePayAmount amount: Double) -> Decimal {
+        guard amount.isFinite else { return 0 }
+        let magnitude = abs(amount)
+        guard magnitude < 1_000_000_000 else { return 0 }
+        let cents = (magnitude * 100).rounded()
+        guard cents <= Double(Int.max) else { return 0 }
+        let sign: FloatingPointSign = amount < 0 ? .minus : .plus
+        return Decimal(sign: sign, exponent: -2, significand: Decimal(Int(cents)))
+    }
+
     /// Builds a draft ready to insert, or `nil` when amount is not positive.
     static func makeDraft(
         amount: Double,
@@ -23,7 +35,7 @@ enum ApplePayCaptureLogic {
         date: Date = .now,
         calendar: Calendar = .current
     ) -> Draft? {
-        let decimalAmount = Decimal(amount).rounded(scale: 2)
+        let decimalAmount = money(fromApplePayAmount: amount)
         guard decimalAmount > 0 else { return nil }
 
         let cleanedMerchant = cleaned(merchant)

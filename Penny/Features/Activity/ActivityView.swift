@@ -161,7 +161,7 @@ struct ActivityView: View {
                 Button("Delete", role: .destructive) {
                     if let pendingDelete {
                         modelContext.delete(pendingDelete)
-                        try? modelContext.save()
+                        modelContext.saveOrSurfaceError()
                         Haptics.warning()
                     }
                     pendingDelete = nil

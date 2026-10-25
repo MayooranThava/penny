@@ -39,6 +39,7 @@ struct PennyApp: App {
             RootView()
                 .environment(session)
                 .environment(store)
+                .environment(PennySaveReporter.shared)
                 .modelContainer(container)
         } else {
             LaunchSplashView()
@@ -66,6 +67,7 @@ struct PennyApp: App {
             container = opened
             launchError = nil
         } catch {
+            PennyLog.persistence.error("Launch failed: \(error.localizedDescription, privacy: .public)")
             container = nil
             launchError = error.localizedDescription
         }
@@ -129,6 +131,7 @@ struct StorageErrorView: View {
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(StoreManager.self) private var store
+    @Environment(PennySaveReporter.self) private var saveReporter
     @Query private var settingsList: [UserSettings]
 
     private var settings: UserSettings? { settingsList.first }
@@ -151,9 +154,22 @@ struct RootView: View {
         .onAppear { applyAccentTheme() }
         .onChange(of: settings?.accentThemeRaw) { _, _ in applyAccentTheme() }
         .onChange(of: store.isPro) { _, _ in applyAccentTheme() }
+        .overlay(alignment: .top) {
+            if let message = saveReporter.message {
+                SaveErrorBanner(message: message) {
+                    saveReporter.dismiss()
+                }
+                .padding(.horizontal, PennySpacing.screenPadding)
+                .padding(.top, PennySpacing.xs)
+            }
+        }
         .task {
             // Belt-and-suspenders if settings were missing after an update.
-            try? PennyPersistence.repairIfNeeded(in: modelContext)
+            do {
+                try PennyPersistence.repairIfNeeded(in: modelContext)
+            } catch {
+                PennySaveReporter.shared.report(error)
+            }
         }
     }
 
@@ -216,7 +232,7 @@ struct MainTabView: View {
                             settings?.hasCompletedWalkthrough = true
                             session.walkthroughAnchor = nil
                             session.walkthroughPlanSegment = nil
-                            try? modelContext.save()
+                            modelContext.saveOrSurfaceError()
                         }
                     )
                     .transition(.opacity)
@@ -282,6 +298,7 @@ struct MainTabView: View {
     RootView()
         .environment(AppSession())
         .environment(StoreManager())
+        .environment(PennySaveReporter.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }
 

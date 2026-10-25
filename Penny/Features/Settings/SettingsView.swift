@@ -134,7 +134,7 @@ struct SettingsView: View {
                     let trimmed = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
                     settings?.displayName = trimmed
                     nameText = trimmed
-                    try? modelContext.save()
+                    modelContext.saveOrSurfaceError()
                     Haptics.success()
                 }
                 .disabled(settings == nil)
@@ -166,7 +166,7 @@ struct SettingsView: View {
                     Keyboard.dismiss()
                     if let value = Decimal.from(incomeText), let settings {
                         settings.monthlyIncome = value
-                        try? modelContext.save()
+                        modelContext.saveOrSurfaceError()
                         Haptics.success()
                     }
                 }
@@ -184,7 +184,7 @@ struct SettingsView: View {
                         get: { NSDecimalNumber(decimal: settings.plannedMonthlySavings).doubleValue },
                         set: {
                             settings.plannedMonthlySavings = Decimal($0).rounded(scale: 0)
-                            try? modelContext.save()
+                            modelContext.saveOrSurfaceError()
                         }
                     ),
                     in: 0...5_000,
@@ -285,7 +285,7 @@ struct SettingsView: View {
             }
         }
         modelContext.delete(account)
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.warning()
     }
 
@@ -382,7 +382,7 @@ struct SettingsView: View {
                 return
             }
             settings?.accentTheme = theme
-            try? modelContext.save()
+            modelContext.saveOrSurfaceError()
             AccentTheme.active = theme
             themeRefreshToken += 1
             Haptics.selection()
@@ -478,7 +478,7 @@ struct SettingsView: View {
                 .foregroundStyle(PennyColors.textSecondary)
             Button("Replay quick tour") {
                 settings?.hasCompletedWalkthrough = false
-                try? modelContext.save()
+                modelContext.saveOrSurfaceError()
                 session.showWalkthrough = true
                 Haptics.light()
             }
@@ -590,7 +590,7 @@ struct SettingsView: View {
             get: { settings?.currencyCode ?? "CAD" },
             set: { newValue in
                 settings?.currencyCode = newValue
-                try? modelContext.save()
+                modelContext.saveOrSurfaceError()
             }
         )
     }
@@ -600,7 +600,7 @@ struct SettingsView: View {
             get: { settings?.appearance ?? .system },
             set: { newValue in
                 settings?.appearance = newValue
-                try? modelContext.save()
+                modelContext.saveOrSurfaceError()
             }
         )
     }
@@ -610,7 +610,7 @@ struct SettingsView: View {
             get: { settings?.billRemindersEnabled ?? true },
             set: { newValue in
                 settings?.billRemindersEnabled = newValue
-                try? modelContext.save()
+                modelContext.saveOrSurfaceError()
                 Task {
                     await NotificationService.shared.refreshBillReminders(bills: bills, enabled: newValue)
                 }

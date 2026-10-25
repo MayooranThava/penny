@@ -26,7 +26,7 @@ enum BillScheduleService {
             }
         }
         if changed {
-            try? context.save()
+            context.saveOrSurfaceError()
         }
         return changed
     }

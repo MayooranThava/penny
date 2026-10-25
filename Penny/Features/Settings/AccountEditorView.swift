@@ -257,7 +257,7 @@ struct AccountEditorView: View {
             persistFunding(for: targetAccount, balance: balance)
         }
 
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.success()
         dismiss()
     }
@@ -304,7 +304,7 @@ struct AccountEditorView: View {
             modelContext.delete(row)
         }
         modelContext.delete(account)
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.warning()
         dismiss()
     }

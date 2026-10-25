@@ -295,7 +295,7 @@ struct CategoryDetailView: View {
                                         Keyboard.dismiss()
                                         if let value = Decimal.from(budgetText), value >= 0 {
                                             category.budgetedAmount = value
-                                            try? modelContext.save()
+                                            modelContext.saveOrSurfaceError()
                                             BudgetPlanning.syncMonthEnvelope(
                                                 in: modelContext,
                                                 categories: allCategories,

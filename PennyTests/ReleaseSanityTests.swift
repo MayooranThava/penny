@@ -50,10 +50,15 @@ struct ReleaseSanityTests {
     @Test("SwiftData store name and schema version stay stable across releases")
     func persistenceIdentityVital() {
         #expect(PennyPersistence.storeName == "Penny")
-        #expect(PennySchemaV1.versionIdentifier == Schema.Version(1, 0, 0))
+        #expect(PennyPersistence.dataIsSafeMessage == "Your data is safe")
+        #expect(PennySchemaV103.versionIdentifier == Schema.Version(1, 0, 3))
+        #expect(PennySchemaV103.models.count == 8)
+        #expect(PennySchemaV1.versionIdentifier == Schema.Version(1, 0, 4))
         #expect(PennySchemaV1.models.count == 9)
-        #expect(PennyMigrationPlan.schemas.count == 1)
-        #expect(PennyMigrationPlan.stages.isEmpty)
+        #expect(PennyMigrationPlan.schemas.count == 2)
+        #expect(PennyMigrationPlan.stages.count == 1)
+        #expect(String(describing: PennyMigrationPlan.schemas[0]) == "PennySchemaV103")
+        #expect(String(describing: PennyMigrationPlan.schemas[1]) == "PennySchemaV1")
     }
 
     // MARK: - Demo seed

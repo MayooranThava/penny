@@ -47,7 +47,7 @@ Or in Xcode: open `Penny.xcodeproj` → select the **Penny** scheme → **Produc
 | Bill delete drops committed spend (`isActive`) | ✓ | ✓ |
 | Persistence store name / schema V1 | — | ✓ |
 | Settings repair when content exists | — | ✓ |
-| Upgrade / no data lost, including ~5,000 transaction timing | — | reserved in `PennyTests/Migration` (fixture in PR 2). Required for SwiftData model changes. See `docs/ci.md`. |
+| Upgrade / no data lost, including ~5,000 transaction timing | — | `PennyTests/Migration` opens v1.0.3 and v1.0.4 stores, checks cents, and times 5,000 transactions. Required for SwiftData model changes. See `docs/ci.md`. |
 
 ## Manual smoke (≈5 minutes on Simulator or TestFlight)
 
@@ -75,7 +75,7 @@ Ship only when:
 
 1. Prefer pure logic in `Tools/PennyCoreLogic/Tests/.../ReleaseSanityTests.swift` so Linux CI can run it.
 2. Persistence / SwiftData / StoreKit file checks go in `PennyTests/ReleaseSanityTests.swift`.
-3. Upgrade fixtures belong in `PennyTests/Migration/Fixtures/` (a folder reference on PennyTests, so a `Penny-v1.0.4.store` is bundled without a new Copy Bundle Resources row). Model changes must pass that upgrade test, including the timing check on about 5,000 transactions (`docs/ci.md`).
+3. Upgrade checks live in `PennyTests/Migration`. They write a v1.0.3 store and a v1.0.4 store, then open them with the migration plan. Model changes must pass that suite, including the timing check on 5,000 transactions (`docs/ci.md`). `Migration/Fixtures` stays a folder reference if a device-captured store is added later.
 4. After adding a `PennyTests` Swift file, regenerate the Xcode project:
 
 ```bash

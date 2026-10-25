@@ -250,7 +250,7 @@ struct GoalsPlanView: View {
             modelContext.delete(row)
         }
         modelContext.delete(goal)
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.warning()
     }
 }
@@ -491,7 +491,7 @@ struct AddGoalView: View {
             }
         }
 
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.success()
         dismiss()
     }
@@ -536,7 +536,7 @@ struct AddGoalView: View {
             modelContext.delete(row)
         }
         modelContext.delete(goal)
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.warning()
         dismiss()
     }
@@ -669,7 +669,7 @@ struct BillsPlanView: View {
             Button("Delete", role: .destructive) {
                 if let pendingDelete {
                     pendingDelete.isActive = false
-                    try? modelContext.save()
+                    modelContext.saveOrSurfaceError()
                     Haptics.warning()
                 }
                 pendingDelete = nil
@@ -821,7 +821,7 @@ struct AddBillView: View {
             )
             modelContext.insert(bill)
         }
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.success()
         dismiss()
     }
@@ -830,7 +830,7 @@ struct AddBillView: View {
         guard let bill else { return }
         Keyboard.dismiss()
         bill.isActive = false
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.warning()
         dismiss()
     }
@@ -936,7 +936,7 @@ struct DebtPlanView: View {
             Button("Delete", role: .destructive) {
                 if let pendingDelete {
                     modelContext.delete(pendingDelete)
-                    try? modelContext.save()
+                    modelContext.saveOrSurfaceError()
                     Haptics.warning()
                 }
                 pendingDelete = nil
@@ -1117,7 +1117,7 @@ struct AddDebtView: View {
             )
             modelContext.insert(debt)
         }
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.success()
         dismiss()
     }
@@ -1126,7 +1126,7 @@ struct AddDebtView: View {
         guard let debt else { return }
         Keyboard.dismiss()
         modelContext.delete(debt)
-        try? modelContext.save()
+        modelContext.saveOrSurfaceError()
         Haptics.warning()
         dismiss()
     }

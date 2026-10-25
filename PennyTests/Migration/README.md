@@ -1,13 +1,18 @@
 # Migration tests
 
-This folder is the reserved home for the **no data lost on upgrade** check. PR 2 lands the real fixture and assertions. Until then, `MigrationTests` passes and only checks that this folder’s `Fixtures` directory is copied into the PennyTests bundle.
+This suite is the **no data lost on upgrade** check. CI runs the entire `PennyTests` target. Do not add `-only-testing`, `-skip-testing`, or a scheme skip. `ci-gate` fails if `v103StoreOpensOnCurrentSchemaWithoutLosingACent` or `fiveThousandTransactionUpgradeFinishesWithinAFewSeconds` did not run.
 
-CI runs the **entire** `PennyTests` target. Do not add `-only-testing`, `-skip-testing`, or a scheme skip for this suite. `ci-gate` fails if the macOS test job fails or is skipped.
+## How the stores are produced
 
-## What PR 2 adds
+This repo’s cloud agent cannot install the App Store binaries for v1.0.3 or v1.0.4, so the tests do not ship a prebuilt `.store` file. They write a real SwiftData store, then open it the way an update does.
 
-1. A store written by the shipping app at marketing version **1.0.4**, placed at `PennyTests/Migration/Fixtures/Penny-v1.0.4.store`. The `Fixtures` directory is a folder reference on the PennyTests target, so files added here are bundled without a new Copy Bundle Resources entry.
-2. A test that copies that store to a temp directory, opens it with the current `PennyPersistence` schema / migration plan, and asserts no records were dropped.
-3. A timing check that migrates **about 5,000 transactions** inside the budget the test sets. Time the open/migrate call itself so other parallel suites do not dominate the number. This suite is `.serialized`.
+- **v1.0.3** uses `PennySchemaV103` in `Penny/Persistence/PennySchemaV103.swift`. Those stored properties are the model from commit `dca913c` (the v1.0.3 marketing bump). The test inserts a household (including a `$0.01` row and a long note), closes the container, and calls `PennyPersistence.makeContainer(at:)`.
+- **v1.0.4** uses an unversioned `Schema` of the current model types. That shape has not changed since commit `92c6746`. The shipping v1.0.4 app opened its store the same way, without `PennyMigrationPlan`. The test then opens the file through the plan.
+- **Skip-version** is the v1.0.3 file opened on the current schema. Users do not have to install v1.0.4 in between. The plan’s one lightweight stage adds `paidCycleKey`, `hasCompletedWalkthrough`, and `GoalFundingAllocation`.
+- **5,000 transactions** are written with the v1.0.3 schema. The assertion times only `makeContainer(at:)`, and the sum of the amounts must stay exact.
 
-Any pull request that changes the SwiftData model (`Penny/Models`, the schema in `PennyPersistence`, or `PennySchemaV1` / `PennyMigrationPlan`) has to pass that upgrade test once it exists. Open the fixture the way a real upgrade would (file URL copied out of the bundle). Do not call `makeContainer()` without `inMemory` for the fixture: the on-disk name `Penny` is the user’s store. CI gives each test its own temp store only when `makeContainer(inMemory: true)` runs under the test trait.
+`makeContainer(at:)` copies the store before opening. `failedMigrationRestoresBackupAndSaysDataIsSafe` corrupts the file after that copy and expects the original rows back, plus the words “Your data is safe”.
+
+## When the model changes
+
+Add a new `VersionedSchema`. Do not edit `PennySchemaV103` or the stored properties of an older version. Add a stage, point the app at the new types, and add a fixture case here. Checklist: `docs/data-persistence.md`.

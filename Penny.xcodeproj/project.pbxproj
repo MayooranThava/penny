@@ -85,6 +85,7 @@
 		C4D9E4F4D0A74755846E06E0 /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */; };
 		BC0C78BAEE304ACD8DC80B58 /* PrivateModeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */; };
 		7C687F474DB34EC8B390E1C0 /* PrivateModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */; };
+		B9AEA937ED0D428CA6F0D469 /* MoneyFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72FD3E021844BA99F186F61 /* MoneyFormatters.swift */; };
 		FCF453A78104421B833BB8E0 /* PrivateModeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */; };
 		361E3E35221940A884F6F9B7 /* Penny.app in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* Penny.app */; };
 		A10000000000000000000026 /* PennyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* PennyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -762,6 +763,7 @@
 				DC8A7EE53E574A2BADC2CFB5 /* ActivityPerformanceTests.swift in Sources */,
 				4A4C811A3E644415A97413A3 /* AppScreenshotTests.swift in Sources */,
 				9AAF0A6B8DBF40D4A208547F /* ScreenshotLaunch.swift in Sources */,
+				B9AEA937ED0D428CA6F0D469 /* MoneyFormatters.swift in Sources */,
 				FCF453A78104421B833BB8E0 /* PrivateModeLogic.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

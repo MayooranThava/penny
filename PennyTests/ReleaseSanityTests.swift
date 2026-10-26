@@ -309,7 +309,202 @@ struct ReleaseSanityTests {
         #expect(csv.contains("2026-09-01"))
     }
 
+    // MARK: - Settings copy
+
+    @Test("Settings privacy line names on-device storage and Apple crash reports")
+    func settingsPrivacyLine() {
+        #expect(PennyAppInfo.settingsFootnote == [
+            "Penny keeps your financial info on your iPhone and never sends it to us. Purchases are handled by Apple, and Apple may share crash reports with us only if you've turned that on in your iPhone settings.",
+            "Penny is a budgeting tool, not financial, tax or investment advice. Amounts are estimates based on what you enter and may not match your bank.",
+            "Penny doesn't connect to your bank. Wallet tap capture and widgets keep their data on this iPhone.",
+            "Deleting Penny or using Reset permanently erases your data from this iPhone.",
+            "Intended for adults; not directed to children under 13. Full details are in the Terms of Use."
+        ])
+        #expect(PennyAppInfo.privacySummary == PennyAppInfo.settingsFootnote[0])
+        let lowered = PennyAppInfo.privacySummary.lowercased()
+        #expect(!lowered.contains("to anyone"))
+        #expect(!lowered.contains("send analytics"))
+        #expect(!PennyAppInfo.settingsFootnote.joined(separator: "\n").contains("App updates keep your data"))
+    }
+
+    @Test("Reset clears the open store, backup, marker, and widget snapshot")
+    @MainActor
+    func resetErasesOnDeviceFiles() throws {
+        #expect(WidgetSnapshotStore.activeDefaultsSuite != WidgetSnapshotStore.appGroupID)
+        #expect(WidgetSnapshotStore.activeDefaultsSuite.hasPrefix("PennyTests."))
+
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyReset-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Penny.store")
+        let fileManager = FileManager.default
+
+        do {
+            let container = try PennyPersistence.makeContainer(at: storeURL)
+            let context = ModelContext(container)
+            context.insert(sampleExpense(title: "Coffee"))
+            context.insert(sampleExpense(title: "Groceries"))
+            context.insert(
+                RecurringBill(
+                    name: "Internet",
+                    amount: 80,
+                    dueDay: 10,
+                    categoryName: "Subscriptions",
+                    recurrence: .monthly,
+                    nextDueDate: .now,
+                    startDate: .now,
+                    isActive: true,
+                    icon: "wifi"
+                )
+            )
+            context.insert(UserSettings(currencyCode: "CAD", monthlyIncome: 100, hasCompletedOnboarding: true))
+            try context.save()
+            #expect(try context.fetch(FetchDescriptor<Transaction>()).count == 2)
+
+            try PennyStoreBackup.copyStore(
+                at: storeURL,
+                to: PennyStoreBackup.snapshotDirectory(for: storeURL)
+            )
+            try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
+            WidgetSnapshotStore.save(resetSnapshot(displayName: "Reset"))
+            let wal = URL(fileURLWithPath: storeURL.path + "-wal")
+            let shm = URL(fileURLWithPath: storeURL.path + "-shm")
+            let walBefore = fileManager.fileExists(atPath: wal.path)
+            let shmBefore = fileManager.fileExists(atPath: shm.path)
+
+            try PennyPersistence.reset(in: context)
+
+            #expect(fileManager.fileExists(atPath: storeURL.path))
+            #expect(fileManager.fileExists(atPath: wal.path) == walBefore)
+            #expect(fileManager.fileExists(atPath: shm.path) == shmBefore)
+            try expectNoBackupOrWidget(at: storeURL)
+            try expectNoUserModels(in: context)
+        }
+
+        let reopened = try PennyPersistence.makeContainer(at: storeURL)
+        try expectNoUserModels(in: ModelContext(reopened))
+        try expectNoBackupOrWidget(at: storeURL)
+    }
+
+    @Test("Delete all data uses the same cleanup and leaves no transactions")
+    @MainActor
+    func deleteAllDataUsesReset() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyDelete-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Penny.store")
+
+        do {
+            let container = try PennyPersistence.makeContainer(at: storeURL)
+            let context = ModelContext(container)
+            context.insert(sampleExpense(title: "Coffee"))
+            context.insert(sampleExpense(title: "Groceries"))
+            try context.save()
+            try PennyStoreBackup.copyStore(
+                at: storeURL,
+                to: PennyStoreBackup.snapshotDirectory(for: storeURL)
+            )
+            try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
+            WidgetSnapshotStore.save(resetSnapshot(displayName: "Delete"))
+
+            try PennyPersistence.deleteAllData(in: context)
+
+            #expect(FileManager.default.fileExists(atPath: storeURL.path))
+            #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
+            try expectNoBackupOrWidget(at: storeURL)
+        }
+
+        let reopened = try PennyPersistence.makeContainer(at: storeURL)
+        let context = ModelContext(reopened)
+        #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<RecurringBill>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<Debt>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<SavingsGoal>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<FinancialAccount>()).isEmpty)
+        try expectNoBackupOrWidget(at: storeURL)
+    }
+
+    @Test("Reset demo data keeps the store file and drops the pre-upgrade backup")
+    @MainActor
+    func resetDemoDataUsesReset() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyResetDemo-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Penny.store")
+
+        let container = try PennyPersistence.makeContainer(at: storeURL)
+        let context = ModelContext(container)
+        context.insert(sampleExpense(title: "Coffee"))
+        try context.save()
+        try PennyStoreBackup.copyStore(
+            at: storeURL,
+            to: PennyStoreBackup.snapshotDirectory(for: storeURL)
+        )
+        try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
+        WidgetSnapshotStore.save(resetSnapshot(displayName: "Demo"))
+
+        try PennyPersistence.resetDemoData(in: context)
+
+        #expect(FileManager.default.fileExists(atPath: storeURL.path))
+        try expectNoBackupOrWidget(at: storeURL)
+        #expect(try context.fetch(FetchDescriptor<UserSettings>()).first?.usingDemoData == true)
+    }
+
     // MARK: - Helpers
+
+    private func sampleExpense(title: String) -> Transaction {
+        Transaction(
+            title: title,
+            amount: 12,
+            transactionType: .expense,
+            categoryName: "Food"
+        )
+    }
+
+    private func resetSnapshot(displayName: String) -> WidgetSnapshotStore.Snapshot {
+        WidgetSnapshotStore.Snapshot(
+            safeToSpend: 12,
+            currencyCode: "CAD",
+            monthLabel: "Oct",
+            nextReminderTitle: "Rent due",
+            nextReminderDetail: "$10",
+            displayName: displayName,
+            updatedAt: .now,
+            upcomingItems: nil,
+            spentThisMonth: nil,
+            plannedSpending: nil,
+            budgetHealth: nil,
+            topGoalName: nil,
+            topGoalProgress: nil,
+            topGoalDetail: nil
+        )
+    }
+
+    @MainActor
+    private func expectNoUserModels(in context: ModelContext) throws {
+        #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<BudgetCategory>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<Budget>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<RecurringBill>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<SavingsGoal>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<Debt>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<FinancialAccount>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<GoalFundingAllocation>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<UserSettings>()).isEmpty)
+    }
+
+    private func expectNoBackupOrWidget(at storeURL: URL) throws {
+        let fileManager = FileManager.default
+        #expect(!fileManager.fileExists(atPath: PennyStoreBackup.snapshotDirectory(for: storeURL).path))
+        #expect(!fileManager.fileExists(atPath: PennyStoreBackup.markerURL(for: storeURL).path))
+        #expect(!fileManager.fileExists(atPath: PennyStoreBackup.backupRoot(for: storeURL).path))
+        #expect(WidgetSnapshotStore.load() == nil)
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        #expect(defaults.object(forKey: WidgetSnapshotStore.snapshotKey) == nil)
+    }
 
     private func locateStoreKitConfig() throws -> URL {
         let fm = FileManager.default

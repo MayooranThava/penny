@@ -5,6 +5,10 @@
 - PennyTests has a Copy Bundle Resources phase that bundles Migration/Fixtures
   (so a v1.0.4 store can land there without another project edit).
 - Every @Suite opts into isolated SwiftData / UserDefaults.
+- Settings → Legal & privacy renders PennyAppInfo.settingsFootnote and does not
+  inline those sentences.
+- Suites that touch WidgetSnapshotStore are .serialized so they do not share
+  the test widget UserDefaults slot in parallel.
 - The macOS test script does not filter PennyTests (MigrationTests must run).
 - Every .xcassets PBXFileReference (app and widgets) is folder.assetcatalog,
   ASSETCATALOG_COMPILER_APPICON_NAME stays AppIcon, and Penny/Info.plist
@@ -81,6 +85,44 @@ def suite_blocks(text: str) -> list[str]:
             blocks.append(block)
         index += 1
     return blocks
+
+
+def settings_footnote_sentences(app_info: str) -> list[str]:
+    """Sentences named by `settingsFootnote`, in order. The array must not inline them."""
+    array = re.search(r"static let settingsFootnote = \[(.*?)\]", app_info, re.S)
+    if array is None:
+        raise ValueError("PennyAppInfo.settingsFootnote is missing")
+    body = array.group(1)
+    if '"' in body:
+        raise ValueError("settingsFootnote inlines wording instead of naming constants")
+    names = re.findall(r"\b([A-Za-z_][A-Za-z0-9_]*)\b", body)
+    if not names:
+        raise ValueError("settingsFootnote has no lines")
+    sentences: list[str] = []
+    for name in names:
+        match = re.search(rf'static let {name}\s*=\s*"([^"]*)"', app_info)
+        if match is None:
+            raise ValueError(f"settingsFootnote names {name}, which has no string literal")
+        sentences.append(match.group(1))
+    return sentences
+
+
+def settings_footnote_failures() -> list[str]:
+    """Settings legal footnote must render the locked constants, not a second copy."""
+    app_info_path = ROOT / "Penny" / "Utilities" / "PennyAppInfo.swift"
+    settings_path = ROOT / "Penny" / "Features" / "Settings" / "SettingsView.swift"
+    try:
+        sentences = settings_footnote_sentences(app_info_path.read_text())
+    except ValueError as error:
+        return [str(error)]
+    settings = settings_path.read_text()
+    failures: list[str] = []
+    if "PennyAppInfo.settingsFootnote" not in settings:
+        failures.append("SettingsView does not render PennyAppInfo.settingsFootnote")
+    for sentence in sentences:
+        if sentence in settings:
+            failures.append(f"SettingsView inlines footnote copy: {sentence}")
+    return failures
 
 
 def phase_is_resources(project: str, phase_id: str) -> bool:
@@ -223,9 +265,16 @@ def main() -> int:
                 )
 
     for path in sorted((ROOT / "PennyTests").rglob("*.swift")):
-        for block in suite_blocks(path.read_text()):
+        text = path.read_text()
+        for block in suite_blocks(text):
             if "isolatedTestResources" not in block:
                 failures.append(f"{path.relative_to(ROOT)} suite is missing .isolatedTestResources: {block}")
+            if "WidgetSnapshotStore" in text and ".serialized" not in block:
+                failures.append(
+                    f"{path.relative_to(ROOT)} suite shares the widget snapshot slot and is not .serialized: {block}"
+                )
+
+    failures.extend(settings_footnote_failures())
 
     for path in (CI_MACOS, WORKFLOW):
         for line in filtered_lines(path):
@@ -242,6 +291,8 @@ def main() -> int:
     print(f"[pass] {len(test_targets)} test target(s) on the Penny scheme, unskipped", file=sys.stderr)
     print("[pass] PennyTests bundles Migration/Fixtures", file=sys.stderr)
     print("[pass] every suite isolates SwiftData and UserDefaults", file=sys.stderr)
+    print("[pass] Settings footnote renders PennyAppInfo.settingsFootnote", file=sys.stderr)
+    print("[pass] widget snapshot suites are .serialized", file=sys.stderr)
     print("[pass] macOS CI does not filter PennyTests", file=sys.stderr)
     print("[pass] every .xcassets reference is folder.assetcatalog", file=sys.stderr)
     print("[pass] ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon", file=sys.stderr)

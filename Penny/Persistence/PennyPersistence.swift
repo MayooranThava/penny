@@ -1,6 +1,7 @@
 import Foundation
 import os
 import SwiftData
+import WidgetKit
 
 enum PennyLog {
     static let persistence = Logger(subsystem: "com.mayooran.penny", category: "persistence")
@@ -18,6 +19,50 @@ enum PennyPersistence {
 
     /// Shown when a migration fails and the pre-migration copy is put back.
     static let dataIsSafeMessage = "Your data is safe"
+
+    /// On-disk store for this container, or nil when the container is memory-only.
+    static func onDiskStoreURL(in container: ModelContainer) -> URL? {
+        container.configurations.first { !$0.isStoredInMemoryOnly }?.url
+    }
+
+    /// Shared Settings → Reset / Delete all data cleanup.
+    ///
+    /// Deletes every model through the open context and saves before touching
+    /// files. The live `.store` / `-wal` / `-shm` files stay in place so the
+    /// open `ModelContainer` is still valid. Only the pre-migration backup
+    /// snapshot, its marker, and the widget snapshot are removed.
+    @MainActor
+    static func reset(in context: ModelContext) throws {
+        try DemoDataService.deleteAll(in: context)
+        if let storeURL = onDiskStoreURL(in: context.container) {
+            PennyStoreBackup.discard(storeAt: storeURL)
+        }
+        WidgetSnapshotStore.clear()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Settings → Reset demo data. Erases local data, then loads the sample household.
+    @MainActor
+    static func resetDemoData(in context: ModelContext) throws {
+        try reset(in: context)
+        try DemoDataService.resetAll(in: context)
+    }
+
+    /// Settings → Delete all data. Same erase as Reset, then an empty first-run store.
+    @MainActor
+    static func deleteAllData(in context: ModelContext) throws {
+        try reset(in: context)
+        try DemoDataService.seedFresh(
+            in: context,
+            currencyCode: "CAD",
+            monthlyIncome: 0,
+            replaceExisting: true
+        )
+        if let settings = try context.fetch(FetchDescriptor<UserSettings>()).first {
+            settings.hasCompletedOnboarding = false
+            try context.save()
+        }
+    }
 
     /// Set only by PennyTests. Nil in the app, so production and previews keep
     /// the in-memory or on-disk store named `Penny`.

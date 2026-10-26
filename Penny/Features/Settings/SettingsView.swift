@@ -472,7 +472,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         Section("About Penny") {
             LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-            LabeledContent("Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+            LabeledContent("Build", value: PennyAppInfo.buildNumber)
             Text("Personal finance planning that stays on your device. Free to use; Penny Pro Lifetime is an optional one-time unlock.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
@@ -487,12 +487,16 @@ struct SettingsView: View {
 
     private var legalSection: some View {
         Section {
-            Text("Penny keeps your financial information on this device. App updates keep your data. Deleting the app, or using Reset/Delete in Data, clears local data. Optional Wallet tap capture uses Shortcuts on your iPhone — amounts stay local. Penny does not connect to banks or send analytics to the developer. Widgets may show a local summary snapshot via an App Group.")
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textSecondary)
-            Text("Figures marked with \(LegalCopy.asterisk) are estimates from your entries — not bank balances or financial advice. Full details are in the Terms of Use. Penny is intended for adults and is not directed to children under 13.")
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textSecondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(LegalCopy.asterisk)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(PennyAppInfo.settingsFootnote, id: \.self) { line in
+                        Text(line)
+                    }
+                }
+            }
+            .font(PennyTypography.footnote)
+            .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
             Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
             Link("Support & refunds", destination: PennyAppInfo.supportURL)
@@ -620,7 +624,7 @@ struct SettingsView: View {
 
     private func resetDemo() {
         do {
-            try DemoDataService.resetAll(in: modelContext)
+            try PennyPersistence.resetDemoData(in: modelContext)
             Haptics.success()
         } catch {
             Haptics.warning()
@@ -629,18 +633,7 @@ struct SettingsView: View {
 
     private func deleteAll() {
         do {
-            try DemoDataService.deleteAll(in: modelContext)
-            try DemoDataService.seedFresh(
-                in: modelContext,
-                currencyCode: "CAD",
-                monthlyIncome: 0,
-                replaceExisting: true
-            )
-            let descriptor = FetchDescriptor<UserSettings>()
-            if let settings = try modelContext.fetch(descriptor).first {
-                settings.hasCompletedOnboarding = false
-                try modelContext.save()
-            }
+            try PennyPersistence.deleteAllData(in: modelContext)
             Haptics.warning()
         } catch {
             Haptics.warning()

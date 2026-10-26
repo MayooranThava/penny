@@ -7,6 +7,13 @@ struct WidgetSnapshotTests {
     private let enUS = Locale(identifier: "en_US")
     private let germany = Locale(identifier: "de_DE")
 
+    @Test("Snapshots use the test UserDefaults suite, not the App Group")
+    func usesIsolatedDefaultsSuite() {
+        let suite = WidgetSnapshotStore.activeDefaultsSuite
+        #expect(suite != WidgetSnapshotStore.appGroupID)
+        #expect(suite.hasPrefix("PennyTests."))
+    }
+
     @Test("0.10 + 0.20 is stored as 0.30, not a binary fraction")
     func dimePlusTwentyCents() throws {
         let sum = Decimal(string: "0.10")! + Decimal(string: "0.20")!

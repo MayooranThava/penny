@@ -25,20 +25,43 @@ enum PennyPersistence {
         container.configurations.first { !$0.isStoredInMemoryOnly }?.url
     }
 
-    /// Settings → Reset. Deletes the SwiftData store files, the pre-migration
-    /// `PennyStoreBackup` snapshot, its marker, and the App Group widget snapshot,
-    /// then reloads widget timelines. Does not write a replacement store.
+    /// Shared Settings → Reset / Delete all data cleanup.
+    ///
+    /// Deletes every model through the open context and saves before touching
+    /// files. The live `.store` / `-wal` / `-shm` files stay in place so the
+    /// open `ModelContainer` is still valid. Only the pre-migration backup
+    /// snapshot, its marker, and the widget snapshot are removed.
     @MainActor
-    static func reset(at storeURL: URL?) {
-        if let storeURL {
-            let fileManager = FileManager.default
-            for url in PennyStoreBackup.relatedURLs(for: storeURL) {
-                try? fileManager.removeItem(at: url)
-            }
+    static func reset(in context: ModelContext) throws {
+        try DemoDataService.deleteAll(in: context)
+        if let storeURL = onDiskStoreURL(in: context.container) {
             PennyStoreBackup.discard(storeAt: storeURL)
         }
         WidgetSnapshotStore.clear()
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Settings → Reset demo data. Erases local data, then loads the sample household.
+    @MainActor
+    static func resetDemoData(in context: ModelContext) throws {
+        try reset(in: context)
+        try DemoDataService.resetAll(in: context)
+    }
+
+    /// Settings → Delete all data. Same erase as Reset, then an empty first-run store.
+    @MainActor
+    static func deleteAllData(in context: ModelContext) throws {
+        try reset(in: context)
+        try DemoDataService.seedFresh(
+            in: context,
+            currencyCode: "CAD",
+            monthlyIncome: 0,
+            replaceExisting: true
+        )
+        if let settings = try context.fetch(FetchDescriptor<UserSettings>()).first {
+            settings.hasCompletedOnboarding = false
+            try context.save()
+        }
     }
 
     /// Set only by PennyTests. Nil in the app, so production and previews keep

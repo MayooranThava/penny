@@ -624,8 +624,7 @@ struct SettingsView: View {
 
     private func resetDemo() {
         do {
-            PennyPersistence.reset(at: PennyPersistence.onDiskStoreURL(in: modelContext.container))
-            try DemoDataService.resetAll(in: modelContext)
+            try PennyPersistence.resetDemoData(in: modelContext)
             Haptics.success()
         } catch {
             Haptics.warning()
@@ -634,18 +633,7 @@ struct SettingsView: View {
 
     private func deleteAll() {
         do {
-            try DemoDataService.deleteAll(in: modelContext)
-            try DemoDataService.seedFresh(
-                in: modelContext,
-                currencyCode: "CAD",
-                monthlyIncome: 0,
-                replaceExisting: true
-            )
-            let descriptor = FetchDescriptor<UserSettings>()
-            if let settings = try modelContext.fetch(descriptor).first {
-                settings.hasCompletedOnboarding = false
-                try modelContext.save()
-            }
+            try PennyPersistence.deleteAllData(in: modelContext)
             Haptics.warning()
         } catch {
             Haptics.warning()

@@ -386,15 +386,15 @@ struct HomeView: View {
                                 .font(PennyTypography.caption)
                                 .foregroundStyle(PennyColors.textOnBrand.opacity(0.9))
                             Spacer()
-                            Text(
-                                MoneyFormatters.string(
-                                    from: debt.plannedMonthlyPayment,
-                                    currencyCode: currency
-                                ) + "/mo"
+                            PrivateAmount(
+                                amount: debt.plannedMonthlyPayment,
+                                currencyCode: currency,
+                                font: PennyTypography.caption,
+                                color: PennyColors.textOnBrand,
+                                site: .homeIncludesDebtTarget,
+                                backdrop: .hero,
+                                trailingWhenVisible: PrivateAmountLogic.monthlySuffix
                             )
-                            .font(PennyTypography.caption)
-                            .monospacedDigit()
-                            .foregroundStyle(PennyColors.textOnBrand)
                         }
                     }
                 }
@@ -419,12 +419,15 @@ struct HomeView: View {
                                     .font(PennyTypography.caption)
                                     .foregroundStyle(PennyColors.textOnBrand.opacity(0.9))
                                 Spacer()
-                                Text(
-                                    MoneyFormatters.string(from: required, currencyCode: currency) + "/mo"
+                                PrivateAmount(
+                                    amount: required,
+                                    currencyCode: currency,
+                                    font: PennyTypography.caption,
+                                    color: PennyColors.textOnBrand,
+                                    site: .homeIncludesGoalTarget,
+                                    backdrop: .hero,
+                                    trailingWhenVisible: PrivateAmountLogic.monthlySuffix
                                 )
-                                .font(PennyTypography.caption)
-                                .monospacedDigit()
-                                .foregroundStyle(PennyColors.textOnBrand)
                             }
                         }
                     }

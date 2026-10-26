@@ -16,6 +16,9 @@ struct PrivateAmount: View {
     var style: PrivateAmountLogic.Style = .standard
     var site: PrivateTotalSite
     var backdrop: PrivateAmountBackdrop = .surface
+    /// Appended only while the amount is visible. Private mode drops it so a
+    /// suffix such as "/mo" is not left beside the dots.
+    var trailingWhenVisible: String = ""
     var locale: Locale = .current
 
     @Environment(PrivateModeController.self) private var privateMode
@@ -26,35 +29,44 @@ struct PrivateAmount: View {
     var body: some View {
         let privateOn = privateMode.isEnabled
         let appearance = maskAppearance
-        let text = PrivateAmountLogic.display(
+        let dots = PrivateAmountLogic.dotStyle(for: site)
+        let text = PrivateAmountLogic.displayWithTrailing(
+            amount: amount,
+            currencyCode: currencyCode,
+            style: style,
+            isPrivate: privateOn,
+            site: site,
+            trailing: trailingWhenVisible,
+            locale: locale
+        )
+        let spokenAmount = PrivateAmountLogic.accessibilityText(
             amount: amount,
             currencyCode: currencyCode,
             style: style,
             isPrivate: privateOn,
             locale: locale
         )
-        let spoken = PrivateAmountLogic.accessibilityText(
-            amount: amount,
-            currencyCode: currencyCode,
-            style: style,
-            isPrivate: privateOn,
-            locale: locale
-        )
+        let spoken = privateOn || trailingWhenVisible.isEmpty
+            ? spokenAmount
+            : spokenAmount + trailingWhenVisible
         Text(text)
             .font(font)
             .monospacedDigit()
             .foregroundStyle(privateOn ? appearance.color : color)
             .opacity(privateOn ? appearance.opacity : 1)
-            .scaleEffect(privateOn ? dynamicScale : 1, anchor: .leading)
+            .scaleEffect(privateOn ? dynamicScale * dots.glyphScale : 1, anchor: .leading)
             .accessibilityLabel(spoken)
             .accessibilityIdentifier(site.rawValue)
             .animation(crossfade, value: privateMode.isEnabled)
     }
 
     private var maskAppearance: (color: Color, opacity: Double) {
+        let dots = PrivateAmountLogic.dotStyle(for: site)
         let style = PrivateAmountLogic.maskStyle(
             matching: color.privateSRGB(colorScheme),
-            over: backgroundColors
+            over: backgroundColors,
+            preferredOpacity: dots.preferredOpacity,
+            minimum: PrivateAmountLogic.minimumContrast
         )
         return (
             Color(red: style.foreground.r, green: style.foreground.g, blue: style.foreground.b),

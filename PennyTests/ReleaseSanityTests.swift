@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import SwiftData
 import Testing
 @testable import Penny
@@ -329,7 +330,7 @@ struct ReleaseSanityTests {
 
     @Test("Reset clears the open store, backup, marker, and widget snapshot")
     @MainActor
-    func resetErasesOnDeviceFiles() throws {
+    func resetErasesOnDeviceFiles() async throws {
         #expect(WidgetSnapshotStore.activeDefaultsSuite != WidgetSnapshotStore.appGroupID)
         #expect(WidgetSnapshotStore.activeDefaultsSuite.hasPrefix("PennyTests."))
 
@@ -373,7 +374,7 @@ struct ReleaseSanityTests {
             let walBefore = fileManager.fileExists(atPath: wal.path)
             let shmBefore = fileManager.fileExists(atPath: shm.path)
 
-            try PennyPersistence.reset(in: context)
+            _ = try await PennyPersistence.reset(in: context)
 
             #expect(fileManager.fileExists(atPath: storeURL.path))
             #expect(fileManager.fileExists(atPath: wal.path) == walBefore)
@@ -387,9 +388,126 @@ struct ReleaseSanityTests {
         try expectNoBackupOrWidget(at: storeURL)
     }
 
+    @Test("Reset removes a deleted transaction title from the .store, -wal, and -shm bytes")
+    @MainActor
+    func resetErasesCanaryFromStoreFiles() async throws {
+        let canary = "PENNY-ERASE-CANARY-\(UUID().uuidString)"
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyErase-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Penny.store")
+        let needle = Data(canary.utf8)
+
+        do {
+            let container = try PennyPersistence.makeContainer(at: storeURL)
+            let context = ModelContext(container)
+            context.insert(sampleExpense(title: canary))
+            try context.save()
+            _ = try await PennyPersistence.reset(in: context)
+
+            for url in PennyStoreBackup.relatedURLs(for: storeURL) {
+                if url.path != storeURL.path, !FileManager.default.fileExists(atPath: url.path) {
+                    continue
+                }
+                let bytes = try Data(contentsOf: url)
+                #expect(bytes.range(of: needle) == nil)
+            }
+        }
+
+        let reopened = try PennyPersistence.makeContainer(at: storeURL)
+        let transactions = try ModelContext(reopened).fetch(FetchDescriptor<Transaction>())
+        #expect(transactions.isEmpty)
+    }
+
+    @Test("Reset finishes when compaction cannot lock the store")
+    @MainActor
+    func resetCompletesWhenCompactionCannotLock() async throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyEraseLock-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Penny.store")
+        let container = try PennyPersistence.makeContainer(at: storeURL)
+        let context = ModelContext(container)
+        context.insert(sampleExpense(title: "Coffee"))
+        try context.save()
+
+        let lock = ExclusiveStoreLock()
+        defer { lock.release() }
+        let result = try await PennyPersistence.$beforeStoreCompaction.withValue({ url in
+            lock.acquire(url)
+        }) {
+            try await PennyPersistence.reset(in: context)
+        }
+        #expect(lock.didAcquire)
+        #expect(!result.succeeded)
+        #expect(result.ranOffMainThread)
+        lock.release()
+        #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
+    }
+
+    @Test("Compaction of 5,000 transactions is measured off the main thread")
+    @MainActor
+    func compactionOfFiveThousandTransactions() async throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyEraseBulk-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Penny.store")
+        let container = try PennyPersistence.makeContainer(at: storeURL)
+        let context = ModelContext(container)
+        if #available(iOS 18, *) {
+            context.autosaveEnabled = false
+        }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 10, day: 15, hour: 12))!
+        let longNote = String(repeating: "Rent is paid from the joint account. ", count: 12)
+        for index in 1...5_000 {
+            context.insert(Transaction(
+                title: "Bulk \(index)",
+                amount: Decimal(sign: .plus, exponent: -2, significand: Decimal(index)),
+                date: date,
+                transactionType: .expense,
+                categoryName: "Groceries",
+                note: index == 1 ? longNote : ""
+            ))
+        }
+        context.insert(UserSettings(
+            currencyCode: "CAD",
+            monthlyIncome: Decimal(sign: .plus, exponent: -2, significand: 500055),
+            hasCompletedOnboarding: true
+        ))
+        try context.save()
+        #expect(try context.fetch(FetchDescriptor<Transaction>()).count == 5_000)
+
+        let result = try await PennyPersistence.reset(in: context)
+        let seconds = result.duration.secondsValue
+        let timingLine = String(
+            format: "COMPACTION_5000_SECONDS=%.3f\n",
+            locale: Locale(identifier: "en_US_POSIX"),
+            seconds
+        )
+        // xcodebuild does not forward print/stderr from the simulator. The
+        // macOS job reads the attachment (Xcode 26) and this temp marker.
+        print(timingLine, terminator: "")
+        FileHandle.standardError.write(Data(timingLine.utf8))
+        NSLog("%@", timingLine.trimmingCharacters(in: .newlines))
+        let timingURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("COMPACTION_5000_SECONDS.txt")
+        try? timingLine.write(to: timingURL, atomically: true, encoding: .utf8)
+        #if compiler(>=6.2)
+        Attachment.record(timingLine, named: "COMPACTION_5000_SECONDS.txt")
+        #endif
+        #expect(result.ranOffMainThread)
+        #expect(result.succeeded)
+        #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
+    }
+
     @Test("Delete all data uses the same cleanup and leaves no transactions")
     @MainActor
-    func deleteAllDataUsesReset() throws {
+    func deleteAllDataUsesReset() async throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("PennyDelete-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -409,7 +527,7 @@ struct ReleaseSanityTests {
             try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
             WidgetSnapshotStore.save(resetSnapshot(displayName: "Delete"))
 
-            try PennyPersistence.deleteAllData(in: context)
+            try await PennyPersistence.deleteAllData(in: context)
 
             #expect(FileManager.default.fileExists(atPath: storeURL.path))
             #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
@@ -428,7 +546,7 @@ struct ReleaseSanityTests {
 
     @Test("Reset demo data keeps the store file and drops the pre-upgrade backup")
     @MainActor
-    func resetDemoDataUsesReset() throws {
+    func resetDemoDataUsesReset() async throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("PennyResetDemo-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -446,7 +564,7 @@ struct ReleaseSanityTests {
         try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
         WidgetSnapshotStore.save(resetSnapshot(displayName: "Demo"))
 
-        try PennyPersistence.resetDemoData(in: context)
+        try await PennyPersistence.resetDemoData(in: context)
 
         #expect(FileManager.default.fileExists(atPath: storeURL.path))
         try expectNoBackupOrWidget(at: storeURL)
@@ -518,5 +636,81 @@ struct ReleaseSanityTests {
         }
         Issue.record("Could not find Penny.storekit relative to \(#filePath)")
         throw CocoaError(.fileNoSuchFile)
+    }
+}
+
+private extension Duration {
+    var secondsValue: Double {
+        let components = self.components
+        return Double(components.seconds) + Double(components.attoseconds) / 1e18
+    }
+}
+
+/// Holds `BEGIN EXCLUSIVE` on a store so a second connection cannot checkpoint or vacuum.
+/// If that transaction cannot be granted, write permission is removed so the open fails instead.
+private final class ExclusiveStoreLock: @unchecked Sendable {
+    private let gate = NSLock()
+    private var db: OpaquePointer?
+    private var storePath: String?
+    private var originalPermissions: NSNumber?
+    private var acquired = false
+
+    var didAcquire: Bool {
+        gate.lock()
+        defer { gate.unlock() }
+        return acquired
+    }
+
+    func acquire(_ url: URL) {
+        gate.lock()
+        defer { gate.unlock() }
+        storePath = url.path
+        var handle: OpaquePointer?
+        let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX
+        if sqlite3_open_v2(url.path, &handle, flags, nil) == SQLITE_OK, let handle {
+            db = handle
+            sqlite3_busy_timeout(handle, 1_000)
+            var error: UnsafeMutablePointer<CChar>?
+            let result = sqlite3_exec(handle, "BEGIN EXCLUSIVE;", nil, nil, &error)
+            sqlite3_free(error)
+            if result == SQLITE_OK {
+                acquired = true
+            }
+        } else if let handle {
+            sqlite3_close(handle)
+        }
+
+        // BEGIN EXCLUSIVE blocks other writers. Write permission is removed as well
+        // so the compaction connection cannot open the file for update.
+        if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) {
+            let permissions = (attributes[.posixPermissions] as? NSNumber)
+                ?? (attributes[.posixPermissions] as? Int).map { NSNumber(value: $0) }
+            if let permissions {
+                originalPermissions = permissions
+                if (try? FileManager.default.setAttributes(
+                    [.posixPermissions: NSNumber(value: 0o444)],
+                    ofItemAtPath: url.path
+                )) != nil {
+                    acquired = true
+                }
+            }
+        }
+    }
+
+    func release() {
+        gate.lock()
+        defer { gate.unlock() }
+        if let db {
+            sqlite3_exec(db, "ROLLBACK;", nil, nil, nil)
+            sqlite3_close(db)
+            self.db = nil
+        }
+        if let storePath, let originalPermissions {
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: originalPermissions.uint16Value],
+                ofItemAtPath: storePath
+            )
+            self.originalPermissions = nil
+        }
     }
 }

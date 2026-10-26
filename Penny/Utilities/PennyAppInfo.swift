@@ -3,11 +3,11 @@ import Foundation
 /// Declares app metadata constants used in Settings / About.
 enum PennyAppInfo {
     static let displayName = "Penny"
-    static let marketingVersion = "1.1"
+    static let marketingVersion = "1.2"
     /// `CFBundleVersion`, which Xcode sets from `CURRENT_PROJECT_VERSION`.
     /// Settings shows this. There is no second hardcoded build number.
     static var buildNumber: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "4"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "5"
     }
     /// Settings → Legal & privacy. One asterisk, then these lines in order.
     static let privacySummary =

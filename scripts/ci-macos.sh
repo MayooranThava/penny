@@ -201,6 +201,45 @@ require_test_token() {
   return 1
 }
 
+# xcodebuild does not forward simulator print/stderr. The timing test also
+# attaches the line (Xcode 26) and writes COMPACTION_5000_SECONDS.txt under
+# the simulator temp directory, which is a real folder on this Mac.
+read_compaction_seconds() {
+  local line="" path="" attach_dir=""
+  line="$(grep -E -o 'COMPACTION_5000_SECONDS=[0-9.]+' "$ROOT/artifacts/xcodebuild-test.log" 2>/dev/null | tail -n 1 || true)"
+  if [[ -n "$line" ]]; then
+    printf '%s\n' "$line"
+    return 0
+  fi
+  if [[ -d "$ROOT/artifacts/PennyTests.xcresult" ]]; then
+    attach_dir="$(mktemp -d "${TMPDIR:-/tmp}/penny-attachments.XXXXXX")"
+    if xcrun xcresulttool export attachments \
+        --path "$ROOT/artifacts/PennyTests.xcresult" \
+        --output-path "$attach_dir" >"$ROOT/artifacts/xcresult-attachments.log" 2>&1; then
+      line="$(grep -a -R -E -o -h 'COMPACTION_5000_SECONDS=[0-9.]+' "$attach_dir" 2>/dev/null | tail -n 1 || true)"
+    else
+      echo "xcresulttool export attachments failed. See artifacts/xcresult-attachments.log" >&2
+      cat "$ROOT/artifacts/xcresult-attachments.log" >&2 || true
+    fi
+    rm -rf "$attach_dir"
+    if [[ -n "$line" ]]; then
+      printf '%s\n' "$line"
+      return 0
+    fi
+  fi
+  if [[ -d "${HOME}/Library/Developer/CoreSimulator/Devices" ]]; then
+    while IFS= read -r path; do
+      [[ -n "$path" ]] || continue
+      line="$(grep -E -o 'COMPACTION_5000_SECONDS=[0-9.]+' "$path" 2>/dev/null | tail -n 1 || true)"
+      if [[ -n "$line" ]]; then
+        printf '%s\n' "$line"
+        return 0
+      fi
+    done < <(find "${HOME}/Library/Developer/CoreSimulator/Devices" -name 'COMPACTION_5000_SECONDS.txt' -type f -print 2>/dev/null || true)
+  fi
+  return 1
+}
+
 migration_seen=0
 timing_seen=0
 if require_test_token "v103StoreOpensOnCurrentSchemaWithoutLosingACent"; then
@@ -210,6 +249,11 @@ if require_test_token "fiveThousandTransactionUpgradeFinishesWithinAFewSeconds";
   timing_seen=1
 fi
 
+compaction_line=""
+if compaction_line="$(read_compaction_seconds)"; then
+  echo "Store compaction (5,000 transactions): $compaction_line"
+fi
+
 {
   echo "- build-for-testing: Penny.app, PennyWidgets.appex, and scheme test bundles"
   echo "- PennyTests filter: none (Migration suite is required)"
@@ -217,7 +261,7 @@ fi
   echo "- xcodebuild exit: $status"
   echo "- v103 upgrade test seen: $migration_seen"
   echo "- 5,000-transaction timing test seen: $timing_seen"
-  if compaction_line="$(grep -E -o 'COMPACTION_5000_SECONDS=[0-9.]+' "$ROOT/artifacts/xcodebuild-test.log" | tail -n 1)"; then
+  if [[ -n "$compaction_line" ]]; then
     echo "- Store compaction (5,000 transactions): \`$compaction_line\`"
   fi
 } >> "$SUMMARY"
@@ -230,6 +274,10 @@ if [[ "$migration_seen" -ne 1 || "$timing_seen" -ne 1 ]]; then
   echo "PennyTests exited 0 but the upgrade tests did not run." >&2
   echo "Required: v103StoreOpensOnCurrentSchemaWithoutLosingACent and fiveThousandTransactionUpgradeFinishesWithinAFewSeconds." >&2
   echo "Do not filter the PennyTests target." >&2
+  exit 1
+fi
+if [[ -z "$compaction_line" && "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  echo "Store compaction timing was not found in the xcodebuild log, test attachments, or simulator marker file." >&2
   exit 1
 fi
 

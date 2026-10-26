@@ -484,9 +484,22 @@ struct ReleaseSanityTests {
 
         let result = try await PennyPersistence.reset(in: context)
         let seconds = result.duration.secondsValue
-        let timingLine = String(format: "COMPACTION_5000_SECONDS=%.3f\n", seconds)
+        let timingLine = String(
+            format: "COMPACTION_5000_SECONDS=%.3f\n",
+            locale: Locale(identifier: "en_US_POSIX"),
+            seconds
+        )
+        // xcodebuild does not forward print/stderr from the simulator. The
+        // macOS job reads the attachment (Xcode 26) and this temp marker.
         print(timingLine, terminator: "")
         FileHandle.standardError.write(Data(timingLine.utf8))
+        NSLog("%@", timingLine.trimmingCharacters(in: .newlines))
+        let timingURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("COMPACTION_5000_SECONDS.txt")
+        try? timingLine.write(to: timingURL, atomically: true, encoding: .utf8)
+        #if compiler(>=6.2)
+        Attachment.record(timingLine, named: "COMPACTION_5000_SECONDS.txt")
+        #endif
         #expect(result.ranOffMainThread)
         #expect(result.succeeded)
         #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)

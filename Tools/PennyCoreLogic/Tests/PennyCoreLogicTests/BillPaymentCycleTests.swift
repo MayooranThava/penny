@@ -25,7 +25,7 @@ struct BillPaymentCycleTests {
             BillPaymentCycle.includesInCommittedSpend(isActive: $0.isActive)
         }
         let committed = FinanceCalculator.totalMonthlyCommitted(
-            billAmountsAndRecurrence: included.map { ($0.amount, $0.recurrence) },
+            billAmountsAndRecurrence: [rent, gym].map { ($0.amount, $0.recurrence, $0.isActive) },
             debtPayments: []
         )
         #expect(included.map(\.amount) == [45])

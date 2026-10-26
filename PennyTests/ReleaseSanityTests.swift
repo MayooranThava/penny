@@ -234,7 +234,7 @@ struct ReleaseSanityTests {
         #expect(all.contains { !$0.isActive && $0.name == "Rent" })
 
         let committed = FinanceCalculator.totalMonthlyCommitted(
-            billAmountsAndRecurrence: active.map { ($0.amount, $0.recurrence) },
+            billAmountsAndRecurrence: all.map { ($0.amount, $0.recurrence, $0.isActive) },
             debtPayments: []
         )
         #expect(committed == 45)

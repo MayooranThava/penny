@@ -594,9 +594,10 @@ struct SettingsView: View {
         let month = DateHelpers.startOfMonth()
         let monthTx = transactions.filter { DateHelpers.isSameMonth($0.date, month) }
         let spent = monthTx.filter { $0.transactionType == .expense }.reduce(Decimal(0)) { $0 + $1.amount }
-        let billsMonthly = bills.reduce(Decimal(0)) {
-            $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
-        }
+        let billsMonthly = FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: bills.map { ($0.amount, $0.recurrence, $0.isActive) },
+            debtPayments: []
+        )
         let debtMonthly = debts.reduce(Decimal(0)) { $0 + $1.plannedMonthlyPayment }
         let reserved = Set(bills.map { $0.name.lowercased() } + debts.map { $0.name.lowercased() })
         let discretionary = monthTx

@@ -34,9 +34,9 @@ struct ReleaseSanityTests {
     func totalMonthlyCommittedVital() {
         let total = FinanceCalculator.totalMonthlyCommitted(
             billAmountsAndRecurrence: [
-                (100, .monthly),
-                (50, .weekly),
-                (1_200, .yearly)
+                (100, .monthly, true),
+                (50, .weekly, true),
+                (1_200, .yearly, true)
             ],
             debtPayments: [250, 100]
         )

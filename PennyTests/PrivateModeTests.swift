@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import Penny
 
@@ -271,27 +272,26 @@ struct PrivateModeTests {
         #expect(PrivateAmountLogic.crossfadeSeconds(reduceMotion: false, animationsSuppressed: false) == 0.2)
     }
 
-    @Test("Notifications drop a supplied total and keep an individual amount")
-    func notificationCopy() {
-        let bill = PennyNotificationContent.billReminder(
-            name: "Rent",
-            individualAmount: Decimal(string: "1750")!,
-            billsTotal: Decimal(string: "2400")!,
-            currencyCode: "CAD",
-            isPrivate: true,
+    @Test("Bill reminders keep the original wording when private mode is off")
+    func billReminderMatchesPreviousCopy() throws {
+        let open = PennyNotificationContent.billReminder(
+            name: "Internet",
+            individualAmount: nil,
+            billsTotal: nil,
+            currencyCode: "EUR",
+            isPrivate: false,
             locale: enUS
         )
-        #expect(bill.body.contains("1,750"))
-        #expect(!bill.body.contains("2,400"))
+        #expect(open.title == "Upcoming bill")
+        #expect(open.body == "Internet is due soon.")
 
-        let connected = PennyNotificationContent.walletConnected(
-            total: Decimal(string: "8600.10")!,
-            currencyCode: "CAD",
-            isPrivate: true,
-            locale: enUS
-        )
-        #expect(connected.title == "Connected ✓")
-        #expect(!PrivateAmountLogic.containsDigit(connected.body))
+        let service = try source("Penny/Services/NotificationService.swift")
+        #expect(!service.contains("currencyCode: \"CAD\""))
+        #expect(service.contains("currencyCode: currencyCode"))
+        #expect(!service.contains("notifyWalletConnectedIfAuthorized"))
+        #expect(!service.contains("Connected ✓"))
+        let setup = try source("Penny/Features/Settings/ApplePayCaptureSetupView.swift")
+        #expect(!setup.contains("notifyWalletConnectedIfAuthorized"))
     }
 
     @Test("Every hidden total is built through a PrivateAmount site")
@@ -315,35 +315,144 @@ struct PrivateModeTests {
         #expect(missing.isEmpty, "Totals with no PrivateAmount site: \(missing.joined(separator: ", "))")
     }
 
-    @Test("Toggling fifty times does not save SwiftData or rebuild the snapshot")
+    @Test("The eye button is its own VoiceOver control on the Safe to Spend card")
+    func eyeButtonIsItsOwnAccessibilityElement() throws {
+        let home = try source("Penny/Features/Home/HomeView.swift")
+        let card = try slice(home, from: "private var safeToSpendCardBody", until: "private func breakdownRow")
+        let combine = try #require(card.range(of: ".accessibilityElement(children: .combine)"))
+        let beforeCombine = String(card[..<combine.lowerBound])
+        let afterCombine = String(card[combine.upperBound...])
+        #expect(!beforeCombine.contains("PrivateModeEyeButton"))
+        #expect(afterCombine.contains("PrivateModeEyeButton"))
+        #expect(afterCombine.contains(".accessibilityElement(children: .contain)"))
+
+        let button = try slice(
+            try source("Penny/Components/PrivateAmount.swift"),
+            from: "struct PrivateModeEyeButton",
+            until: "struct PrivateInsightBlock"
+        )
+        #expect(button.contains("Button"))
+        #expect(button.contains(".accessibilityAddTraits(.isButton)"))
+        #expect(button.contains("eyeAccessibilityLabel"))
+        #expect(PrivateAmountLogic.eyeAccessibilityLabel(isPrivate: false) == "Hide totals")
+        #expect(PrivateAmountLogic.eyeAccessibilityLabel(isPrivate: true) == "Show totals")
+    }
+
+    @Test("Widget timelines keep real snapshot numbers and mask them at render")
+    func widgetsMaskFromTheFlagAtRender() throws {
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        PrivateModeDefaults.setEnabled(true, in: defaults)
+        let snapshot = WidgetSnapshotStore.Snapshot.placeholder
+        WidgetSnapshotStore.save(snapshot)
+        #expect(snapshot.safeToSpend > 0)
+        let shown = WidgetPrivateDisplay.safeToSpend(
+            amount: snapshot.safeToSpend,
+            currencyCode: snapshot.currencyCode,
+            isPrivate: PrivateModeStore.isEnabled,
+            site: .widgetSafeToSpend,
+            locale: enUS
+        )
+        #expect(shown == PrivateAmountLogic.mask)
+        #expect(PrivateModeStore.isEnabled)
+        let stored = try #require(defaults.data(forKey: WidgetSnapshotStore.snapshotKey))
+        #expect(String(decoding: stored, as: UTF8.self).contains("3350"))
+
+        let totalWidgets = [
+            "PennyWidgets/SafeToSpendWidget.swift",
+            "PennyWidgets/MonthlyBudgetWidget.swift",
+            "PennyWidgets/SavingsGoalWidget.swift",
+            "PennyWidgets/UpcomingReminderWidget.swift"
+        ]
+        for relative in totalWidgets {
+            let source = try source(relative)
+            #expect(source.contains("isPrivate: PrivateModeStore.isEnabled"))
+            if let view = source.range(of: "WidgetView") {
+                let provider = String(source[..<view.lowerBound])
+                #expect(!provider.contains("MoneyFormatters"))
+                #expect(!provider.contains("PrivateAmountLogic.display"))
+            }
+        }
+        let bills = try source("PennyWidgets/UpcomingBillsWidget.swift")
+        #expect(bills.contains("upcomingBillDetail"))
+        #expect(bills.contains("PrivateModeStore.isEnabled"))
+    }
+
+    @Test("Fifty quick toggles reload once and do not save SwiftData")
     @MainActor
-    func fiftyTogglesDoNotTouchData() throws {
+    func fiftyTogglesDoNotTouchData() async throws {
         let snapshot = WidgetSnapshotStore.Snapshot.placeholder
         WidgetSnapshotStore.save(snapshot)
         let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
         let before = try #require(defaults.data(forKey: WidgetSnapshotStore.snapshotKey))
         #expect(String(decoding: before, as: UTF8.self).contains("3350"))
 
+        let container = try PennyPersistence.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let containerSaves = PennyDataAccessCounter()
+        let token = try observeContainerSaves(of: context, counter: containerSaves)
+        defer { NotificationCenter.default.removeObserver(token) }
+
+        context.insert(Transaction(
+            title: "Coffee",
+            amount: Decimal(string: "4.75")!,
+            transactionType: .expense,
+            categoryName: "Food"
+        ))
+        let probe = PennyDataAccessCounter()
         let reloader = RecordingPrivateReloader()
         let controller = PrivateModeController(reloader: reloader)
-        let counter = PennyDataAccessCounter()
-        PennyDataAccessProbe.$counter.withValue(counter) {
+        controller.reloadCoalescer.debounce = 0.05
+
+        try PennyDataAccessProbe.$counter.withValue(probe) {
+            #expect(context.saveOrSurfaceError())
+        }
+        let proofDeadline = Date().addingTimeInterval(1)
+        while containerSaves.saves < 1 && Date() < proofDeadline {
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        #expect(containerSaves.saves >= 1)
+        #expect(probe.saves >= 1)
+        containerSaves.saves = 0
+        probe.saves = 0
+        probe.fetches = 0
+
+        PennyDataAccessProbe.$counter.withValue(probe) {
             for _ in 0..<50 {
                 controller.toggle()
             }
         }
+        #expect(reloader.calls.isEmpty)
+        // An even number of toggles from the default off ends off.
+        #expect(controller.isEnabled == false)
+        #expect(PrivateModeDefaults.isEnabled(in: defaults) == false)
+        try await Task.sleep(nanoseconds: 400_000_000)
 
-        #expect(counter.saves == 0)
-        #expect(counter.fetches == 0)
+        #expect(probe.saves == 0)
+        #expect(probe.fetches == 0)
+        #expect(containerSaves.saves == 0)
         let after = try #require(defaults.data(forKey: WidgetSnapshotStore.snapshotKey))
         #expect(after == before)
-        #expect(reloader.calls.count == 50)
+        #expect(reloader.calls.count == 1)
+        #expect(reloader.calls.count <= 3)
         #expect(reloader.calls.allSatisfy { $0 == PrivateWidgetKinds.totalShowing })
         #expect(!PrivateWidgetKinds.totalShowing.contains(PrivateWidgetKinds.upcomingBills))
-        #expect(reloader.calls[0].contains(PrivateWidgetKinds.safeToSpend))
-        #expect(reloader.calls[0].contains(PrivateWidgetKinds.monthlyBudget))
-        #expect(reloader.calls[0].contains(PrivateWidgetKinds.savingsGoal))
-        #expect(reloader.calls[0].contains(PrivateWidgetKinds.upcomingReminder))
+    }
+
+    @MainActor
+    private func observeContainerSaves(
+        of context: ModelContext,
+        counter: PennyDataAccessCounter
+    ) throws -> NSObjectProtocol {
+        guard #available(iOS 18, *) else {
+            throw PrivateModeTestError.missingMarker("ModelContext.didSave")
+        }
+        return NotificationCenter.default.addObserver(
+            forName: ModelContext.didSave,
+            object: context,
+            queue: .main
+        ) { _ in
+            counter.saves += 1
+        }
     }
 
     private func repoRoot() -> URL {

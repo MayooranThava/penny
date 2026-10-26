@@ -212,68 +212,67 @@ struct PrivateModeLogicTests {
         #expect(!PrivateAmountLogic.containsDigit(reminder))
     }
 
-    @Test("Toggling fifty times reloads only the widgets that show totals")
+    @Test("Fifty quick toggles coalesce into one reload and keep the final flag")
     func fiftyToggles() {
         let suite = "PennyCoreLogic.PrivateMode.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         var session = PrivateModeSession(defaults: defaults)
-        var reloads: [[String]] = []
-        for _ in 0..<50 {
-            if let kinds = session.toggle() {
-                reloads.append(kinds)
+        var coalescer = PrivateWidgetReloadCoalescer()
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var changes = 0
+        for index in 0..<50 {
+            if session.toggle() != nil {
+                changes += 1
+                coalescer.noteChange(at: start.addingTimeInterval(Double(index) * 0.01))
             }
         }
-        #expect(reloads.count == 50)
-        #expect(reloads.allSatisfy { $0 == PrivateWidgetKinds.totalShowing })
+        #expect(changes == 50)
+        // An even number of toggles from the default off ends off.
+        #expect(session.isEnabled == false)
+        #expect(PrivateModeDefaults.isEnabled(in: defaults) == false)
+        let midway = start.addingTimeInterval(0.49)
+        #expect(coalescer.takeDueReload(at: midway) == nil)
+        let due = start.addingTimeInterval(0.49 + PrivateWidgetReloadCoalescer.defaultDebounce)
+        let kinds = coalescer.takeDueReload(at: due)
+        #expect(kinds == PrivateWidgetKinds.totalShowing)
+        #expect(kinds?.count == PrivateWidgetKinds.totalShowing.count)
+        #expect(coalescer.takeDueReload(at: due.addingTimeInterval(5)) == nil)
         #expect(!PrivateWidgetKinds.totalShowing.contains(PrivateWidgetKinds.upcomingBills))
-        #expect(reloads[0].contains(PrivateWidgetKinds.safeToSpend))
-        #expect(reloads[0].contains(PrivateWidgetKinds.monthlyBudget))
-        #expect(reloads[0].contains(PrivateWidgetKinds.savingsGoal))
+        #expect(kinds?.contains(PrivateWidgetKinds.safeToSpend) == true)
+        #expect(kinds?.contains(PrivateWidgetKinds.monthlyBudget) == true)
+        #expect(kinds?.contains(PrivateWidgetKinds.savingsGoal) == true)
+        #expect(kinds?.contains(PrivateWidgetKinds.upcomingReminder) == true)
     }
 
-    @Test("Notifications drop totals in private mode and keep an individual amount")
-    func notifications() {
-        let bill = PennyNotificationContent.billReminder(
-            name: "Rent",
-            individualAmount: Decimal(string: "1750")!,
-            billsTotal: Decimal(string: "2400")!,
-            currencyCode: "CAD",
-            isPrivate: true,
-            locale: enUS
-        )
-        #expect(bill.body.contains("Rent"))
-        #expect(bill.body.contains("1,750"))
-        #expect(!bill.body.contains("2,400"))
-        #expect(!bill.body.contains("All bills"))
-
+    @Test("Bill reminders keep the original wording when private mode is off")
+    func billReminderMatchesPreviousCopy() {
         let open = PennyNotificationContent.billReminder(
             name: "Rent",
             individualAmount: nil,
-            billsTotal: Decimal(string: "2400")!,
-            currencyCode: "CAD",
+            billsTotal: nil,
+            currencyCode: "EUR",
             isPrivate: false,
             locale: enUS
         )
-        #expect(open.body.contains("2,400"))
+        #expect(open.title == "Upcoming bill")
+        #expect(open.body == "Rent is due soon.")
 
-        let connected = PennyNotificationContent.walletConnected(
-            total: Decimal(string: "8600.10")!,
-            currencyCode: "CAD",
+        let hidden = PennyNotificationContent.billReminder(
+            name: "Rent",
+            individualAmount: Decimal(string: "1750")!,
+            billsTotal: Decimal(string: "2400")!,
+            currencyCode: "EUR",
             isPrivate: true,
             locale: enUS
         )
-        #expect(connected.title == "Connected ✓")
-        #expect(!PrivateAmountLogic.containsDigit(connected.body))
-        #expect(!connected.body.contains("8,600"))
-
-        let connectedOpen = PennyNotificationContent.walletConnected(
-            total: Decimal(string: "8600.10")!,
-            currencyCode: "CAD",
-            isPrivate: false,
-            locale: enUS
-        )
-        #expect(connectedOpen.body.contains("8,600.10"))
+        #expect(hidden.title == "Upcoming bill")
+        #expect(hidden.body.contains("Rent is due soon."))
+        #expect(hidden.body.contains("1,750"))
+        #expect(!hidden.body.contains("2,400"))
+        #expect(!hidden.body.contains("All bills"))
+        let euros = MoneyFormatters.string(from: Decimal(string: "1750")!, currencyCode: "EUR", locale: enUS)
+        #expect(hidden.body.contains(euros))
     }
 
     @Test("Dots at 60% opacity keep 4.5:1 contrast on card surfaces")

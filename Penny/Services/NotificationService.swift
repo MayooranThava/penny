@@ -25,50 +25,23 @@ final class NotificationService {
         }
     }
 
-    func refreshBillReminders(bills: [RecurringBill], enabled: Bool) async {
+    func refreshBillReminders(bills: [RecurringBill], enabled: Bool, currencyCode: String) async {
         center.removeAllPendingNotificationRequests()
         guard enabled else { return }
         let authorized = await requestAuthorizationIfNeeded()
         guard authorized else { return }
 
         for bill in bills where bill.isActive && bill.reminderEnabled {
-            scheduleReminder(for: bill)
+            scheduleReminder(for: bill, currencyCode: currencyCode)
         }
     }
 
-    func walletConnectedCopy(total: Decimal?, currencyCode: String) -> PennyNotificationCopy {
-        PennyNotificationContent.walletConnected(
-            total: total,
-            currencyCode: currencyCode,
-            isPrivate: PrivateModeStore.isEnabled,
-            locale: .current
-        )
-    }
-
-    func notifyWalletConnectedIfAuthorized(total: Decimal?, currencyCode: String) async {
-        let settings = await center.notificationSettings()
-        guard settings.authorizationStatus == .authorized
-            || settings.authorizationStatus == .provisional
-            || settings.authorizationStatus == .ephemeral else { return }
-        let copy = walletConnectedCopy(total: total, currencyCode: currencyCode)
-        let content = UNMutableNotificationContent()
-        content.title = copy.title
-        content.body = copy.body
-        content.sound = .default
-        let request = UNNotificationRequest(
-            identifier: "wallet-connected",
-            content: content,
-            trigger: nil
-        )
-        center.add(request)
-    }
-
-    private func scheduleReminder(for bill: RecurringBill) {
+    private func scheduleReminder(for bill: RecurringBill, currencyCode: String) {
         let copy = PennyNotificationContent.billReminder(
             name: bill.name,
             individualAmount: nil,
             billsTotal: nil,
-            currencyCode: "CAD",
+            currencyCode: currencyCode,
             isPrivate: PrivateModeStore.isEnabled,
             locale: .current
         )

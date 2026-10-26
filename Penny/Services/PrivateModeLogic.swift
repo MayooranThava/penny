@@ -301,6 +301,28 @@ enum PrivateWidgetKinds {
     static let totalShowing = [safeToSpend, monthlyBudget, savingsGoal, upcomingReminder]
 }
 
+/// Trailing debounce for widget timeline reloads. The flag is stored immediately.
+/// Rapid taps collapse into one reload after a quiet second, and that reload
+/// uses whatever the flag is then. Widget views read the flag when they render.
+struct PrivateWidgetReloadCoalescer {
+    static let defaultDebounce: TimeInterval = 1
+    var debounce: TimeInterval = defaultDebounce
+    private var dueAt: Date?
+    private var pending = false
+
+    mutating func noteChange(at now: Date) {
+        pending = true
+        dueAt = now.addingTimeInterval(debounce)
+    }
+
+    mutating func takeDueReload(at now: Date) -> [String]? {
+        guard pending, let dueAt, now >= dueAt else { return nil }
+        pending = false
+        self.dueAt = nil
+        return PrivateWidgetKinds.totalShowing
+    }
+}
+
 enum PrivateScenePhase: Equatable {
     case active
     case inactive
@@ -474,20 +496,6 @@ enum PennyNotificationContent {
             body += " All bills this month: \(money)."
         }
         return PennyNotificationCopy(title: "Upcoming bill", body: body)
-    }
-
-    static func walletConnected(
-        total: Decimal?,
-        currencyCode: String,
-        isPrivate: Bool,
-        locale: Locale
-    ) -> PennyNotificationCopy {
-        let title = "Connected ✓"
-        guard let total, !isPrivate else {
-            return PennyNotificationCopy(title: title, body: "Wallet capture is on.")
-        }
-        let money = MoneyFormatters.string(from: total, currencyCode: currencyCode, locale: locale)
-        return PennyNotificationCopy(title: title, body: "Wallet capture is on. \(money).")
     }
 }
 

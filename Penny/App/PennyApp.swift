@@ -266,7 +266,12 @@ struct MainTabView: View {
         .task {
             refreshSchedulesAndWidgets()
             let enabled = settingsList.first?.billRemindersEnabled ?? false
-            await NotificationService.shared.refreshBillReminders(bills: Array(bills), enabled: enabled)
+            let currency = settingsList.first?.currencyCode ?? "CAD"
+            await NotificationService.shared.refreshBillReminders(
+                bills: Array(bills),
+                enabled: enabled,
+                currencyCode: currency
+            )
             if settingsList.first?.hasCompletedWalkthrough == false {
                 session.showWalkthrough = true
             }
@@ -287,8 +292,13 @@ struct MainTabView: View {
         refreshWidgetSnapshot()
         if rolled {
             let enabled = settings?.billRemindersEnabled ?? false
+            let currency = settings?.currencyCode ?? "CAD"
             Task {
-                await NotificationService.shared.refreshBillReminders(bills: Array(bills), enabled: enabled)
+                await NotificationService.shared.refreshBillReminders(
+                    bills: Array(bills),
+                    enabled: enabled,
+                    currencyCode: currency
+                )
             }
         }
     }

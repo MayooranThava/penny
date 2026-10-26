@@ -307,7 +307,7 @@ struct HomeView: View {
         .padding(.top, PennySpacing.sm)
     }
 
-    private var safeToSpendCard: some View {
+    private var safeToSpendCardBody: some View {
         VStack(alignment: .leading, spacing: PennySpacing.md) {
             HStack(alignment: .center, spacing: 2) {
                 Text("Safe to Spend")
@@ -316,7 +316,9 @@ struct HomeView: View {
                     .textCase(.uppercase)
                 EstimateAsterisk(onBrand: true)
                 Spacer(minLength: PennySpacing.xs)
-                PrivateModeEyeButton(onBrand: true)
+                Color.clear
+                    .frame(width: 44, height: 44)
+                    .accessibilityHidden(true)
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -436,6 +438,16 @@ struct HomeView: View {
         )
         .accessibilityElement(children: .combine)
         .modifier(PrivateSafeToSpendLabel(amount: breakdown.safeToSpend, currencyCode: currency))
+    }
+
+    private var safeToSpendCard: some View {
+        ZStack(alignment: .topTrailing) {
+            safeToSpendCardBody
+            PrivateModeEyeButton(onBrand: true)
+                .padding(.top, PennySpacing.lg)
+                .padding(.trailing, PennySpacing.lg)
+        }
+        .accessibilityElement(children: .contain)
         .walkthroughAnchor(.safeToSpend)
     }
 

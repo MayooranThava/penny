@@ -31,6 +31,8 @@ final class PrivateModeController {
     private(set) var isEnabled: Bool
     private(set) var animationsSuppressed: Bool
     private let reloader: any PrivateWidgetReloading
+    var reloadCoalescer = PrivateWidgetReloadCoalescer()
+    private var reloadTask: Task<Void, Never>?
 
     init(reloader: any PrivateWidgetReloading = WidgetKitPrivateReloader()) {
         self.reloader = reloader
@@ -61,7 +63,21 @@ final class PrivateModeController {
         }
         isEnabled = newValue
         guard changed else { return }
-        reloader.reload(kinds: PrivateWidgetKinds.totalShowing)
+        // The flag is already stored, so a widget that renders now masks totals.
+        // Timeline reloads wait until taps stop, and the last flag wins.
+        reloadCoalescer.noteChange(at: Date())
+        let delay = reloadCoalescer.debounce
+        reloadTask?.cancel()
+        reloadTask = Task { @MainActor [weak self] in
+            let nanoseconds = UInt64(max(delay, 0) * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: nanoseconds)
+            guard let self, !Task.isCancelled else { return }
+            // A slightly early wake still counts as the end of the quiet period.
+            let kinds = self.reloadCoalescer.takeDueReload(at: Date().addingTimeInterval(0.05))
+            if let kinds {
+                self.reloader.reload(kinds: kinds)
+            }
+        }
     }
 
     func refreshFromDefaults() {

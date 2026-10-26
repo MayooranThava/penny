@@ -123,6 +123,7 @@ struct PrivateModeEyeButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(.isButton)
         .accessibilityLabel(PrivateAmountLogic.eyeAccessibilityLabel(isPrivate: privateMode.isEnabled))
         .animation(
             reduceMotion ? nil : .easeInOut(duration: PrivateAmountLogic.crossfadeSeconds),

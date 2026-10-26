@@ -679,8 +679,13 @@ struct SettingsView: View {
             set: { newValue in
                 settings?.billRemindersEnabled = newValue
                 modelContext.saveOrSurfaceError()
+                let currency = settings?.currencyCode ?? "CAD"
                 Task {
-                    await NotificationService.shared.refreshBillReminders(bills: bills, enabled: newValue)
+                    await NotificationService.shared.refreshBillReminders(
+                        bills: bills,
+                        enabled: newValue,
+                        currencyCode: currency
+                    )
                 }
             }
         )

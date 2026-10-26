@@ -7,6 +7,7 @@
 
 /* Begin PBXBuildFile section */
 		765A30B36B57474F83904140 /* PennyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054DD13068E64BDB84F1BF5A /* PennyApp.swift */; };
+		9DECBDB1CE3C4598B9CFBAAE /* UITestSeedLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0698967D11B04B8AB6C15EE1 /* UITestSeedLaunch.swift */; };
 		5E793FBD15A749FAAC6AA3D2 /* ActivityShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0633B33EBC2A48ED825B1373 /* ActivityShareSheet.swift */; };
 		B3ED9F509B9C43EBAE29139C /* LegalDisclaimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF59FB9337494C97ABF63712 /* LegalDisclaimer.swift */; };
 		6A269A86638542718FA4E0FD /* PennyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 261C169A17504A9F9F03AB14 /* PennyComponents.swift */; };
@@ -64,10 +65,14 @@
 		B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E56848AF87D941B9B7326B77 /* MigrationTests.swift */; };
 		1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */; };
 		DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */; };
+		FCC388B0A0C345EDBC733153 /* SafeToSpendDeletedBillTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */; };
 		1233AAA8431840308153FD2E /* SaveErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0829EAFDAC454E09BA513921 /* SaveErrorTests.swift */; };
 		A9E5F33D97714F4AAB74FBCD /* TestIsolation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451EDA9EDA5847FBAE81136F /* TestIsolation.swift */; };
 		A71EB7026833457998E82ED7 /* TestIsolationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797CEC20C9C24EAAACE968B9 /* TestIsolationTests.swift */; };
 		700BBAA7D907475082C83F51 /* WidgetSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F05473FFE16442697022075 /* WidgetSnapshotTests.swift */; };
+		DC8A7EE53E574A2BADC2CFB5 /* ActivityPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDF09C69C8F4810BB9B0C0A /* ActivityPerformanceTests.swift */; };
+		4A4C811A3E644415A97413A3 /* AppScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60776FA20E584F1A8B212643 /* AppScreenshotTests.swift */; };
+		9AAF0A6B8DBF40D4A208547F /* ScreenshotLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1F813F675B8409189417968 /* ScreenshotLaunch.swift */; };
 		0959C5EB97F842BFBB218C92 /* MonthlyBudgetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAEAE8156FCF4AD78E602878 /* MonthlyBudgetWidget.swift */; };
 		25700C9123CD4564818118D9 /* PennyWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C619F61B78A34D229F07B91F /* PennyWidgetsBundle.swift */; };
 		D5D8BEA437E24B6E8E549378 /* SafeToSpendWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4AA4EB52EFA44AD999C6FEC /* SafeToSpendWidget.swift */; };
@@ -80,6 +85,7 @@
 		C4D9E4F4D0A74755846E06E0 /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */; };
 		BC0C78BAEE304ACD8DC80B58 /* PrivateModeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */; };
 		7C687F474DB34EC8B390E1C0 /* PrivateModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */; };
+		FCF453A78104421B833BB8E0 /* PrivateModeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */; };
 		361E3E35221940A884F6F9B7 /* Penny.app in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* Penny.app */; };
 		A10000000000000000000026 /* PennyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* PennyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -98,6 +104,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = A1000000000000000000001B;
 			remoteInfo = PennyWidgets;
+		};
+		A10000000000000000000034 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000006;
+			remoteInfo = Penny;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -119,10 +132,12 @@
 		A10000000000000000000008 /* Penny.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Penny.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000001C /* PennyWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PennyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000009 /* PennyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PennyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000002D /* PennyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PennyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000027 /* Penny.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Penny.entitlements; sourceTree = "<group>"; };
 		A10000000000000000000028 /* PennyWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PennyWidgets.entitlements; sourceTree = "<group>"; };
 		A10000000000000000000029 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		054DD13068E64BDB84F1BF5A /* PennyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyApp.swift; sourceTree = "<group>"; };
+		0698967D11B04B8AB6C15EE1 /* UITestSeedLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSeedLaunch.swift; sourceTree = "<group>"; };
 		0633B33EBC2A48ED825B1373 /* ActivityShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityShareSheet.swift; sourceTree = "<group>"; };
 		EF59FB9337494C97ABF63712 /* LegalDisclaimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDisclaimer.swift; sourceTree = "<group>"; };
 		261C169A17504A9F9F03AB14 /* PennyComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyComponents.swift; sourceTree = "<group>"; };
@@ -180,10 +195,14 @@
 		E56848AF87D941B9B7326B77 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
 		A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeTests.swift; sourceTree = "<group>"; };
 		41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseSanityTests.swift; sourceTree = "<group>"; };
+		9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeToSpendDeletedBillTests.swift; sourceTree = "<group>"; };
 		0829EAFDAC454E09BA513921 /* SaveErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveErrorTests.swift; sourceTree = "<group>"; };
 		451EDA9EDA5847FBAE81136F /* TestIsolation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestIsolation.swift; sourceTree = "<group>"; };
 		797CEC20C9C24EAAACE968B9 /* TestIsolationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestIsolationTests.swift; sourceTree = "<group>"; };
 		7F05473FFE16442697022075 /* WidgetSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotTests.swift; sourceTree = "<group>"; };
+		9CDF09C69C8F4810BB9B0C0A /* ActivityPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPerformanceTests.swift; sourceTree = "<group>"; };
+		60776FA20E584F1A8B212643 /* AppScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScreenshotTests.swift; sourceTree = "<group>"; };
+		F1F813F675B8409189417968 /* ScreenshotLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotLaunch.swift; sourceTree = "<group>"; };
 		CAEAE8156FCF4AD78E602878 /* MonthlyBudgetWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyBudgetWidget.swift; sourceTree = "<group>"; };
 		C619F61B78A34D229F07B91F /* PennyWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyWidgetsBundle.swift; sourceTree = "<group>"; };
 		E4AA4EB52EFA44AD999C6FEC /* SafeToSpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeToSpendWidget.swift; sourceTree = "<group>"; };
@@ -218,6 +237,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1000000000000000000002F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -227,6 +253,7 @@
 				A10000000000000000000004 /* Penny */,
 				A1000000000000000000001A /* PennyWidgets */,
 				A10000000000000000000005 /* PennyTests */,
+				A1000000000000000000002B /* PennyUITests */,
 				A10000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -237,6 +264,7 @@
 				A10000000000000000000008 /* Penny.app */,
 				A1000000000000000000001C /* PennyWidgets.appex */,
 				A10000000000000000000009 /* PennyTests.xctest */,
+				A1000000000000000000002D /* PennyUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -263,6 +291,7 @@
 			isa = PBXGroup;
 			children = (
 				054DD13068E64BDB84F1BF5A /* PennyApp.swift */,
+				0698967D11B04B8AB6C15EE1 /* UITestSeedLaunch.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -439,6 +468,7 @@
 				C0EDC57A0B474EC28AF7D73D /* Migration */,
 				A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */,
 				41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */,
+				9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */,
 				0829EAFDAC454E09BA513921 /* SaveErrorTests.swift */,
 				451EDA9EDA5847FBAE81136F /* TestIsolation.swift */,
 				797CEC20C9C24EAAACE968B9 /* TestIsolationTests.swift */,
@@ -455,6 +485,16 @@
 				A13A815D6A2D4206AD49FFCA /* README.md */,
 			);
 			path = Migration;
+			sourceTree = "<group>";
+		};
+		A1000000000000000000002B /* PennyUITests */ = {
+			isa = PBXGroup;
+			children = (
+				9CDF09C69C8F4810BB9B0C0A /* ActivityPerformanceTests.swift */,
+				60776FA20E584F1A8B212643 /* AppScreenshotTests.swift */,
+				F1F813F675B8409189417968 /* ScreenshotLaunch.swift */,
+			);
+			path = PennyUITests;
 			sourceTree = "<group>";
 		};
 		A1000000000000000000001A /* PennyWidgets */ = {
@@ -529,6 +569,23 @@
 			productReference = A10000000000000000000009 /* PennyTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		A1000000000000000000002C /* PennyUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000030 /* Build configuration list for PBXNativeTarget "PennyUITests" */;
+			buildPhases = (
+				A1000000000000000000002E /* Sources */,
+				A1000000000000000000002F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000033 /* PBXTargetDependency */,
+			);
+			name = PennyUITests;
+			productName = PennyUITests;
+			productReference = A1000000000000000000002D /* PennyUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -546,6 +603,10 @@
 						CreatedOnToolsVersion = 16.0;
 					};
 					A10000000000000000000007 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A10000000000000000000006;
+					};
+					A1000000000000000000002C = {
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = A10000000000000000000006;
 					};
@@ -567,6 +628,7 @@
 				A10000000000000000000006 /* Penny */,
 				A1000000000000000000001B /* PennyWidgets */,
 				A10000000000000000000007 /* PennyTests */,
+				A1000000000000000000002C /* PennyUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -603,6 +665,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				765A30B36B57474F83904140 /* PennyApp.swift in Sources */,
+				9DECBDB1CE3C4598B9CFBAAE /* UITestSeedLaunch.swift in Sources */,
 				5E793FBD15A749FAAC6AA3D2 /* ActivityShareSheet.swift in Sources */,
 				B3ED9F509B9C43EBAE29139C /* LegalDisclaimer.swift in Sources */,
 				6A269A86638542718FA4E0FD /* PennyComponents.swift in Sources */,
@@ -684,10 +747,22 @@
 				B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */,
 				1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */,
 				DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */,
+				FCC388B0A0C345EDBC733153 /* SafeToSpendDeletedBillTests.swift in Sources */,
 				1233AAA8431840308153FD2E /* SaveErrorTests.swift in Sources */,
 				A9E5F33D97714F4AAB74FBCD /* TestIsolation.swift in Sources */,
 				A71EB7026833457998E82ED7 /* TestIsolationTests.swift in Sources */,
 				700BBAA7D907475082C83F51 /* WidgetSnapshotTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1000000000000000000002E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DC8A7EE53E574A2BADC2CFB5 /* ActivityPerformanceTests.swift in Sources */,
+				4A4C811A3E644415A97413A3 /* AppScreenshotTests.swift in Sources */,
+				9AAF0A6B8DBF40D4A208547F /* ScreenshotLaunch.swift in Sources */,
+				FCF453A78104421B833BB8E0 /* PrivateModeLogic.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -703,6 +778,11 @@
 			isa = PBXTargetDependency;
 			target = A1000000000000000000001B /* PennyWidgets */;
 			targetProxy = A10000000000000000000025 /* PBXContainerItemProxy */;
+		};
+		A10000000000000000000033 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000006 /* Penny */;
+			targetProxy = A10000000000000000000034 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -936,6 +1016,46 @@
 			};
 			name = Release;
 		};
+		A10000000000000000000031 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 2YJ478267N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Penny;
+
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+
+			};
+			name = Debug;
+		};
+		A10000000000000000000032 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 2YJ478267N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Penny;
+
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -971,6 +1091,15 @@
 			buildConfigurations = (
 				A10000000000000000000018 /* Debug */,
 				A10000000000000000000019 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000030 /* Build configuration list for PBXNativeTarget "PennyUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000031 /* Debug */,
+				A10000000000000000000032 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

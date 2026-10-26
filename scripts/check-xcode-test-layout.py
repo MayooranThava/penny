@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """CI layout checks that do not need a Mac.
 
-- Every unit-test and UI-test target is on the Penny scheme and not skipped.
+- Every unit-test target, and every UI-test target except PennyUITests, is on the
+  Penny scheme and not skipped.
+- PennyUITests is only on the PennyScreenshots scheme (Release). ci-gate does
+  not run it. The screenshot workflow is push-to-main and workflow_dispatch.
+- --list-products prints only test bundles the Penny scheme builds and does
+  not skip. The macOS job requires those products after build-for-testing.
+  PennyUITests.xctest is omitted because that job never compiles it.
 - PennyTests has a Copy Bundle Resources phase that bundles Migration/Fixtures
   (so a v1.0.4 store can land there without another project edit).
 - Every @Suite opts into isolated SwiftData / UserDefaults.
@@ -25,8 +31,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PBXPROJ = ROOT / "Penny.xcodeproj" / "project.pbxproj"
 SCHEME = ROOT / "Penny.xcodeproj" / "xcshareddata" / "xcschemes" / "Penny.xcscheme"
+SCREENSHOT_SCHEME = ROOT / "Penny.xcodeproj" / "xcshareddata" / "xcschemes" / "PennyScreenshots.xcscheme"
 CI_MACOS = ROOT / "scripts" / "ci-macos.sh"
+CI_SCREENSHOTS = ROOT / "scripts" / "ci-screenshots.sh"
 WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+SCREENSHOT_WORKFLOW = ROOT / ".github" / "workflows" / "screenshots.yml"
+SCREENSHOT_UI_TEST = "PennyUITests"
 TEST_TYPES = {
     "com.apple.product-type.bundle.unit-test",
     "com.apple.product-type.bundle.ui-testing",
@@ -209,6 +219,129 @@ def filtered_lines(path: Path) -> list[str]:
     return bad
 
 
+def screenshot_isolation_failures(project: str, penny_scheme: str) -> list[str]:
+    """The screenshot UI tests stay off ci-gate and only run from their own scheme."""
+    failures: list[str] = []
+    if SCREENSHOT_UI_TEST in penny_scheme:
+        failures.append("Penny scheme must not reference PennyUITests")
+    if not SCREENSHOT_SCHEME.is_file():
+        return failures + ["PennyScreenshots.xcscheme is missing"]
+    screen = SCREENSHOT_SCHEME.read_text()
+    testables = scheme_testables(screen)
+    names = {name: skipped for skipped, name in testables}
+    if names.get(SCREENSHOT_UI_TEST) != "NO":
+        failures.append("PennyScreenshots scheme must include PennyUITests and not skip it")
+    if "PennyTests" in names:
+        failures.append("PennyScreenshots scheme must not run PennyTests")
+    if 'buildConfiguration = "Release"' not in screen.split("<TestAction", 1)[-1].split("</TestAction>", 1)[0]:
+        failures.append("PennyScreenshots test action must use the Release configuration")
+    if f'productType = "com.apple.product-type.bundle.ui-testing"' not in project:
+        failures.append("PennyUITests product type is missing")
+    return failures
+
+
+def launch_contract_failures() -> list[str]:
+    app_path = ROOT / "Penny" / "App" / "UITestSeedLaunch.swift"
+    test_path = ROOT / "PennyUITests" / "ScreenshotLaunch.swift"
+    penny_path = ROOT / "Penny" / "App" / "PennyApp.swift"
+    if not app_path.is_file() or not test_path.is_file():
+        return ["UITestSeedLaunch.swift and PennyUITests/ScreenshotLaunch.swift are required"]
+    app = app_path.read_text()
+    test = test_path.read_text()
+    penny = penny_path.read_text()
+    failures: list[str] = []
+    code = "\n".join(line.split("//", 1)[0] for line in app.splitlines())
+    if "#if" in code or "#if" in "\n".join(line.split("//", 1)[0] for line in penny.splitlines()):
+        failures.append("UITestSeedLaunch must stay compiled into Release; do not wrap it in #if")
+    if "xctestconfiguration" not in app.lower():
+        failures.append("UITestSeedLaunch must require the XCUITest configuration path")
+    if "UITestSeedLaunch.isEnabled" not in penny:
+        failures.append("PennyApp does not consult UITestSeedLaunch.isEnabled")
+    for literal in (
+        "-PennyUITestSeed",
+        "PENNY_XCUI_CONFIGURATION",
+        "-PennyAppearance",
+        "-PennyPrivateMode",
+        "-PennyUITestTransactionCount",
+    ):
+        if literal not in app or literal not in test:
+            failures.append(f"{literal} must be used by both the app and PennyUITests")
+    allowed = {
+        "Penny/Services/DemoDataService.swift",
+        "Penny/App/UITestSeedLaunch.swift",
+    }
+    hits = {
+        str(path.relative_to(ROOT))
+        for path in ROOT.rglob("*.swift")
+        if "seedVolumeTransactions" in path.read_text()
+    }
+    if hits != allowed:
+        failures.append(f"seedVolumeTransactions references must be {sorted(allowed)}, found {sorted(hits)}")
+    return failures
+
+
+def demo_seed_failures() -> list[str]:
+    path = ROOT / "Penny" / "Services" / "DemoDataService.swift"
+    text = path.read_text()
+    banned = (
+        "Starbucks",
+        "Netflix",
+        "Loblaws",
+        "Tim Hortons",
+        "Uber",
+        "Cineplex",
+        "Spotify",
+        "Disney",
+        "Amazon",
+        "Walmart",
+        "Costco",
+        "Indigo",
+        "Shoppers",
+        "No Frills",
+        "Winners",
+        "Raptors",
+        "TTC",
+        "McDonald",
+        "Airbnb",
+        "Nike",
+        "YouTube",
+        "Alex",
+    )
+    return [f"DemoDataService contains real brand or personal name {name!r}" for name in banned if name in text]
+
+
+def screenshot_workflow_failures() -> list[str]:
+    failures: list[str] = []
+    if not SCREENSHOT_WORKFLOW.is_file():
+        return ["screenshots workflow is missing"]
+    workflow = SCREENSHOT_WORKFLOW.read_text()
+    ci = WORKFLOW.read_text()
+    if "pull_request" in workflow:
+        failures.append("screenshots workflow must not run on pull_request")
+    if "workflow_dispatch" not in workflow:
+        failures.append("screenshots workflow must allow workflow_dispatch")
+    if "branches: [main]" not in workflow:
+        failures.append("screenshots workflow must run on push to main")
+    if "select-stable-xcode.sh" not in workflow:
+        failures.append("screenshots workflow must select the same stable Xcode as the Mac job")
+    if "ci-screenshots.sh" not in workflow:
+        failures.append("screenshots workflow must run scripts/ci-screenshots.sh")
+    if "name: app-screenshots" not in workflow:
+        failures.append("screenshots artifact must be named app-screenshots")
+    if "screenshots.yml" in ci or "ci-screenshots" in ci or "PennyUITests" in ci:
+        failures.append("ci.yml must not run the screenshot job or PennyUITests")
+    if not CI_SCREENSHOTS.is_file():
+        return failures + ["scripts/ci-screenshots.sh is missing"]
+    script = CI_SCREENSHOTS.read_text()
+    if "-scheme PennyScreenshots" not in script or "-configuration Release" not in script:
+        failures.append("ci-screenshots.sh must test the PennyScreenshots scheme in Release")
+    if "-only-testing" in script or "-skip-testing" in script:
+        failures.append("ci-screenshots.sh must not filter tests")
+    if "export-screenshot-artifacts.py" not in script:
+        failures.append("ci-screenshots.sh must export screenshots and metrics")
+    return failures
+
+
 def main() -> int:
     list_products = "--list-products" in sys.argv
     failures: list[str] = []
@@ -226,6 +359,15 @@ def main() -> int:
         failures.append("No unit-test or UI-test targets found")
 
     for target in test_targets:
+        if target["name"] == SCREENSHOT_UI_TEST:
+            skipped = by_name.get(target["name"])
+            if skipped is not None:
+                failures.append(
+                    "PennyUITests must stay off the Penny scheme so ci-gate does not run screenshots"
+                )
+            if target["product_type"] != "com.apple.product-type.bundle.ui-testing":
+                failures.append("PennyUITests must be a UI-test bundle")
+            continue
         skipped = by_name.get(target["name"])
         if skipped is None:
             failures.append(
@@ -281,6 +423,10 @@ def main() -> int:
             failures.append(f"test filter would skip MigrationTests: {line}")
 
     failures.extend(asset_catalog_failures(project))
+    failures.extend(screenshot_isolation_failures(project, scheme))
+    failures.extend(launch_contract_failures())
+    failures.extend(demo_seed_failures())
+    failures.extend(screenshot_workflow_failures())
 
     if failures:
         print("Xcode test layout check failed:", file=sys.stderr)
@@ -288,7 +434,10 @@ def main() -> int:
             fail(message)
         return 1
 
-    print(f"[pass] {len(test_targets)} test target(s) on the Penny scheme, unskipped", file=sys.stderr)
+    print(
+        f"[pass] {len(test_targets)} test target(s); PennyUITests is only on PennyScreenshots",
+        file=sys.stderr,
+    )
     print("[pass] PennyTests bundles Migration/Fixtures", file=sys.stderr)
     print("[pass] every suite isolates SwiftData and UserDefaults", file=sys.stderr)
     print("[pass] Settings footnote renders PennyAppInfo.settingsFootnote", file=sys.stderr)
@@ -298,8 +447,12 @@ def main() -> int:
     print("[pass] ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon", file=sys.stderr)
     print("[pass] Penny/Info.plist sets CFBundleIconName to AppIcon", file=sys.stderr)
     if list_products:
+        # ci-macos.sh requires each printed product after the Penny scheme
+        # build. PennyUITests is a test target, but only PennyScreenshots
+        # builds it, so it must not appear here.
         for target in test_targets:
-            print(target["product"])
+            if by_name.get(target["name"]) == "NO":
+                print(target["product"])
     return 0
 
 

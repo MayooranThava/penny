@@ -229,6 +229,14 @@ public enum PrivateAmountLogic {
         text.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) }
     }
 
+    /// True when `text` contains a currency amount. Same pattern `maskCurrencyAmounts` uses.
+    /// Percents, dates, and the "Hidden amount" label do not match.
+    public static func containsCurrencyAmount(_ text: String) -> Bool {
+        guard let regex = try? NSRegularExpression(pattern: currencyPattern) else { return false }
+        let range = NSRange(text.startIndex..., in: text)
+        return regex.firstMatch(in: text, range: range) != nil
+    }
+
     public static func maskCurrencyAmounts(in text: String, replacement: String = mask) -> String {
         let pattern = currencyPattern
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }

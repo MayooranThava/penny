@@ -7,6 +7,21 @@ struct PrivateModeLogicTests {
     private let enUS = Locale(identifier: "en_US")
     private let germany = Locale(identifier: "de_DE")
 
+    @Test("Currency amount regex matches money and ignores percents, dates, and the mask")
+    func currencyAmountRegexMatchesMoneyOnly() {
+        #expect(PrivateAmountLogic.containsCurrencyAmount("$1,234.56"))
+        #expect(PrivateAmountLogic.containsCurrencyAmount("CA$92.40"))
+        #expect(PrivateAmountLogic.containsCurrencyAmount("Remaining $12.00 today"))
+        #expect(PrivateAmountLogic.containsCurrencyAmount("1 234,56 €"))
+        #expect(!PrivateAmountLogic.containsCurrencyAmount("Hidden amount"))
+        #expect(!PrivateAmountLogic.containsCurrencyAmount(PrivateAmountLogic.mask))
+        #expect(!PrivateAmountLogic.containsCurrencyAmount("Budget 42 percent used"))
+        #expect(!PrivateAmountLogic.containsCurrencyAmount("Oct 26"))
+        #expect(PrivateAmountLogic.containsDigit("$1.00"))
+        #expect(!PrivateAmountLogic.containsDigit("Hidden amount"))
+        #expect(!PrivateAmountLogic.containsDigit(PrivateAmountLogic.mask))
+    }
+
     @Test("Masked totals are five dots and never a currency amount")
     func maskHidesMagnitude() {
         let samples: [Decimal] = [

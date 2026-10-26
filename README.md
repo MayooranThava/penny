@@ -16,7 +16,7 @@ Penny is a native iOS personal finance planner focused on clarity: safe-to-spend
 - **Widgets**: Safe to Spend (Home + Lock Screen), Upcoming reminder, Upcoming bills, Monthly budget, Savings goal (App Group `group.com.mayooran.penny`)
 - **Design system**: mint/emerald warm identity, light + dark mode, reusable cards/rows/buttons
 - **Local insights**: deterministic rules (no AI APIs)
-- **Demo data**: sample household with display name **Alex** and a generic credit-card debt (not a real person)
+- **Demo data**: sample household with display name **Demo**, fictional merchants, and a generic credit-card debt (not a real person)
 
 ## Architecture
 

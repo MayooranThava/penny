@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(StoreManager.self) private var store
     @Environment(AppSession.self) private var session
+    @Environment(PrivateModeController.self) private var privateMode
     @Query private var settingsList: [UserSettings]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
     @Query(sort: \Debt.name) private var debts: [Debt]
@@ -39,6 +40,7 @@ struct SettingsView: View {
                 incomeSection
                 accountsSection
                 appearanceSection
+                privacySection
                 notificationsSection
                 applePaySection
                 proSection
@@ -247,14 +249,14 @@ struct SettingsView: View {
                             Label(account.name, systemImage: account.accountType.icon)
                                 .foregroundStyle(PennyColors.textPrimary)
                             Spacer()
-                            Text(
-                                MoneyFormatters.compact(
-                                    from: account.balance,
-                                    currencyCode: settings?.currencyCode ?? "CAD"
-                                )
+                            PrivateAmount(
+                                amount: account.balance,
+                                currencyCode: settings?.currencyCode ?? "CAD",
+                                font: PennyTypography.callout,
+                                color: PennyColors.textSecondary,
+                                style: .compact,
+                                site: .accountBalance
                             )
-                            .foregroundStyle(PennyColors.textSecondary)
-                            .monospacedDigit()
                             Image(systemName: "pencil")
                                 .font(.caption)
                                 .foregroundStyle(PennyColors.textTertiary)
@@ -276,6 +278,19 @@ struct SettingsView: View {
                 }
             }
 
+            if !accounts.isEmpty {
+                HStack {
+                    Text("Net worth")
+                    Spacer()
+                    PrivateAmount(
+                        amount: accountsNetWorth,
+                        currencyCode: settings?.currencyCode ?? "CAD",
+                        font: PennyTypography.bodyEmphasized,
+                        style: .compact,
+                        site: .accountsNetWorth
+                    )
+                }
+            }
             Button {
                 startAddAccount()
             } label: {
@@ -293,6 +308,32 @@ struct SettingsView: View {
                 Text("Free includes \(PennyProductCatalog.freeTierAccountLimit) accounts. Penny Pro unlocks more accounts (extra TFSAs, FHSA, non-registered) and goal funding.")
             }
         }
+    }
+
+    private var accountsNetWorth: Decimal {
+        PrivateAmountLogic.netWorth(
+            balances: accounts.map { (balance: $0.balance, included: $0.isIncludedInNetWorth) }
+        )
+    }
+
+    private var privacySection: some View {
+        Section {
+            Toggle("Hide totals", isOn: hideTotalsBinding)
+        } header: {
+            Text("Privacy")
+        } footer: {
+            Text("Masks totals on Home, Budget, Plan, Activity, and widgets. Individual transactions, bills, and payments stay visible.")
+        }
+    }
+
+    private var hideTotalsBinding: Binding<Bool> {
+        Binding(
+            get: { privateMode.isEnabled },
+            set: { newValue in
+                privateMode.setEnabled(newValue)
+                Haptics.light()
+            }
+        )
     }
 
     private func deleteAccount(_ account: FinancialAccount) {
@@ -835,6 +876,8 @@ struct PaywallView: View {
 #Preview {
     SettingsView()
         .environment(StoreManager())
+        .environment(AppSession())
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }
 

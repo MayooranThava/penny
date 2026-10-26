@@ -101,22 +101,41 @@ struct BudgetView: View {
                 }
 
                 VStack(alignment: .leading, spacing: PennySpacing.sm) {
-                    metric("Planned spending", planned)
-                    metric("Spent", spent)
-                    metric("Remaining", remaining, color: remaining < 0 ? PennyColors.expense : PennyColors.income)
+                    metric("Income", settingsList.first?.monthlyIncome ?? 0, site: .budgetIncome)
+                    metric("Planned spending", planned, site: .budgetPlanned)
+                    metric("Spent", spent, site: .budgetSpent)
+                    metric("Remaining", remaining, color: remaining < 0 ? PennyColors.expense : PennyColors.income, site: .budgetRemaining)
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Budget \(Int(FinanceCalculator.budgetProgressClamped(budgeted: planned, spent: spent) * 100)) percent used. Remaining \(MoneyFormatters.string(from: remaining, currencyCode: currency))")
+            .modifier(
+                PrivateBudgetSummaryLabel(
+                    percent: Int((FinanceCalculator.budgetProgressClamped(budgeted: planned, spent: spent) * 100).rounded()),
+                    remaining: remaining,
+                    currencyCode: currency
+                )
+            )
         }
     }
 
-    private func metric(_ title: String, _ value: Decimal, color: Color = PennyColors.textPrimary) -> some View {
+    private func metric(
+        _ title: String,
+        _ value: Decimal,
+        color: Color = PennyColors.textPrimary,
+        site: PrivateTotalSite
+    ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(PennyTypography.footnote)
                 .foregroundStyle(PennyColors.textSecondary)
-            MoneyText(amount: value, currencyCode: currency, font: PennyTypography.smallAmount, color: color, compact: true)
+            PrivateAmount(
+                amount: value,
+                currencyCode: currency,
+                font: PennyTypography.smallAmount,
+                color: color,
+                style: .compact,
+                site: site
+            )
         }
     }
 
@@ -184,10 +203,27 @@ struct CategoryBudgetRow: View {
                             .font(PennyTypography.bodyEmphasized)
                             .foregroundStyle(PennyColors.textPrimary)
                         Spacer()
-                        Text("\(MoneyFormatters.compact(from: spent, currencyCode: currencyCode)) / \(MoneyFormatters.compact(from: category.budgetedAmount, currencyCode: currencyCode))")
-                            .font(PennyTypography.caption)
-                            .monospacedDigit()
-                            .foregroundStyle(PennyColors.textSecondary)
+                        HStack(spacing: 2) {
+                            PrivateAmount(
+                                amount: spent,
+                                currencyCode: currencyCode,
+                                font: PennyTypography.caption,
+                                color: PennyColors.textSecondary,
+                                style: .compact,
+                                site: .budgetCategorySpent
+                            )
+                            Text("/")
+                                .font(PennyTypography.caption)
+                                .foregroundStyle(PennyColors.textSecondary)
+                            PrivateAmount(
+                                amount: category.budgetedAmount,
+                                currencyCode: currencyCode,
+                                font: PennyTypography.caption,
+                                color: PennyColors.textSecondary,
+                                style: .compact,
+                                site: .budgetCategoryBudgeted
+                            )
+                        }
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
@@ -279,9 +315,9 @@ struct CategoryDetailView: View {
                                 }
                             }
                             HStack {
-                                stat("Budget", category.budgetedAmount)
-                                stat("Spent", spent)
-                                stat("Left", remaining, color: remaining < 0 ? PennyColors.expense : PennyColors.income)
+                                stat("Budget", category.budgetedAmount, site: .budgetCategoryBudgeted)
+                                stat("Spent", spent, site: .budgetCategorySpent)
+                                stat("Left", remaining, color: remaining < 0 ? PennyColors.expense : PennyColors.income, site: .budgetCategoryRemaining)
                             }
 
                             if isEditing {
@@ -362,12 +398,24 @@ struct CategoryDetailView: View {
         }
     }
 
-    private func stat(_ title: String, _ value: Decimal, color: Color = PennyColors.textPrimary) -> some View {
+    private func stat(
+        _ title: String,
+        _ value: Decimal,
+        color: Color = PennyColors.textPrimary,
+        site: PrivateTotalSite
+    ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(PennyTypography.footnote)
                 .foregroundStyle(PennyColors.textSecondary)
-            MoneyText(amount: value, currencyCode: currencyCode, font: PennyTypography.smallAmount, color: color, compact: true)
+            PrivateAmount(
+                amount: value,
+                currencyCode: currencyCode,
+                font: PennyTypography.smallAmount,
+                color: color,
+                style: .compact,
+                site: site
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -399,6 +447,7 @@ struct CategoryDetailView: View {
                     .cornerRadius(6)
                 }
                 .frame(height: 140)
+                .privateModeYAxis(site: .budgetTrendAxis)
                 .accessibilityLabel("Spending trend for \(category.name) over three months")
             }
         }
@@ -408,5 +457,6 @@ struct CategoryDetailView: View {
 #Preview("Budget") {
     BudgetView()
         .environment(AppSession())
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }

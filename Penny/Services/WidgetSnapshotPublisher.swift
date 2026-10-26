@@ -22,6 +22,7 @@ enum WidgetSnapshotPublisher {
         settings: UserSettings?,
         month: Date = DateHelpers.startOfMonth()
     ) {
+        PennyDataAccessProbe.counter?.fetches += 1
         let currency = settings?.currencyCode ?? "CAD"
         let monthTransactions = transactions.filter { DateHelpers.isSameMonth($0.date, month) }
 

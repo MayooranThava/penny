@@ -595,6 +595,10 @@ struct ApplePayCaptureSetupView: View {
     private func markConfiguredAndClose() {
         settings?.applePayCaptureConfigured = true
         modelContext.saveOrSurfaceError()
+        let currency = settings?.currencyCode ?? "CAD"
+        Task {
+            await NotificationService.shared.notifyWalletConnectedIfAuthorized(total: nil, currencyCode: currency)
+        }
         Haptics.success()
         dismiss()
     }

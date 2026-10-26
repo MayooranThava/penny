@@ -40,6 +40,24 @@ struct MonthlyBudgetWidgetView: View {
         }
     }
 
+    private var spentText: String {
+        WidgetPrivateDisplay.budget(
+            amount: spent,
+            currencyCode: entry.snapshot.currencyCode,
+            isPrivate: PrivateModeStore.isEnabled,
+            site: .widgetMonthlyBudgetSpent
+        )
+    }
+
+    private var plannedText: String {
+        WidgetPrivateDisplay.budget(
+            amount: planned,
+            currencyCode: entry.snapshot.currencyCode,
+            isPrivate: PrivateModeStore.isEnabled,
+            site: .widgetMonthlyBudgetPlanned
+        )
+    }
+
     private var statusLabel: String {
         switch entry.snapshot.budgetHealth {
         case "over": return "Over budget"
@@ -54,14 +72,25 @@ struct MonthlyBudgetWidgetView: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text(entry.snapshot.formattedBudgetAmount(spent))
+            Text(spentText)
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
+                .opacity(PrivateModeStore.isEnabled ? PrivateAmountLogic.maskOpacity : 1)
+                .accessibilityLabel(PrivateAmountLogic.accessibilityText(
+                    amount: spent,
+                    currencyCode: entry.snapshot.currencyCode,
+                    style: .compact,
+                    isPrivate: PrivateModeStore.isEnabled,
+                    locale: .current
+                ))
 
-            Text("of \(entry.snapshot.formattedBudgetAmount(planned)) planned")
+            Text("of \(plannedText) planned")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .accessibilityLabel(
+                    "of \(PrivateAmountLogic.accessibilityText(amount: planned, currencyCode: entry.snapshot.currencyCode, style: .compact, isPrivate: PrivateModeStore.isEnabled, locale: .current)) planned"
+                )
 
             ProgressView(value: min(progress, 1))
                 .tint(healthColor)

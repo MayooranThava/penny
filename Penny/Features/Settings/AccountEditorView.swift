@@ -156,9 +156,19 @@ struct AccountEditorView: View {
                                 .font(PennyTypography.bodyEmphasized)
                                 .foregroundStyle(PennyColors.textPrimary)
                                 .lineLimit(1)
-                            Text("Target \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency))")
-                                .font(PennyTypography.caption)
-                                .foregroundStyle(PennyColors.textTertiary)
+                            HStack(spacing: 4) {
+                                Text("Target")
+                                PrivateAmount(
+                                    amount: goal.targetAmount,
+                                    currencyCode: currency,
+                                    font: PennyTypography.caption,
+                                    color: PennyColors.textTertiary,
+                                    style: .compact,
+                                    site: .planGoalTarget
+                                )
+                            }
+                            .font(PennyTypography.caption)
+                            .foregroundStyle(PennyColors.textTertiary)
                         }
                         Spacer(minLength: PennySpacing.sm)
                         TextField("0", text: fundingBinding(for: goal.id))
@@ -173,9 +183,14 @@ struct AccountEditorView: View {
                     Text("Unallocated")
                         .foregroundStyle(PennyColors.textSecondary)
                     Spacer()
-                    Text(MoneyFormatters.compact(from: unallocated, currencyCode: currency))
-                        .foregroundStyle(unallocated >= 0 ? PennyColors.textSecondary : PennyColors.overBudget)
-                        .monospacedDigit()
+                    PrivateAmount(
+                        amount: unallocated,
+                        currencyCode: currency,
+                        font: PennyTypography.caption,
+                        color: unallocated >= 0 ? PennyColors.textSecondary : PennyColors.overBudget,
+                        style: .compact,
+                        site: .accountBalance
+                    )
                 }
                 .font(PennyTypography.caption)
             }
@@ -313,5 +328,6 @@ struct AccountEditorView: View {
 #Preview {
     AccountEditorView()
         .environment(StoreManager())
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }

@@ -29,7 +29,31 @@ struct SafeToSpendWidgetView: View {
     var entry: SafeToSpendEntry
 
     private var amountText: String {
-        entry.snapshot.formattedSafeToSpend()
+        WidgetPrivateDisplay.safeToSpend(
+            amount: entry.snapshot.safeToSpend,
+            currencyCode: entry.snapshot.currencyCode,
+            isPrivate: PrivateModeStore.isEnabled,
+            site: amountSite
+        )
+    }
+
+    private var amountSite: PrivateTotalSite {
+        switch family {
+        case .accessoryCircular, .accessoryRectangular:
+            return .widgetLockScreenSafeToSpend
+        default:
+            return .widgetSafeToSpend
+        }
+    }
+
+    private var spokenAmount: String {
+        PrivateAmountLogic.accessibilityText(
+            amount: entry.snapshot.safeToSpend,
+            currencyCode: entry.snapshot.currencyCode,
+            style: .standard,
+            isPrivate: PrivateModeStore.isEnabled,
+            locale: .current
+        )
     }
 
     var body: some View {
@@ -40,10 +64,11 @@ struct SafeToSpendWidgetView: View {
                 VStack(spacing: 1) {
                     Text("Safe")
                         .font(.caption2)
-                    Text(amountText)
-                        .font(.caption.weight(.bold))
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
+                Text(amountText)
+                    .font(.caption.weight(.bold))
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .accessibilityLabel(spokenAmount)
                 }
             }
             .containerBackground(for: .widget) { AccessoryWidgetBackground() }
@@ -55,6 +80,7 @@ struct SafeToSpendWidgetView: View {
                     .font(.headline)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
+                    .accessibilityLabel(spokenAmount)
                 Text(entry.snapshot.monthLabel)
                     .font(.caption2)
             }
@@ -75,6 +101,8 @@ struct SafeToSpendWidgetView: View {
                 .foregroundStyle(.white)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
+                .opacity(PrivateModeStore.isEnabled ? PrivateAmountLogic.maskOpacity : 1)
+                .accessibilityLabel(spokenAmount)
             Text("Rest of \(entry.snapshot.monthLabel)")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.9))

@@ -36,10 +36,45 @@ final class NotificationService {
         }
     }
 
-    private func scheduleReminder(for bill: RecurringBill) {
+    func walletConnectedCopy(total: Decimal?, currencyCode: String) -> PennyNotificationCopy {
+        PennyNotificationContent.walletConnected(
+            total: total,
+            currencyCode: currencyCode,
+            isPrivate: PrivateModeStore.isEnabled,
+            locale: .current
+        )
+    }
+
+    func notifyWalletConnectedIfAuthorized(total: Decimal?, currencyCode: String) async {
+        let settings = await center.notificationSettings()
+        guard settings.authorizationStatus == .authorized
+            || settings.authorizationStatus == .provisional
+            || settings.authorizationStatus == .ephemeral else { return }
+        let copy = walletConnectedCopy(total: total, currencyCode: currencyCode)
         let content = UNMutableNotificationContent()
-        content.title = "Upcoming bill"
-        content.body = "\(bill.name) is due soon."
+        content.title = copy.title
+        content.body = copy.body
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "wallet-connected",
+            content: content,
+            trigger: nil
+        )
+        center.add(request)
+    }
+
+    private func scheduleReminder(for bill: RecurringBill) {
+        let copy = PennyNotificationContent.billReminder(
+            name: bill.name,
+            individualAmount: nil,
+            billsTotal: nil,
+            currencyCode: "CAD",
+            isPrivate: PrivateModeStore.isEnabled,
+            locale: .current
+        )
+        let content = UNMutableNotificationContent()
+        content.title = copy.title
+        content.body = copy.body
         content.sound = .default
 
         var triggerDate = Calendar.current.date(

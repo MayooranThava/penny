@@ -42,6 +42,7 @@ extension ModelContext {
     @MainActor
     func saveOrSurfaceError() -> Bool {
         do {
+            PennyDataAccessProbe.counter?.saves += 1
             if let forced = PennySaveTesting.forcedError {
                 throw forced
             }

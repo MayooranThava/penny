@@ -62,6 +62,24 @@ struct ActivityView: View {
                     .padding(.horizontal, PennySpacing.screenPadding)
                     .padding(.vertical, PennySpacing.sm)
 
+                if !filtered.isEmpty {
+                    HStack {
+                        Text("This month")
+                            .font(PennyTypography.caption)
+                            .foregroundStyle(PennyColors.textSecondary)
+                        Spacer()
+                        PrivateAmount(
+                            amount: netTotal(filtered),
+                            currencyCode: currency,
+                            font: PennyTypography.smallAmount,
+                            style: .signed(showPlus: true),
+                            site: .activityMonthlySum
+                        )
+                    }
+                    .padding(.horizontal, PennySpacing.screenPadding)
+                    .padding(.bottom, PennySpacing.xs)
+                }
+
                 if filtered.isEmpty {
                     Spacer()
                     EmptyStateView(
@@ -118,9 +136,20 @@ struct ActivityView: View {
                                     }
                                 }
                             } header: {
-                                Text(group.key)
-                                    .font(PennyTypography.overline)
-                                    .foregroundStyle(PennyColors.textSecondary)
+                                HStack {
+                                    Text(group.key)
+                                        .font(PennyTypography.overline)
+                                        .foregroundStyle(PennyColors.textSecondary)
+                                    Spacer()
+                                    PrivateAmount(
+                                        amount: netTotal(group.items),
+                                        currencyCode: currency,
+                                        font: PennyTypography.caption,
+                                        color: PennyColors.textSecondary,
+                                        style: .signed(showPlus: true),
+                                        site: .activityDailySum
+                                    )
+                                }
                             }
                         }
                     }
@@ -204,6 +233,12 @@ struct ActivityView: View {
             }
         }
         .foregroundStyle(PennyColors.brand)
+    }
+
+    private func netTotal(_ items: [Transaction]) -> Decimal {
+        items.reduce(0) { partial, tx in
+            partial + (tx.transactionType == .income ? tx.amount : -tx.amount)
+        }
     }
 
     private var filterBar: some View {
@@ -537,6 +572,7 @@ struct AddTransactionView: View {
 #Preview("Activity") {
     ActivityView()
         .environment(AppSession())
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }
 

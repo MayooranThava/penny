@@ -149,6 +149,7 @@ struct RootView: View {
             }
         }
         .preferredColorScheme(settings?.appearance.colorScheme)
+        .environment(PrivateModeController.shared)
         .tint(PennyColors.brand)
         .id(effectiveTheme.rawValue)
         .onAppear { applyAccentTheme() }
@@ -180,6 +181,7 @@ struct RootView: View {
 
 struct MainTabView: View {
     @Environment(AppSession.self) private var session
+    @Environment(PrivateModeController.self) private var privateMode
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }) private var bills: [RecurringBill]
@@ -245,6 +247,7 @@ struct MainTabView: View {
             refreshSchedulesAndWidgets()
         }
         .onChange(of: scenePhase) { _, phase in
+            privateMode.noteScenePhase(Self.privatePhase(phase))
             guard phase == .active else { return }
             session.resetMonth()
             refreshSchedulesAndWidgets()
@@ -267,6 +270,15 @@ struct MainTabView: View {
             if settingsList.first?.hasCompletedWalkthrough == false {
                 session.showWalkthrough = true
             }
+        }
+    }
+
+    private static func privatePhase(_ phase: ScenePhase) -> PrivateScenePhase {
+        switch phase {
+        case .active: return .active
+        case .inactive: return .inactive
+        case .background: return .background
+        @unknown default: return .other
         }
     }
 
@@ -298,6 +310,7 @@ struct MainTabView: View {
     RootView()
         .environment(AppSession())
         .environment(StoreManager())
+        .environment(PrivateModeController.shared)
         .environment(PennySaveReporter.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }

@@ -24,6 +24,24 @@ enum MonthlySummaryPDFService {
         }
     }
 
+    /// Real amounts, even when private mode is on. Exports are deliberate.
+    static func summaryLines(for input: Input, locale: Locale = .current) -> [String] {
+        var lines = [
+            "Income: \(MoneyFormatters.string(from: input.income, currencyCode: input.currencyCode, locale: locale))",
+            "Spent: \(MoneyFormatters.string(from: input.spent, currencyCode: input.currencyCode, locale: locale))",
+            "Bills (monthly equiv.): \(MoneyFormatters.string(from: input.billsMonthly, currencyCode: input.currencyCode, locale: locale))"
+        ]
+        if input.debtMonthly > 0 {
+            lines.append(
+                "Debt payments: \(MoneyFormatters.string(from: input.debtMonthly, currencyCode: input.currencyCode, locale: locale))"
+            )
+        }
+        lines.append(
+            "Safe to Spend*: \(MoneyFormatters.string(from: input.safeToSpend, currencyCode: input.currencyCode, locale: locale))"
+        )
+        return lines
+    }
+
     static func exportFile(input: Input) throws -> URL {
         let page = CGRect(x: 0, y: 0, width: 612, height: 792) // US Letter
         let renderer = UIGraphicsPDFRenderer(bounds: page)
@@ -59,16 +77,10 @@ enum MonthlySummaryPDFService {
             y += 12
 
             draw("Overview", font: .systemFont(ofSize: 16, weight: .semibold))
-            draw("Income: \(MoneyFormatters.string(from: input.income, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12))
-            draw("Spent: \(MoneyFormatters.string(from: input.spent, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12))
-            draw("Bills (monthly equiv.): \(MoneyFormatters.string(from: input.billsMonthly, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12))
-            if input.debtMonthly > 0 {
-                draw(
-                    "Debt payments: \(MoneyFormatters.string(from: input.debtMonthly, currencyCode: input.currencyCode))",
-                    font: .systemFont(ofSize: 12)
-                )
+            for line in summaryLines(for: input) {
+                let emphasized = line.hasPrefix("Safe to Spend")
+                draw(line, font: .systemFont(ofSize: emphasized ? 12 : 12, weight: emphasized ? .semibold : .regular))
             }
-            draw("Safe to Spend*: \(MoneyFormatters.string(from: input.safeToSpend, currencyCode: input.currencyCode))", font: .systemFont(ofSize: 12, weight: .semibold))
             y += 10
 
             if !input.categoryLines.isEmpty {

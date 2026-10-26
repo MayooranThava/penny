@@ -1,6 +1,7 @@
 import Foundation
 import os
 import SwiftData
+import WidgetKit
 
 enum PennyLog {
     static let persistence = Logger(subsystem: "com.mayooran.penny", category: "persistence")
@@ -18,6 +19,27 @@ enum PennyPersistence {
 
     /// Shown when a migration fails and the pre-migration copy is put back.
     static let dataIsSafeMessage = "Your data is safe"
+
+    /// On-disk store for this container, or nil when the container is memory-only.
+    static func onDiskStoreURL(in container: ModelContainer) -> URL? {
+        container.configurations.first { !$0.isStoredInMemoryOnly }?.url
+    }
+
+    /// Settings → Reset. Deletes the SwiftData store files, the pre-migration
+    /// `PennyStoreBackup` snapshot, its marker, and the App Group widget snapshot,
+    /// then reloads widget timelines. Does not write a replacement store.
+    @MainActor
+    static func reset(at storeURL: URL?) {
+        if let storeURL {
+            let fileManager = FileManager.default
+            for url in PennyStoreBackup.relatedURLs(for: storeURL) {
+                try? fileManager.removeItem(at: url)
+            }
+            PennyStoreBackup.discard(storeAt: storeURL)
+        }
+        WidgetSnapshotStore.clear()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
 
     /// Set only by PennyTests. Nil in the app, so production and previews keep
     /// the in-memory or on-disk store named `Penny`.

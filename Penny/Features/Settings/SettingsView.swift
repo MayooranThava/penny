@@ -472,7 +472,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         Section("About Penny") {
             LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-            LabeledContent("Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+            LabeledContent("Build", value: PennyAppInfo.buildNumber)
             Text("Personal finance planning that stays on your device. Free to use; Penny Pro Lifetime is an optional one-time unlock.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
@@ -490,15 +490,13 @@ struct SettingsView: View {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(LegalCopy.asterisk)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(PennyAppInfo.privacySummary)
-                    Text(PennyAppInfo.budgetingDisclaimer)
+                    ForEach(PennyAppInfo.settingsFootnote, id: \.self) { line in
+                        Text(line)
+                    }
                 }
             }
             .font(PennyTypography.footnote)
             .foregroundStyle(PennyColors.textSecondary)
-            Text("Full details are in the Terms of Use. Penny is intended for adults and is not directed to children under 13.")
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)
             Link("Terms of Use", destination: PennyAppInfo.termsOfUseURL)
             Link("Support & refunds", destination: PennyAppInfo.supportURL)
@@ -626,6 +624,7 @@ struct SettingsView: View {
 
     private func resetDemo() {
         do {
+            PennyPersistence.reset(at: PennyPersistence.onDiskStoreURL(in: modelContext.container))
             try DemoDataService.resetAll(in: modelContext)
             Haptics.success()
         } catch {

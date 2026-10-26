@@ -313,17 +313,74 @@ struct ReleaseSanityTests {
 
     @Test("Settings privacy line names on-device storage and Apple crash reports")
     func settingsPrivacyLine() {
-        #expect(
-            PennyAppInfo.privacySummary
-                == "Penny keeps your financial info on your iPhone and never sends it to us. Purchases are handled by Apple, and Apple may share crash reports with us only if you've turned that on in your iPhone settings."
-        )
+        #expect(PennyAppInfo.settingsFootnote == [
+            "Penny keeps your financial info on your iPhone and never sends it to us. Purchases are handled by Apple, and Apple may share crash reports with us only if you've turned that on in your iPhone settings.",
+            "Penny is a budgeting tool, not financial, tax or investment advice. Amounts are estimates based on what you enter and may not match your bank.",
+            "Penny doesn't connect to your bank. Wallet tap capture and widgets keep their data on this iPhone.",
+            "Deleting Penny or using Reset permanently erases your data from this iPhone.",
+            "Intended for adults; not directed to children under 13. Full details are in the Terms of Use."
+        ])
+        #expect(PennyAppInfo.privacySummary == PennyAppInfo.settingsFootnote[0])
         let lowered = PennyAppInfo.privacySummary.lowercased()
         #expect(!lowered.contains("to anyone"))
         #expect(!lowered.contains("send analytics"))
-        #expect(
-            PennyAppInfo.budgetingDisclaimer
-                == "Penny is a budgeting tool, not financial, tax or investment advice. Amounts are estimates based on what you enter and may not match your bank."
+        #expect(!PennyAppInfo.settingsFootnote.joined(separator: "\n").contains("App updates keep your data"))
+    }
+
+    @Test("Reset deletes the store, pre-upgrade backup, marker, and widget snapshot")
+    @MainActor
+    func resetErasesOnDeviceFiles() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyReset-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let storeURL = root.appendingPathComponent("Penny.store")
+        try Data("store".utf8).write(to: storeURL)
+        try Data("wal".utf8).write(to: URL(fileURLWithPath: storeURL.path + "-wal"))
+        try Data("shm".utf8).write(to: URL(fileURLWithPath: storeURL.path + "-shm"))
+        try PennyStoreBackup.copyStore(
+            at: storeURL,
+            to: PennyStoreBackup.snapshotDirectory(for: storeURL)
         )
+        try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
+        WidgetSnapshotStore.save(
+            WidgetSnapshotStore.Snapshot(
+                safeToSpend: 12,
+                currencyCode: "CAD",
+                monthLabel: "Oct",
+                nextReminderTitle: "Rent due",
+                nextReminderDetail: "$10",
+                displayName: "Reset",
+                updatedAt: .now,
+                upcomingItems: nil,
+                spentThisMonth: nil,
+                plannedSpending: nil,
+                budgetHealth: nil,
+                topGoalName: nil,
+                topGoalProgress: nil,
+                topGoalDetail: nil
+            )
+        )
+
+        let fileManager = FileManager.default
+        #expect(fileManager.fileExists(atPath: storeURL.path))
+        #expect(fileManager.fileExists(atPath: PennyStoreBackup.snapshotDirectory(for: storeURL).path))
+        #expect(fileManager.fileExists(atPath: PennyStoreBackup.markerURL(for: storeURL).path))
+        #expect(WidgetSnapshotStore.load()?.displayName == "Reset")
+
+        PennyPersistence.reset(at: storeURL)
+
+        #expect(!fileManager.fileExists(atPath: storeURL.path))
+        #expect(!fileManager.fileExists(atPath: storeURL.path + "-wal"))
+        #expect(!fileManager.fileExists(atPath: storeURL.path + "-shm"))
+        #expect(!fileManager.fileExists(atPath: PennyStoreBackup.backupRoot(for: storeURL).path))
+        #expect(!fileManager.fileExists(atPath: PennyStoreBackup.snapshotDirectory(for: storeURL).path))
+        #expect(!fileManager.fileExists(atPath: PennyStoreBackup.markerURL(for: storeURL).path))
+        #expect(!PennyStoreBackup.storeExists(at: storeURL))
+        #expect(WidgetSnapshotStore.load() == nil)
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        #expect(defaults.data(forKey: WidgetSnapshotStore.snapshotKey) == nil)
     }
 
     // MARK: - Helpers

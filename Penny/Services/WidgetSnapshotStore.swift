@@ -98,4 +98,10 @@ enum WidgetSnapshotStore {
               let data = defaults.data(forKey: snapshotKey) else { return nil }
         return try? JSONDecoder().decode(Snapshot.self, from: data)
     }
+
+    /// Removes the shared snapshot. Tests use `defaultsSuiteOverride` in place of the App Group.
+    static func clear() {
+        guard let defaults = UserDefaults(suiteName: activeDefaultsSuite) else { return }
+        defaults.removeObject(forKey: snapshotKey)
+    }
 }

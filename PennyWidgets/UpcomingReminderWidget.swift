@@ -53,9 +53,19 @@ struct UpcomingReminderWidgetView: View {
 
             Spacer(minLength: 0)
 
-            Text("Safe to spend \(formattedSafeToSpend)")
+            Text(reminderLine)
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.secondary)
+                .accessibilityLabel(
+                    WidgetPrivateDisplay.reminderLine(
+                        amount: entry.snapshot.safeToSpend,
+                        currencyCode: entry.snapshot.currencyCode,
+                        isPrivate: PrivateModeStore.isEnabled
+                    ).replacingOccurrences(
+                        of: PrivateAmountLogic.mask,
+                        with: PrivateAmountLogic.hiddenAccessibilityLabel
+                    )
+                )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) {
@@ -63,8 +73,12 @@ struct UpcomingReminderWidgetView: View {
         }
     }
 
-    private var formattedSafeToSpend: String {
-        entry.snapshot.formattedSafeToSpend()
+    private var reminderLine: String {
+        WidgetPrivateDisplay.reminderLine(
+            amount: entry.snapshot.safeToSpend,
+            currencyCode: entry.snapshot.currencyCode,
+            isPrivate: PrivateModeStore.isEnabled
+        )
     }
 }
 

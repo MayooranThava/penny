@@ -118,6 +118,8 @@ widget_files: list[Path] = sorted(WIDGETS_ROOT.rglob("*.swift"))
 WIDGET_SHARED_SOURCES = [
     SOURCE_ROOT / "Utilities" / "MoneyFormatters.swift",
     SOURCE_ROOT / "Services" / "WidgetSnapshotStore.swift",
+    SOURCE_ROOT / "Services" / "PrivateModeLogic.swift",
+    SOURCE_ROOT / "Services" / "PrivateModeController.swift",
 ]
 asset_catalogs: list[Path] = sorted(SOURCE_ROOT.rglob("*.xcassets"))
 

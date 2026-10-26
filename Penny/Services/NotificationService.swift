@@ -25,21 +25,29 @@ final class NotificationService {
         }
     }
 
-    func refreshBillReminders(bills: [RecurringBill], enabled: Bool) async {
+    func refreshBillReminders(bills: [RecurringBill], enabled: Bool, currencyCode: String) async {
         center.removeAllPendingNotificationRequests()
         guard enabled else { return }
         let authorized = await requestAuthorizationIfNeeded()
         guard authorized else { return }
 
         for bill in bills where bill.isActive && bill.reminderEnabled {
-            scheduleReminder(for: bill)
+            scheduleReminder(for: bill, currencyCode: currencyCode)
         }
     }
 
-    private func scheduleReminder(for bill: RecurringBill) {
+    private func scheduleReminder(for bill: RecurringBill, currencyCode: String) {
+        let copy = PennyNotificationContent.billReminder(
+            name: bill.name,
+            individualAmount: nil,
+            billsTotal: nil,
+            currencyCode: currencyCode,
+            isPrivate: PrivateModeStore.isEnabled,
+            locale: .current
+        )
         let content = UNMutableNotificationContent()
-        content.title = "Upcoming bill"
-        content.body = "\(bill.name) is due soon."
+        content.title = copy.title
+        content.body = copy.body
         content.sound = .default
 
         var triggerDate = Calendar.current.date(

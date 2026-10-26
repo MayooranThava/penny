@@ -6,6 +6,8 @@ struct PennyInsight: Identifiable, Equatable {
     let detail: String
     let symbolName: String
     let kind: Kind
+    /// True when the title or detail includes a calculated total, not one bill or payment.
+    let includesTotal: Bool
 
     enum Kind: String, Equatable {
         case positive
@@ -19,13 +21,15 @@ struct PennyInsight: Identifiable, Equatable {
         title: String,
         detail: String,
         symbolName: String,
-        kind: Kind
+        kind: Kind,
+        includesTotal: Bool = false
     ) {
         self.id = id
         self.title = title
         self.detail = detail
         self.symbolName = symbolName
         self.kind = kind
+        self.includesTotal = includesTotal
     }
 }
 
@@ -100,7 +104,8 @@ enum InsightEngine {
                             title: "You're close to your \(category.name) budget.",
                             detail: "\(MoneyFormatters.string(from: max(0, remaining), currencyCode: input.currencyCode)) left this month.",
                             symbolName: "exclamationmark.circle.fill",
-                            kind: .caution
+                            kind: .caution,
+                            includesTotal: true
                         )
                     )
                 case .healthy where remaining > 0 && category.current > 0:
@@ -109,7 +114,8 @@ enum InsightEngine {
                             title: "\(MoneyFormatters.string(from: remaining, currencyCode: input.currencyCode)) remains in \(category.name) this month.",
                             detail: "Still room in this category.",
                             symbolName: "checkmark.circle.fill",
-                            kind: .neutral
+                            kind: .neutral,
+                            includesTotal: true
                         )
                     )
                 case .overBudget:
@@ -119,7 +125,8 @@ enum InsightEngine {
                             title: "You're \(MoneyFormatters.string(from: over, currencyCode: input.currencyCode)) over your \(category.name) budget.",
                             detail: "Based on the budget and spending you entered for this category.",
                             symbolName: "chart.bar.fill",
-                            kind: .caution
+                            kind: .caution,
+                            includesTotal: true
                         )
                     )
                 default:
@@ -153,7 +160,8 @@ enum InsightEngine {
                         title: "At this pace you may exceed your monthly budget.",
                         detail: "Rough estimate: about \(MoneyFormatters.compact(from: over, currencyCode: input.currencyCode)) over if spending continues as logged.",
                         symbolName: "gauge.with.dots.needle.67percent",
-                        kind: .caution
+                        kind: .caution,
+                        includesTotal: true
                     )
                 )
             } else if projected < input.monthlyBudget * Decimal(9) / Decimal(10) {
@@ -163,7 +171,8 @@ enum InsightEngine {
                         title: "You're spending below your monthly budget pace.",
                         detail: "Rough estimate: about \(MoneyFormatters.compact(from: under, currencyCode: input.currencyCode)) of headroom if logged spending continues.",
                         symbolName: "leaf.fill",
-                        kind: .positive
+                        kind: .positive,
+                        includesTotal: true
                     )
                 )
             }
@@ -203,7 +212,8 @@ enum InsightEngine {
                             title: "\(goal.name) needs about \(MoneyFormatters.compact(from: required, currencyCode: input.currencyCode))/month.",
                             detail: "Estimate to reach your entered target by \(DateHelpers.monthYear(for: targetDate)).",
                             symbolName: "calendar",
-                            kind: .tip
+                            kind: .tip,
+                            includesTotal: true
                         )
                     )
                 }

@@ -10,6 +10,7 @@ struct HomeView: View {
     @Query(sort: \Debt.name) private var debts: [Debt]
     @Query(sort: \SavingsGoal.createdAt) private var goals: [SavingsGoal]
     @Query private var allocations: [GoalFundingAllocation]
+    @Query(sort: \FinancialAccount.sortOrder) private var accounts: [FinancialAccount]
     @Query private var settingsList: [UserSettings]
 
     @Environment(AppSession.self) private var session
@@ -218,6 +219,7 @@ struct HomeView: View {
                         header
                         safeToSpendCard
                         spendingSection
+                        netWorthSection
                         upcomingSection
                             .id(WalkthroughAnchorID.upcomingBills)
                         goalsSection
@@ -305,22 +307,29 @@ struct HomeView: View {
         .padding(.top, PennySpacing.sm)
     }
 
-    private var safeToSpendCard: some View {
+    private var safeToSpendCardBody: some View {
         VStack(alignment: .leading, spacing: PennySpacing.md) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
+            HStack(alignment: .center, spacing: 2) {
                 Text("Safe to Spend")
                     .font(PennyTypography.overline)
                     .foregroundStyle(PennyColors.textOnBrand.opacity(0.85))
                     .textCase(.uppercase)
                 EstimateAsterisk(onBrand: true)
+                Spacer(minLength: PennySpacing.xs)
+                Color.clear
+                    .frame(width: 44, height: 44)
+                    .accessibilityHidden(true)
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency))
-                    .font(PennyTypography.heroAmount)
-                    .monospacedDigit()
-                    .foregroundStyle(PennyColors.textOnBrand)
-                    .contentTransition(reduceMotion ? .identity : .numericText())
+                PrivateAmount(
+                    amount: breakdown.safeToSpend,
+                    currencyCode: currency,
+                    font: PennyTypography.heroAmount,
+                    color: PennyColors.textOnBrand,
+                    site: .homeSafeToSpendHero,
+                    backdrop: .hero
+                )
 
                 if breakdown.isOverBudget {
                     Text("Over")
@@ -343,22 +352,24 @@ struct HomeView: View {
             Divider().overlay(Color.white.opacity(0.25))
 
             VStack(spacing: 8) {
-                breakdownRow("Income", breakdown.income, positive: true)
-                breakdownRow("Bills", -billMonthlyCommitted, positive: false)
+                breakdownRow("Income", breakdown.income, positive: true, site: .homeBreakdownIncome)
+                breakdownRow("Bills", -billMonthlyCommitted, positive: false, site: .homeBreakdownBills)
                 if debtMonthlyCommitted > 0 {
-                    breakdownRow("Debt payments", -debtMonthlyCommitted, positive: false)
+                    breakdownRow("Debt payments", -debtMonthlyCommitted, positive: false, site: .homeBreakdownDebtPayments)
                 }
-                breakdownRow("Spent", -breakdown.discretionarySpent, positive: false)
+                breakdownRow("Spent", -breakdown.discretionarySpent, positive: false, site: .homeBreakdownSpent)
                 breakdownRow(
                     savingsUsesPlanGoals ? "Goals" : "Saved",
                     -breakdown.plannedSavings,
-                    positive: false
+                    positive: false,
+                    site: .homeBreakdownGoals
                 )
                 breakdownRow(
                     "Safe to Spend",
                     breakdown.safeToSpend,
                     positive: breakdown.safeToSpend >= 0,
-                    emphasized: true
+                    emphasized: true,
+                    site: .homeBreakdownSafeToSpend
                 )
             }
 
@@ -426,9 +437,17 @@ struct HomeView: View {
                 .shadow(color: PennyColors.brand.opacity(0.25), radius: 16, y: 8)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "Safe to spend \(MoneyFormatters.string(from: breakdown.safeToSpend, currencyCode: currency)). Estimate from your entries. See Terms of Use."
-        )
+        .modifier(PrivateSafeToSpendLabel(amount: breakdown.safeToSpend, currencyCode: currency))
+    }
+
+    private var safeToSpendCard: some View {
+        ZStack(alignment: .topTrailing) {
+            safeToSpendCardBody
+            PrivateModeEyeButton(onBrand: true)
+                .padding(.top, PennySpacing.lg)
+                .padding(.trailing, PennySpacing.lg)
+        }
+        .accessibilityElement(children: .contain)
         .walkthroughAnchor(.safeToSpend)
     }
 
@@ -436,23 +455,23 @@ struct HomeView: View {
         _ label: String,
         _ amount: Decimal,
         positive: Bool,
-        emphasized: Bool = false
+        emphasized: Bool = false,
+        site: PrivateTotalSite
     ) -> some View {
         HStack {
             Text(label)
                 .font(emphasized ? PennyTypography.bodyEmphasized : PennyTypography.callout)
                 .foregroundStyle(PennyColors.textOnBrand.opacity(emphasized ? 1 : 0.85))
             Spacer()
-            Text(
-                MoneyFormatters.signed(
-                    from: amount,
-                    currencyCode: currency,
-                    showPlus: positive && amount > 0
-                )
+            PrivateAmount(
+                amount: amount,
+                currencyCode: currency,
+                font: emphasized ? PennyTypography.smallAmount : PennyTypography.callout,
+                color: PennyColors.textOnBrand,
+                style: .signed(showPlus: positive && amount > 0),
+                site: site,
+                backdrop: .hero
             )
-            .font(emphasized ? PennyTypography.smallAmount : PennyTypography.callout)
-            .monospacedDigit()
-            .foregroundStyle(PennyColors.textOnBrand)
         }
     }
 
@@ -475,7 +494,9 @@ struct HomeView: View {
                         health: FinanceCalculator.budgetHealth(
                             budgeted: plannedSpending,
                             spent: monthExpenses
-                        )
+                        ),
+                        spentSite: .homeSpendingSpent,
+                        budgetSite: .homeSpendingBudget
                     )
                 }
             }
@@ -584,6 +605,36 @@ struct HomeView: View {
         }
     }
 
+    private var netWorth: Decimal {
+        PrivateAmountLogic.netWorth(
+            balances: accounts.map { (balance: $0.balance, included: $0.isIncludedInNetWorth) }
+        )
+    }
+
+    private var netWorthSection: some View {
+        Group {
+            if !accounts.isEmpty {
+                VStack(alignment: .leading, spacing: PennySpacing.sm) {
+                    SectionHeader(title: "Net worth")
+                    PennyCard {
+                        HStack {
+                            Text("Accounts included")
+                                .font(PennyTypography.callout)
+                                .foregroundStyle(PennyColors.textSecondary)
+                            Spacer()
+                            PrivateAmount(
+                                amount: netWorth,
+                                currencyCode: currency,
+                                font: PennyTypography.mediumAmount,
+                                site: .homeNetWorth
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private var insightsSection: some View {
         VStack(alignment: .leading, spacing: PennySpacing.sm) {
             SectionHeader(title: "Insights")
@@ -594,14 +645,11 @@ struct HomeView: View {
                             .font(.title2)
                             .foregroundStyle(insightColor(insight.kind))
                             .frame(width: 36)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(insight.title)
-                                .font(PennyTypography.bodyEmphasized)
-                                .foregroundStyle(PennyColors.textPrimary)
-                            Text(insight.detail)
-                                .font(PennyTypography.caption)
-                                .foregroundStyle(PennyColors.textSecondary)
-                        }
+                        PrivateInsightBlock(
+                            title: insight.title,
+                            detail: insight.detail,
+                            includesTotal: insight.includesTotal
+                        )
                     }
                 }
                 .accessibilityElement(children: .combine)
@@ -652,6 +700,7 @@ struct HomeView: View {
     HomeView()
         .environment(AppSession())
         .environment(StoreManager())
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }
 
@@ -659,6 +708,7 @@ struct HomeView: View {
     HomeView()
         .environment(AppSession())
         .environment(StoreManager())
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
         .preferredColorScheme(.dark)
 }

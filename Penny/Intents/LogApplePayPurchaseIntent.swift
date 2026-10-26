@@ -96,6 +96,18 @@ struct LogApplePayPurchaseIntent: AppIntent {
 /// Registers Penny under Shortcuts → Apps so “Log Wallet Purchase” can be found.
 /// Phrases avoid the banned brand word. This does not force setup inside Penny —
 /// it only makes the action discoverable when the user is already in Shortcuts.
+struct TogglePrivateModeIntent: AppIntent {
+    static var title: LocalizedStringResource = "Toggle Private Mode"
+    static var description = IntentDescription("Hides or shows totals. Does not reload your transactions.")
+    static var openAppWhenRun = false
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        PrivateModeController.shared.toggle()
+        return .result()
+    }
+}
+
 struct PennyShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
@@ -106,6 +118,14 @@ struct PennyShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Log Wallet Tap",
             systemImageName: "wallet.pass.fill"
+        )
+        AppShortcut(
+            intent: TogglePrivateModeIntent(),
+            phrases: [
+                "Toggle \(.applicationName) private mode"
+            ],
+            shortTitle: "Toggle Penny private mode",
+            systemImageName: "eye.slash"
         )
     }
 }

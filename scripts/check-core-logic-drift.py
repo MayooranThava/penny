@@ -19,6 +19,7 @@ Mapped files:
   Penny/Services/BillPaymentCycle.swift
   Penny/Utilities/DateHelpers.swift        (mirrored; not under Services/)
   Penny/Utilities/MoneyFormatters.swift    (mirrored; not under Services/)
+  Penny/Services/PrivateModeLogic.swift
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ PAIRS: list[tuple[str, str]] = [
     ("BillPaymentCycle.swift", "Penny/Services/BillPaymentCycle.swift"),
     ("DateHelpers.swift", "Penny/Utilities/DateHelpers.swift"),
     ("MoneyFormatters.swift", "Penny/Utilities/MoneyFormatters.swift"),
+    ("PrivateModeLogic.swift", "Penny/Services/PrivateModeLogic.swift"),
 ]
 
 # Intentionally empty. Decimal.from and Apple Pay cent rounding now match the app.

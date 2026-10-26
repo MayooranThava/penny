@@ -10,6 +10,7 @@
 		5E793FBD15A749FAAC6AA3D2 /* ActivityShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0633B33EBC2A48ED825B1373 /* ActivityShareSheet.swift */; };
 		B3ED9F509B9C43EBAE29139C /* LegalDisclaimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF59FB9337494C97ABF63712 /* LegalDisclaimer.swift */; };
 		6A269A86638542718FA4E0FD /* PennyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 261C169A17504A9F9F03AB14 /* PennyComponents.swift */; };
+		048B57E423754918AB2589C6 /* PrivateAmount.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8502F8811EA4383AA2CF977 /* PrivateAmount.swift */; };
 		9076144A93034C35ACA668D7 /* SaveErrorBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E633E298E8B44ED6B20FC69B /* SaveErrorBanner.swift */; };
 		DBBCA05C5980486CA034C693 /* AccentTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15BBEE8FC2DF478FB3980C3C /* AccentTheme.swift */; };
 		3420228CB15E4FA7ACBB163F /* PennyButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A64DCA3E2C94492A371A232 /* PennyButtonStyles.swift */; };
@@ -45,6 +46,9 @@
 		BC70E995772D44A38733B302 /* InsightEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76E5EE1CE2F64EE790FC158D /* InsightEngine.swift */; };
 		9DAF22EF463F461197FEBBEA /* MonthlySummaryPDFService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D4C6BF0C1944D59B41C81B /* MonthlySummaryPDFService.swift */; };
 		A94C9F2BB0134D22A7329987 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56C24AA3CE89409D8A75CE8D /* NotificationService.swift */; };
+		B48E5CFD90A3435CB5075CE2 /* PennyDataAccessProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7421B539D15F4035B4F24174 /* PennyDataAccessProbe.swift */; };
+		8700B521443D4EBF9A9720E4 /* PrivateModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */; };
+		9031163FF69B460A8E91D167 /* PrivateModeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */; };
 		6407F9FA18C64DB487C0E64E /* WidgetSnapshotPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05B3F147F9E4547B96DB932 /* WidgetSnapshotPublisher.swift */; };
 		872CB7618BF04E6A9A9265CB /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */; };
 		10ACAB5C1D5745DC908B2F37 /* DateHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7752989F86DF4C388A63D6C0 /* DateHelpers.swift */; };
@@ -58,6 +62,7 @@
 		1C6B7CD3B4294168A538A548 /* FinanceCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DDF720BCEBA4614AB2B5A88 /* FinanceCalculatorTests.swift */; };
 		1B3E61C714E944478E10B0C9 /* GoalFundingLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFADE2F836264E7289852EA2 /* GoalFundingLogicTests.swift */; };
 		B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E56848AF87D941B9B7326B77 /* MigrationTests.swift */; };
+		1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */; };
 		DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */; };
 		1233AAA8431840308153FD2E /* SaveErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0829EAFDAC454E09BA513921 /* SaveErrorTests.swift */; };
 		A9E5F33D97714F4AAB74FBCD /* TestIsolation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451EDA9EDA5847FBAE81136F /* TestIsolation.swift */; };
@@ -73,6 +78,8 @@
 		1F7DFD8DA125457393846946 /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = 9C472D242C4441E5ABD03BB7 /* Fixtures */; };
 		49267B669FFF48A5B2A0BCA8 /* MoneyFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72FD3E021844BA99F186F61 /* MoneyFormatters.swift */; };
 		C4D9E4F4D0A74755846E06E0 /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */; };
+		BC0C78BAEE304ACD8DC80B58 /* PrivateModeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */; };
+		7C687F474DB34EC8B390E1C0 /* PrivateModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */; };
 		361E3E35221940A884F6F9B7 /* Penny.app in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* Penny.app */; };
 		A10000000000000000000026 /* PennyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* PennyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -119,6 +126,7 @@
 		0633B33EBC2A48ED825B1373 /* ActivityShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityShareSheet.swift; sourceTree = "<group>"; };
 		EF59FB9337494C97ABF63712 /* LegalDisclaimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDisclaimer.swift; sourceTree = "<group>"; };
 		261C169A17504A9F9F03AB14 /* PennyComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyComponents.swift; sourceTree = "<group>"; };
+		F8502F8811EA4383AA2CF977 /* PrivateAmount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateAmount.swift; sourceTree = "<group>"; };
 		E633E298E8B44ED6B20FC69B /* SaveErrorBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveErrorBanner.swift; sourceTree = "<group>"; };
 		15BBEE8FC2DF478FB3980C3C /* AccentTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccentTheme.swift; sourceTree = "<group>"; };
 		2A64DCA3E2C94492A371A232 /* PennyButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyButtonStyles.swift; sourceTree = "<group>"; };
@@ -154,6 +162,9 @@
 		76E5EE1CE2F64EE790FC158D /* InsightEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightEngine.swift; sourceTree = "<group>"; };
 		48D4C6BF0C1944D59B41C81B /* MonthlySummaryPDFService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlySummaryPDFService.swift; sourceTree = "<group>"; };
 		56C24AA3CE89409D8A75CE8D /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		7421B539D15F4035B4F24174 /* PennyDataAccessProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyDataAccessProbe.swift; sourceTree = "<group>"; };
+		420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeController.swift; sourceTree = "<group>"; };
+		514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeLogic.swift; sourceTree = "<group>"; };
 		E05B3F147F9E4547B96DB932 /* WidgetSnapshotPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotPublisher.swift; sourceTree = "<group>"; };
 		5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotStore.swift; sourceTree = "<group>"; };
 		7752989F86DF4C388A63D6C0 /* DateHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateHelpers.swift; sourceTree = "<group>"; };
@@ -167,6 +178,7 @@
 		9DDF720BCEBA4614AB2B5A88 /* FinanceCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceCalculatorTests.swift; sourceTree = "<group>"; };
 		DFADE2F836264E7289852EA2 /* GoalFundingLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalFundingLogicTests.swift; sourceTree = "<group>"; };
 		E56848AF87D941B9B7326B77 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
+		A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeTests.swift; sourceTree = "<group>"; };
 		41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseSanityTests.swift; sourceTree = "<group>"; };
 		0829EAFDAC454E09BA513921 /* SaveErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveErrorTests.swift; sourceTree = "<group>"; };
 		451EDA9EDA5847FBAE81136F /* TestIsolation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestIsolation.swift; sourceTree = "<group>"; };
@@ -261,6 +273,7 @@
 				0633B33EBC2A48ED825B1373 /* ActivityShareSheet.swift */,
 				EF59FB9337494C97ABF63712 /* LegalDisclaimer.swift */,
 				261C169A17504A9F9F03AB14 /* PennyComponents.swift */,
+				F8502F8811EA4383AA2CF977 /* PrivateAmount.swift */,
 				E633E298E8B44ED6B20FC69B /* SaveErrorBanner.swift */,
 			);
 			path = Components;
@@ -394,6 +407,9 @@
 				76E5EE1CE2F64EE790FC158D /* InsightEngine.swift */,
 				48D4C6BF0C1944D59B41C81B /* MonthlySummaryPDFService.swift */,
 				56C24AA3CE89409D8A75CE8D /* NotificationService.swift */,
+				7421B539D15F4035B4F24174 /* PennyDataAccessProbe.swift */,
+				420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */,
+				514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */,
 				E05B3F147F9E4547B96DB932 /* WidgetSnapshotPublisher.swift */,
 				5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */,
 			);
@@ -421,6 +437,7 @@
 				9DDF720BCEBA4614AB2B5A88 /* FinanceCalculatorTests.swift */,
 				DFADE2F836264E7289852EA2 /* GoalFundingLogicTests.swift */,
 				C0EDC57A0B474EC28AF7D73D /* Migration */,
+				A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */,
 				41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */,
 				0829EAFDAC454E09BA513921 /* SaveErrorTests.swift */,
 				451EDA9EDA5847FBAE81136F /* TestIsolation.swift */,
@@ -589,6 +606,7 @@
 				5E793FBD15A749FAAC6AA3D2 /* ActivityShareSheet.swift in Sources */,
 				B3ED9F509B9C43EBAE29139C /* LegalDisclaimer.swift in Sources */,
 				6A269A86638542718FA4E0FD /* PennyComponents.swift in Sources */,
+				048B57E423754918AB2589C6 /* PrivateAmount.swift in Sources */,
 				9076144A93034C35ACA668D7 /* SaveErrorBanner.swift in Sources */,
 				DBBCA05C5980486CA034C693 /* AccentTheme.swift in Sources */,
 				3420228CB15E4FA7ACBB163F /* PennyButtonStyles.swift in Sources */,
@@ -624,6 +642,9 @@
 				BC70E995772D44A38733B302 /* InsightEngine.swift in Sources */,
 				9DAF22EF463F461197FEBBEA /* MonthlySummaryPDFService.swift in Sources */,
 				A94C9F2BB0134D22A7329987 /* NotificationService.swift in Sources */,
+				B48E5CFD90A3435CB5075CE2 /* PennyDataAccessProbe.swift in Sources */,
+				8700B521443D4EBF9A9720E4 /* PrivateModeController.swift in Sources */,
+				9031163FF69B460A8E91D167 /* PrivateModeLogic.swift in Sources */,
 				6407F9FA18C64DB487C0E64E /* WidgetSnapshotPublisher.swift in Sources */,
 				872CB7618BF04E6A9A9265CB /* WidgetSnapshotStore.swift in Sources */,
 				10ACAB5C1D5745DC908B2F37 /* DateHelpers.swift in Sources */,
@@ -646,6 +667,8 @@
 				2D292D7F447F4606895CD0B0 /* UpcomingReminderWidget.swift in Sources */,
 				49267B669FFF48A5B2A0BCA8 /* MoneyFormatters.swift in Sources */,
 				C4D9E4F4D0A74755846E06E0 /* WidgetSnapshotStore.swift in Sources */,
+				BC0C78BAEE304ACD8DC80B58 /* PrivateModeLogic.swift in Sources */,
+				7C687F474DB34EC8B390E1C0 /* PrivateModeController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -659,6 +682,7 @@
 				1C6B7CD3B4294168A538A548 /* FinanceCalculatorTests.swift in Sources */,
 				1B3E61C714E944478E10B0C9 /* GoalFundingLogicTests.swift in Sources */,
 				B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */,
+				1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */,
 				DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */,
 				1233AAA8431840308153FD2E /* SaveErrorTests.swift in Sources */,
 				A9E5F33D97714F4AAB74FBCD /* TestIsolation.swift in Sources */,

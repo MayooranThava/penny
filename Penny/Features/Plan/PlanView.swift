@@ -156,9 +156,15 @@ struct GoalsPlanView: View {
                                     target: goal.targetAmount,
                                     targetDate: target
                                    ), required > 0 {
-                                    Text("About \(MoneyFormatters.compact(from: required, currencyCode: currency))/month to reach \(MoneyFormatters.compact(from: goal.targetAmount, currencyCode: currency)) by \(DateHelpers.monthYear(for: target))\(LegalCopy.asterisk)")
-                                        .font(PennyTypography.caption)
-                                        .foregroundStyle(PennyColors.textSecondary)
+                                    PrivateGoalPaceText(
+                                        monthlyRequired: required,
+                                        target: goal.targetAmount,
+                                        currencyCode: currency,
+                                        dateLabel: DateHelpers.monthYear(for: target),
+                                        legalSuffix: LegalCopy.asterisk
+                                    )
+                                    .font(PennyTypography.caption)
+                                    .foregroundStyle(PennyColors.textSecondary)
                                 }
                             }
                             .padding(.vertical, PennySpacing.xs)
@@ -401,9 +407,19 @@ struct AddGoalView: View {
                             Label(account.name, systemImage: account.accountType.icon)
                                 .font(PennyTypography.bodyEmphasized)
                                 .lineLimit(1)
-                            Text("\(account.accountType.displayName) · \(MoneyFormatters.compact(from: account.balance, currencyCode: currency))")
-                                .font(PennyTypography.caption)
-                                .foregroundStyle(PennyColors.textTertiary)
+                            HStack(spacing: 4) {
+                                Text("\(account.accountType.displayName) ·")
+                                PrivateAmount(
+                                    amount: account.balance,
+                                    currencyCode: currency,
+                                    font: PennyTypography.caption,
+                                    color: PennyColors.textTertiary,
+                                    style: .compact,
+                                    site: .accountBalance
+                                )
+                            }
+                            .font(PennyTypography.caption)
+                            .foregroundStyle(PennyColors.textTertiary)
                         }
                         Spacer(minLength: PennySpacing.sm)
                         TextField("0", text: fundingBinding(for: account.id))
@@ -568,7 +584,14 @@ struct BillsPlanView: View {
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.textSecondary)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        MoneyText(amount: monthlyTotal, currencyCode: currency, font: PennyTypography.largeAmount, color: PennyColors.brand, compact: true)
+                        PrivateAmount(
+                            amount: monthlyTotal,
+                            currencyCode: currency,
+                            font: PennyTypography.largeAmount,
+                            color: PennyColors.brand,
+                            style: .compact,
+                            site: .planBillsMonthlyTotal
+                        )
                         Text("/ month equiv.")
                             .font(PennyTypography.callout)
                             .foregroundStyle(PennyColors.textSecondary)
@@ -975,7 +998,14 @@ struct DebtCard: View {
                             .foregroundStyle(PennyColors.textSecondary)
                     }
                     Spacer()
-                    MoneyText(amount: debt.currentBalance, currencyCode: currencyCode, font: PennyTypography.mediumAmount, color: PennyColors.debt, compact: true)
+                    PrivateAmount(
+                        amount: debt.currentBalance,
+                        currencyCode: currencyCode,
+                        font: PennyTypography.mediumAmount,
+                        color: PennyColors.debt,
+                        style: .compact,
+                        site: .planDebtBalance
+                    )
                 }
 
                 Text("Payment \(MoneyFormatters.compact(from: debt.plannedMonthlyPayment, currencyCode: currencyCode))/month")
@@ -987,9 +1017,20 @@ struct DebtCard: View {
                     Label("Estimated payoff\(LegalCopy.asterisk): \(DateHelpers.monthYear(for: date))", systemImage: "calendar")
                         .font(PennyTypography.caption)
                         .foregroundStyle(PennyColors.textPrimary)
-                    Text("\(months) months · \(MoneyFormatters.compact(from: interest, currencyCode: currencyCode)) total interest")
-                        .font(PennyTypography.footnote)
-                        .foregroundStyle(PennyColors.textTertiary)
+                    HStack(spacing: 4) {
+                        Text("\(months) months ·")
+                        PrivateAmount(
+                            amount: interest,
+                            currencyCode: currencyCode,
+                            font: PennyTypography.footnote,
+                            color: PennyColors.textTertiary,
+                            style: .compact,
+                            site: .planDebtInterest
+                        )
+                        Text("total interest")
+                    }
+                    .font(PennyTypography.footnote)
+                    .foregroundStyle(PennyColors.textTertiary)
                 case .alreadyPaid:
                     Text("This balance is paid off.")
                         .font(PennyTypography.caption)
@@ -1240,6 +1281,7 @@ struct ForecastPlanView: View {
                             .foregroundStyle(PennyColors.brand)
                         }
                         .frame(height: 200)
+                        .privateModeYAxis(site: .planForecastAxis)
                         .chartXAxis {
                             AxisMarks(values: horizons) { value in
                                 AxisValueLabel {
@@ -1249,14 +1291,30 @@ struct ForecastPlanView: View {
                                 }
                             }
                         }
-                        .accessibilityLabel(chartAccessibility)
+                        .modifier(
+                            PrivateForecastChartLabel(
+                                lines: projections.map {
+                                    (
+                                        label: $0.monthsAhead == 0 ? "today" : "\($0.monthsAhead) months",
+                                        amount: $0.projectedBalance
+                                    )
+                                },
+                                currencyCode: currency
+                            )
+                        )
 
                         ForEach(projections.filter { summaryHorizons.contains($0.monthsAhead) }) { point in
                             HStack {
                                 Text(point.monthsAhead == 0 ? "Today" : "\(point.monthsAhead) months")
                                     .foregroundStyle(PennyColors.textSecondary)
                                 Spacer()
-                                MoneyText(amount: point.projectedBalance, currencyCode: currency, font: PennyTypography.smallAmount, compact: true)
+                                PrivateAmount(
+                                    amount: point.projectedBalance,
+                                    currencyCode: currency,
+                                    font: PennyTypography.smallAmount,
+                                    style: .compact,
+                                    site: .planForecastTotal
+                                )
                             }
                             .font(PennyTypography.callout)
                         }
@@ -1280,18 +1338,12 @@ struct ForecastPlanView: View {
             PaywallView()
         }
     }
-
-    private var chartAccessibility: String {
-        projections.map {
-            let label = $0.monthsAhead == 0 ? "today" : "\($0.monthsAhead) months"
-            return "\(label): \(MoneyFormatters.string(from: $0.projectedBalance, currencyCode: currency))"
-        }.joined(separator: ". ")
-    }
 }
 
 #Preview("Plan") {
     PlanView()
         .environment(AppSession())
         .environment(StoreManager())
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }

@@ -155,6 +155,8 @@ struct ProgressCard: View {
     let budget: Decimal
     let currencyCode: String
     var health: FinanceCalculator.BudgetHealth = .healthy
+    var spentSite: PrivateTotalSite = .homeSpendingSpent
+    var budgetSite: PrivateTotalSite = .homeSpendingBudget
 
     private var progress: Double {
         FinanceCalculator.budgetProgressClamped(budgeted: budget, spent: spent)
@@ -176,11 +178,22 @@ struct ProgressCard: View {
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                MoneyText(amount: spent, currencyCode: currencyCode, font: PennyTypography.mediumAmount)
+                PrivateAmount(
+                    amount: spent,
+                    currencyCode: currencyCode,
+                    font: PennyTypography.mediumAmount,
+                    site: spentSite
+                )
                 Text("of")
                     .font(PennyTypography.callout)
                     .foregroundStyle(PennyColors.textSecondary)
-                MoneyText(amount: budget, currencyCode: currencyCode, font: PennyTypography.smallAmount, color: PennyColors.textSecondary)
+                PrivateAmount(
+                    amount: budget,
+                    currencyCode: currencyCode,
+                    font: PennyTypography.smallAmount,
+                    color: PennyColors.textSecondary,
+                    site: budgetSite
+                )
             }
 
             GeometryReader { geo in
@@ -215,6 +228,8 @@ struct GoalProgressView: View {
     var colourIdentifier: String = "savings"
     var estimatedCompletion: Date? = nil
     var compact: Bool = false
+    var savedSite: PrivateTotalSite = .planGoalSaved
+    var targetSite: PrivateTotalSite = .planGoalTarget
 
     private var progress: Double {
         FinanceCalculator.goalProgressClamped(current: current, target: target)
@@ -235,10 +250,24 @@ struct GoalProgressView: View {
                 Spacer(minLength: 0)
             }
 
-            MoneyText(amount: current, currencyCode: currencyCode, font: compact ? PennyTypography.smallAmount : PennyTypography.mediumAmount)
-            Text("of \(MoneyFormatters.string(from: target, currencyCode: currencyCode))")
-                .font(PennyTypography.caption)
-                .foregroundStyle(PennyColors.textSecondary)
+            PrivateAmount(
+                amount: current,
+                currencyCode: currencyCode,
+                font: compact ? PennyTypography.smallAmount : PennyTypography.mediumAmount,
+                site: savedSite
+            )
+            HStack(spacing: 4) {
+                Text("of")
+                PrivateAmount(
+                    amount: target,
+                    currencyCode: currencyCode,
+                    font: PennyTypography.caption,
+                    color: PennyColors.textSecondary,
+                    site: targetSite
+                )
+            }
+            .font(PennyTypography.caption)
+            .foregroundStyle(PennyColors.textSecondary)
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {

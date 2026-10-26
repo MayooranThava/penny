@@ -47,10 +47,24 @@ struct SavingsGoalWidgetView: View {
                     .font(.title3.weight(.bold).monospacedDigit())
 
                 if let detail = entry.snapshot.topGoalDetail {
-                    Text(detail)
+                    let shown = WidgetPrivateDisplay.goalDetail(
+                        detail,
+                        isPrivate: PrivateModeStore.isEnabled,
+                        site: .widgetSavingsGoal
+                    )
+                    Text(shown)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
+                        .opacity(PrivateModeStore.isEnabled ? PrivateAmountLogic.maskOpacity : 1)
+                        .accessibilityLabel(
+                            PrivateModeStore.isEnabled
+                                ? PrivateAmountLogic.maskCurrencyAmounts(
+                                    in: detail,
+                                    replacement: PrivateAmountLogic.hiddenAccessibilityLabel
+                                )
+                                : detail
+                        )
                 }
             } else {
                 Text("No goals yet")

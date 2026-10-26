@@ -217,6 +217,9 @@ fi
   echo "- xcodebuild exit: $status"
   echo "- v103 upgrade test seen: $migration_seen"
   echo "- 5,000-transaction timing test seen: $timing_seen"
+  if compaction_line="$(grep -E -o 'COMPACTION_5000_SECONDS=[0-9.]+' "$ROOT/artifacts/xcodebuild-test.log" | tail -n 1)"; then
+    echo "- Store compaction (5,000 transactions): \`$compaction_line\`"
+  fi
 } >> "$SUMMARY"
 
 if [[ "$status" -ne 0 ]]; then

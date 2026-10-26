@@ -17,6 +17,7 @@ struct SettingsView: View {
 
     @State private var confirmReset = false
     @State private var confirmDelete = false
+    @State private var isErasingData = false
     @State private var incomeText = ""
     @State private var nameText = ""
     @State private var editingAccount: FinancialAccount?
@@ -89,6 +90,26 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("This permanently removes transactions, budgets, goals, bills, and settings on this device. Export a CSV first if you want a copy — the developer cannot recover deleted data.")
+            }
+            .overlay {
+                if isErasingData {
+                    ZStack {
+                        PennyColors.background.opacity(0.72).ignoresSafeArea()
+                        VStack(spacing: PennySpacing.sm) {
+                            ProgressView()
+                            Text("Erasing data…")
+                                .font(PennyTypography.callout)
+                                .foregroundStyle(PennyColors.textPrimary)
+                        }
+                        .padding(PennySpacing.lg)
+                        .background(
+                            PennyColors.surface,
+                            in: RoundedRectangle(cornerRadius: PennySpacing.radiusMd, style: .continuous)
+                        )
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Erasing data")
+                }
             }
             .alert(
                 "Export unavailable",
@@ -438,7 +459,9 @@ struct SettingsView: View {
                 )
             }
             Button("Reset demo data") { confirmReset = true }
+                .disabled(isErasingData)
             Button("Delete all data", role: .destructive) { confirmDelete = true }
+                .disabled(isErasingData)
         } header: {
             Text("Data")
         } footer: {
@@ -623,20 +646,32 @@ struct SettingsView: View {
     }
 
     private func resetDemo() {
-        do {
-            try PennyPersistence.resetDemoData(in: modelContext)
-            Haptics.success()
-        } catch {
-            Haptics.warning()
+        guard !isErasingData else { return }
+        isErasingData = true
+        Task {
+            await Task.yield()
+            do {
+                try await PennyPersistence.resetDemoData(in: modelContext)
+                Haptics.success()
+            } catch {
+                Haptics.warning()
+            }
+            isErasingData = false
         }
     }
 
     private func deleteAll() {
-        do {
-            try PennyPersistence.deleteAllData(in: modelContext)
-            Haptics.warning()
-        } catch {
-            Haptics.warning()
+        guard !isErasingData else { return }
+        isErasingData = true
+        Task {
+            await Task.yield()
+            do {
+                try await PennyPersistence.deleteAllData(in: modelContext)
+                Haptics.warning()
+            } catch {
+                Haptics.warning()
+            }
+            isErasingData = false
         }
     }
 }

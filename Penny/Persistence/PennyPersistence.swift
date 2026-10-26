@@ -26,24 +26,46 @@ enum PennyPersistence {
         container.configurations.first { !$0.isStoredInMemoryOnly }?.url
     }
 
+    /// Outcome of the background checkpoint and vacuum started by Reset.
+    struct StoreCompactionResult: Sendable {
+        /// Time spent in `PRAGMA wal_checkpoint(TRUNCATE)` and `VACUUM`.
+        var duration: Duration
+        /// True when that work ran off the main thread.
+        var ranOffMainThread: Bool
+        /// False when SQLite could not checkpoint or vacuum. Reset still finishes.
+        var succeeded: Bool
+    }
+
+    /// Test-only. Runs on the background compaction task after the reset save,
+    /// before checkpoint and vacuum. Production leaves this nil.
+    @TaskLocal static var beforeStoreCompaction: (@Sendable (URL) -> Void)?
+
     /// Shared Settings → Reset / Delete all data cleanup.
     ///
-    /// Deletes every model through the open context and saves before touching
-    /// files. A second SQLite connection then runs `PRAGMA wal_checkpoint(TRUNCATE)`
-    /// and `VACUUM` so deleted rows are removed from the file. That step is
-    /// best-effort: a failure is logged and Reset still finishes. The live
-    /// `.store` / `-wal` / `-shm` files are never removed, so the open
-    /// `ModelContainer` stays valid. Only the pre-migration backup snapshot,
-    /// its marker, and the widget snapshot are removed.
+    /// Deletes every model through the open context and saves, then returns
+    /// only after a background task has tried `PRAGMA wal_checkpoint(TRUNCATE)`
+    /// and `VACUUM`. Callers can `await` this without blocking the main thread.
+    /// Compaction failure is logged and does not throw. The live `.store`,
+    /// `-wal`, and `-shm` files are never removed. Only the pre-migration backup
+    /// snapshot, its marker, and the widget snapshot are removed.
     @MainActor
-    static func reset(in context: ModelContext) throws {
+    @discardableResult
+    static func reset(in context: ModelContext) async throws -> StoreCompactionResult {
         try DemoDataService.deleteAll(in: context)
-        if let storeURL = onDiskStoreURL(in: context.container) {
-            compactOpenStore(at: storeURL)
+        let preparation = beforeStoreCompaction
+        let storeURL = onDiskStoreURL(in: context.container)
+        if let storeURL {
             PennyStoreBackup.discard(storeAt: storeURL)
         }
         WidgetSnapshotStore.clear()
         WidgetCenter.shared.reloadAllTimelines()
+        guard let storeURL else {
+            return StoreCompactionResult(duration: .zero, ranOffMainThread: true, succeeded: true)
+        }
+        return await Task.detached(priority: .utility) { () -> StoreCompactionResult in
+            preparation?(storeURL)
+            return compactOpenStore(at: storeURL)
+        }.value
     }
 
     /// Checkpoint and vacuum an on-disk store while SwiftData still has it open.
@@ -51,7 +73,32 @@ enum PennyPersistence {
     /// Opens a separate connection, runs `PRAGMA wal_checkpoint(TRUNCATE)` then
     /// `VACUUM`, and closes it. Does not unlink the live `.store`, `-wal`, or
     /// `-shm` files. SQLite errors are logged and do not fail Reset.
-    private static func compactOpenStore(at storeURL: URL) {
+    nonisolated private static func compactOpenStore(at storeURL: URL) -> StoreCompactionResult {
+        let ranOffMainThread = !Thread.isMainThread
+        let clock = ContinuousClock()
+        let started = clock.now
+        func finish(succeeded: Bool, detail: String? = nil) -> StoreCompactionResult {
+            let duration = started.duration(to: clock.now)
+            let seconds = seconds(from: duration)
+            let message = String(
+                format: "Store compact finished in %.3f seconds (success=%@, offMain=%@%@)",
+                seconds,
+                succeeded ? "true" : "false",
+                ranOffMainThread ? "true" : "false",
+                detail.map { ", \($0)" } ?? ""
+            )
+            if succeeded {
+                PennyLog.persistence.info("\(message, privacy: .public)")
+            } else {
+                PennyLog.persistence.error("\(message, privacy: .public)")
+            }
+            return StoreCompactionResult(
+                duration: duration,
+                ranOffMainThread: ranOffMainThread,
+                succeeded: succeeded
+            )
+        }
+
         var db: OpaquePointer?
         let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX
         let opened = sqlite3_open_v2(storeURL.path, &db, flags, nil)
@@ -60,23 +107,28 @@ enum PennyPersistence {
             if let db {
                 sqlite3_close(db)
             }
-            PennyLog.persistence.error("Store compact skipped: \(detail, privacy: .public)")
-            return
+            return finish(succeeded: false, detail: detail)
         }
         defer { sqlite3_close(db) }
 
-        sqlite3_busy_timeout(db, 500)
-        if let checkpointError = truncateWal(db) {
-            PennyLog.persistence.error("WAL checkpoint failed: \(checkpointError, privacy: .public)")
+        sqlite3_busy_timeout(db, 250)
+        let checkpointError = truncateWal(db)
+        let vacuumError = executeSQL(db, "VACUUM;")
+        if checkpointError == nil, vacuumError == nil {
+            return finish(succeeded: true)
         }
-        if let vacuumError = executeSQL(db, "VACUUM;") {
-            PennyLog.persistence.error("VACUUM failed: \(vacuumError, privacy: .public)")
-        }
+        let detail = [checkpointError, vacuumError].compactMap { $0 }.joined(separator: "; ")
+        return finish(succeeded: false, detail: detail)
+    }
+
+    nonisolated private static func seconds(from duration: Duration) -> Double {
+        let components = duration.components
+        return Double(components.seconds) + Double(components.attoseconds) / 1e18
     }
 
     /// `PRAGMA wal_checkpoint(TRUNCATE)` returns one row: busy, log, checkpointed.
     /// A non-zero busy count means readers stopped the WAL from being fully truncated.
-    private static func truncateWal(_ db: OpaquePointer) -> String? {
+    nonisolated private static func truncateWal(_ db: OpaquePointer) -> String? {
         let sql = "PRAGMA wal_checkpoint(TRUNCATE);"
         var lastFailure = "wal_checkpoint(TRUNCATE) did not finish"
         for attempt in 0..<4 {
@@ -105,7 +157,7 @@ enum PennyPersistence {
         return lastFailure
     }
 
-    private static func executeSQL(_ db: OpaquePointer, _ sql: String) -> String? {
+    nonisolated private static func executeSQL(_ db: OpaquePointer, _ sql: String) -> String? {
         var errorPointer: UnsafeMutablePointer<CChar>?
         let result = sqlite3_exec(db, sql, nil, nil, &errorPointer)
         defer { sqlite3_free(errorPointer) }
@@ -118,17 +170,18 @@ enum PennyPersistence {
         return nil
     }
 
-    /// Settings → Reset demo data. Erases local data, then loads the sample household.
+    /// Settings → Reset demo data. Erases local data, waits for compaction, then loads the sample household.
     @MainActor
-    static func resetDemoData(in context: ModelContext) throws {
-        try reset(in: context)
+    static func resetDemoData(in context: ModelContext) async throws {
+        _ = try await reset(in: context)
         try DemoDataService.resetAll(in: context)
     }
 
     /// Settings → Delete all data. Same erase as Reset, then an empty first-run store.
+    /// Seeding waits until compaction has finished.
     @MainActor
-    static func deleteAllData(in context: ModelContext) throws {
-        try reset(in: context)
+    static func deleteAllData(in context: ModelContext) async throws {
+        _ = try await reset(in: context)
         try DemoDataService.seedFresh(
             in: context,
             currencyCode: "CAD",

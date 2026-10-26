@@ -94,7 +94,7 @@ Workflow **App screenshots** (`.github/workflows/screenshots.yml`) is separate f
 
 The job uses `scripts/select-stable-xcode.sh`, then `scripts/ci-screenshots.sh`. That script runs the `PennyScreenshots` scheme in the **Release** configuration, so the pixels match a shipped build. `VALIDATE_PRODUCT` and code signing are turned off for the simulator install only. Swift still compiles as Release, without the `DEBUG` flag.
 
-`PennyUITests` is not on the Penny scheme. `build-for-testing` in the macOS CI job does not compile or run it.
+`PennyUITests` is not on the Penny scheme. `build-for-testing` in the macOS CI job does not compile or run it. The product check after that build uses `check-xcode-test-layout.py --list-products`, which lists only unskipped Penny-scheme test bundles, so it does not require `PennyUITests.xctest`.
 
 The UI tests launch Penny with `-PennyUITestSeed` and copy the runner's `XCTestConfigurationFilePath` into `PENNY_XCUI_CONFIGURATION`. `UITestSeedLaunch` accepts that pair in Debug and Release. A normal launch, including a Release build someone opens from the Home Screen, does not have the XCUITest configuration path, so the seed does not run. The seed loads the fictional demo household, marks onboarding and the walkthrough complete, and sets Light or Dark plus Private mode. A 5,000-transaction count is only added when the performance tests pass `-PennyUITestTransactionCount`.
 

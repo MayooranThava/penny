@@ -146,6 +146,7 @@ require_product() {
 require_product "Penny.app"
 verify_compiled_app_icon
 require_product "PennyWidgets.appex"
+# Only products the Penny scheme builds. PennyUITests stays off this list.
 while IFS= read -r product; do
   [[ -n "$product" ]] || continue
   require_product "$product"

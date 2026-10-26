@@ -5,6 +5,9 @@
   Penny scheme and not skipped.
 - PennyUITests is only on the PennyScreenshots scheme (Release). ci-gate does
   not run it. The screenshot workflow is push-to-main and workflow_dispatch.
+- --list-products prints only test bundles the Penny scheme builds and does
+  not skip. The macOS job requires those products after build-for-testing.
+  PennyUITests.xctest is omitted because that job never compiles it.
 - PennyTests has a Copy Bundle Resources phase that bundles Migration/Fixtures
   (so a v1.0.4 store can land there without another project edit).
 - Every @Suite opts into isolated SwiftData / UserDefaults.
@@ -444,8 +447,12 @@ def main() -> int:
     print("[pass] ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon", file=sys.stderr)
     print("[pass] Penny/Info.plist sets CFBundleIconName to AppIcon", file=sys.stderr)
     if list_products:
+        # ci-macos.sh requires each printed product after the Penny scheme
+        # build. PennyUITests is a test target, but only PennyScreenshots
+        # builds it, so it must not appear here.
         for target in test_targets:
-            print(target["product"])
+            if by_name.get(target["name"]) == "NO":
+                print(target["product"])
     return 0
 
 

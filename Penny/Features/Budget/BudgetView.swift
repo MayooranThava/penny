@@ -185,6 +185,8 @@ struct CategoryBudgetRow: View {
     let spent: Decimal
     let currencyCode: String
 
+    @Environment(PrivateModeController.self) private var privateMode
+
     private var health: FinanceCalculator.BudgetHealth {
         FinanceCalculator.budgetHealth(budgeted: category.budgetedAmount, spent: spent)
     }
@@ -212,17 +214,19 @@ struct CategoryBudgetRow: View {
                                 style: .compact,
                                 site: .budgetCategorySpent
                             )
-                            Text("/")
-                                .font(PennyTypography.caption)
-                                .foregroundStyle(PennyColors.textSecondary)
-                            PrivateAmount(
-                                amount: category.budgetedAmount,
-                                currencyCode: currencyCode,
-                                font: PennyTypography.caption,
-                                color: PennyColors.textSecondary,
-                                style: .compact,
-                                site: .budgetCategoryBudgeted
-                            )
+                            if PrivateAmountLogic.showsPairedCategoryAmounts(isPrivate: privateMode.isEnabled) {
+                                Text("/")
+                                    .font(PennyTypography.caption)
+                                    .foregroundStyle(PennyColors.textSecondary)
+                                PrivateAmount(
+                                    amount: category.budgetedAmount,
+                                    currencyCode: currencyCode,
+                                    font: PennyTypography.caption,
+                                    color: PennyColors.textSecondary,
+                                    style: .compact,
+                                    site: .budgetCategoryBudgeted
+                                )
+                            }
                         }
                     }
                     GeometryReader { geo in

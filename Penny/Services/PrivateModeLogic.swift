@@ -2,10 +2,24 @@ import Foundation
 
 /// Display rules for Private mode. Masking never changes stored amounts.
 enum PrivateAmountLogic {
-    static let mask = "●●●●●"
+    static let dot = "●"
     static let maskCount = 5
+    static let rowDotCount = 3
+    /// Five-dot mask kept for widgets, insights, and any total outside the calmer treatment.
+    static let mask = "●●●●●"
+    /// Widget and legacy in-app opacity. Home Screen and Lock Screen widgets read this directly.
     static let maskOpacity = 0.60
-    static let minimumContrast = 4.5
+    /// Safe to Spend hero dots. Raised only when 40% misses the graphic contrast floor.
+    static let heroDotOpacity = 0.40
+    /// Row, category, and Includes-line dots. Raised only when 30% misses the floor.
+    static let rowDotOpacity = 0.30
+    /// A filled bullet at the amount's font is about an em tall. This scale brings
+    /// the dot down to the cap height of the digits it replaces.
+    static let dotCapHeightScale = 0.72
+    /// Dots are non-text graphics. 3:1 against the surface replaces the old 4.5:1
+    /// text-contrast clamp. Prefer the role's opacity, then raise just enough to pass.
+    static let minimumContrast = 3.0
+    static let monthlySuffix = "/mo"
     static let crossfadeSeconds = 0.2
     static let hiddenAccessibilityLabel = "Hidden amount"
     static let hideTotalsLabel = "Hide totals"
@@ -17,6 +31,76 @@ enum PrivateAmountLogic {
         case standard
         case compact
         case signed(showPlus: Bool)
+    }
+
+    /// One place for dot count, opacity, and size. Views read this instead of
+    /// picking their own numbers.
+    struct DotStyle: Equatable {
+        var count: Int
+        var text: String
+        var preferredOpacity: Double
+        var glyphScale: Double
+    }
+
+    static func dotStyle(for site: PrivateTotalSite) -> DotStyle {
+        switch site {
+        case .homeSafeToSpendHero:
+            return DotStyle(
+                count: maskCount,
+                text: mask,
+                preferredOpacity: heroDotOpacity,
+                glyphScale: dotCapHeightScale
+            )
+        case .homeBreakdownIncome,
+             .homeBreakdownBills,
+             .homeBreakdownDebtPayments,
+             .homeBreakdownSpent,
+             .homeBreakdownGoals,
+             .homeBreakdownSafeToSpend,
+             .budgetIncome,
+             .budgetPlanned,
+             .budgetSpent,
+             .budgetRemaining,
+             .budgetCategorySpent,
+             .budgetCategoryBudgeted,
+             .budgetCategoryRemaining,
+             .homeIncludesDebtTarget,
+             .homeIncludesGoalTarget:
+            return DotStyle(
+                count: rowDotCount,
+                text: String(repeating: dot, count: rowDotCount),
+                preferredOpacity: rowDotOpacity,
+                glyphScale: dotCapHeightScale
+            )
+        case .homeSpendingSpent,
+             .homeSpendingBudget,
+             .homeNetWorth,
+             .budgetTrendAxis,
+             .planGoalSaved,
+             .planGoalTarget,
+             .planBillsMonthlyTotal,
+             .planDebtBalance,
+             .planDebtInterest,
+             .planForecastTotal,
+             .planForecastAxis,
+             .accountBalance,
+             .accountsNetWorth,
+             .activityDailySum,
+             .activityMonthlySum,
+             .insightSentence,
+             .widgetSafeToSpend,
+             .widgetLockScreenSafeToSpend,
+             .widgetMonthlyBudgetSpent,
+             .widgetMonthlyBudgetPlanned,
+             .widgetSavingsGoal,
+             .widgetReminderSafeToSpend:
+            return DotStyle(
+                count: maskCount,
+                text: mask,
+                preferredOpacity: maskOpacity,
+                glyphScale: 1
+            )
+        }
     }
 
     struct SRGB: Equatable {
@@ -55,17 +139,59 @@ enum PrivateAmountLogic {
         }
     }
 
-    /// Totals become five dots. Individual amounts pass `isTotal: false` and stay exact.
+    /// Totals become dots. The hero keeps five; listed rows use three.
+    /// Callers that omit `site` keep the five-dot widget mask.
+    /// Individual amounts pass `isTotal: false` and stay exact.
     static func display(
         amount: Decimal,
         currencyCode: String,
         style: Style,
         isPrivate: Bool,
         isTotal: Bool = true,
+        site: PrivateTotalSite? = nil,
         locale: Locale
     ) -> String {
-        if isPrivate && isTotal { return mask }
+        if isPrivate && isTotal {
+            if let site { return dotStyle(for: site).text }
+            return mask
+        }
         return formatted(amount: amount, currencyCode: currencyCode, style: style, locale: locale)
+    }
+
+    /// Visible amounts may keep a suffix such as "/mo". A mask never does, so the
+    /// suffix cannot hint at the size of a hidden Includes amount.
+    static func displayWithTrailing(
+        amount: Decimal,
+        currencyCode: String,
+        style: Style,
+        isPrivate: Bool,
+        isTotal: Bool = true,
+        site: PrivateTotalSite? = nil,
+        trailing: String = "",
+        locale: Locale
+    ) -> String {
+        let base = display(
+            amount: amount,
+            currencyCode: currencyCode,
+            style: style,
+            isPrivate: isPrivate,
+            isTotal: isTotal,
+            site: site,
+            locale: locale
+        )
+        if isPrivate || trailing.isEmpty { return base }
+        return base + trailing
+    }
+
+    /// Category rows show spent and budget side by side. Private mode collapses
+    /// that pair to one mask so the row does not read as two hidden totals.
+    static func showsPairedCategoryAmounts(isPrivate: Bool) -> Bool {
+        !isPrivate
+    }
+
+    static func categoryAmountLine(spent: String, budgeted: String, isPrivate: Bool) -> String {
+        if isPrivate { return dotStyle(for: .budgetCategorySpent).text }
+        return "\(spent) / \(budgeted)"
     }
 
     static func accessibilityText(
@@ -139,36 +265,42 @@ enum PrivateAmountLogic {
         var opacity: Double
     }
 
-    /// Prefers the amount colour at 60% opacity. Raises opacity only when 60%
-    /// cannot clear 4.5:1. Some hero gradients cannot clear 4.5:1 at any opacity
-    /// because their stops sit on opposite sides of white and black; then this
-    /// returns the strongest pair, which matches the hero amount colour.
-    static func maskStyle(matching amount: SRGB, over backgrounds: [SRGB]) -> MaskStyle {
+    /// Prefers the role's opacity (40% hero, 30% rows, 60% legacy). Raises opacity
+    /// only until the dots clear 3:1 on every surface. When no opacity can clear
+    /// that floor, this returns the strongest pair.
+    static func maskStyle(
+        matching amount: SRGB,
+        over backgrounds: [SRGB],
+        preferredOpacity: Double = maskOpacity,
+        minimum: Double = minimumContrast
+    ) -> MaskStyle {
         let surfaces = backgrounds.isEmpty ? [SRGB(r: 1, g: 1, b: 1)] : backgrounds
-        let preferred = foreground(matching: amount, over: surfaces, opacity: maskOpacity)
-        if minimumContrast(of: preferred, over: surfaces, opacity: maskOpacity) >= minimumContrast {
-            return MaskStyle(foreground: preferred, opacity: maskOpacity)
+        let start = min(max(preferredOpacity, 0), 1)
+        let preferred = foreground(matching: amount, over: surfaces, opacity: start, minimum: minimum)
+        if minimumContrast(of: preferred, over: surfaces, opacity: start) >= minimum {
+            return MaskStyle(foreground: preferred, opacity: start)
         }
-        var best = MaskStyle(foreground: preferred, opacity: maskOpacity)
-        var bestScore = minimumContrast(of: preferred, over: surfaces, opacity: maskOpacity)
-        var opacity = maskOpacity
+        var best = MaskStyle(foreground: preferred, opacity: start)
+        var bestScore = minimumContrast(of: preferred, over: surfaces, opacity: start)
+        var opacity = start
         while opacity < 1 {
             opacity = min(1, opacity + 0.01)
-            let ink = foreground(matching: amount, over: surfaces, opacity: opacity)
+            let ink = foreground(matching: amount, over: surfaces, opacity: opacity, minimum: minimum)
             let score = minimumContrast(of: ink, over: surfaces, opacity: opacity)
             if score > bestScore {
                 bestScore = score
                 best = MaskStyle(foreground: ink, opacity: opacity)
             }
-            if score >= minimumContrast {
+            if score >= minimum {
                 return MaskStyle(foreground: ink, opacity: opacity)
             }
         }
         return best
     }
 
-    /// Ink colour which, drawn at `opacity` over every background, meets 4.5:1
-    /// when that is possible. Otherwise the higher-contrast mix of black or white.
+    /// Ink colour which, drawn at `opacity` over every background, meets the
+    /// graphic contrast floor when that is possible. Otherwise the higher-contrast
+    /// mix of black or white.
     static func foreground(
         matching amount: SRGB,
         over backgrounds: [SRGB],
@@ -508,6 +640,8 @@ enum PrivateTotalSite: String, CaseIterable, Equatable {
     case homeBreakdownSpent
     case homeBreakdownGoals
     case homeBreakdownSafeToSpend
+    case homeIncludesDebtTarget
+    case homeIncludesGoalTarget
     case homeSpendingSpent
     case homeSpendingBudget
     case homeNetWorth

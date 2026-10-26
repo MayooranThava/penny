@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SwiftUI
 import Testing
 @testable import Penny
 
@@ -39,6 +40,305 @@ struct PrivateModeTests {
             )
             #expect(spoken == "Hidden amount")
             #expect(!PrivateAmountLogic.containsDigit(spoken))
+        }
+    }
+
+    @Test("Hero uses five calmer dots and rows use three")
+    func calmerDotCounts() {
+        let amount = Decimal(string: "3350.40")!
+        let hero = PrivateAmountLogic.display(
+            amount: amount,
+            currencyCode: "CAD",
+            style: .standard,
+            isPrivate: true,
+            site: .homeSafeToSpendHero,
+            locale: enUS
+        )
+        #expect(hero == String(repeating: PrivateAmountLogic.dot, count: 5))
+        #expect(hero.count == 5)
+        let heroDots = PrivateAmountLogic.dotStyle(for: .homeSafeToSpendHero)
+        #expect(heroDots.preferredOpacity == 0.40)
+        #expect(heroDots.glyphScale == PrivateAmountLogic.dotCapHeightScale)
+        #expect(heroDots.glyphScale < 1)
+
+        let rows: [PrivateTotalSite] = [
+            .homeBreakdownIncome,
+            .homeBreakdownBills,
+            .homeBreakdownDebtPayments,
+            .homeBreakdownSpent,
+            .homeBreakdownGoals,
+            .homeBreakdownSafeToSpend,
+            .budgetIncome,
+            .budgetPlanned,
+            .budgetSpent,
+            .budgetRemaining,
+            .budgetCategorySpent,
+            .budgetCategoryBudgeted,
+            .budgetCategoryRemaining,
+            .homeIncludesDebtTarget,
+            .homeIncludesGoalTarget
+        ]
+        for site in rows {
+            let shown = PrivateAmountLogic.display(
+                amount: amount,
+                currencyCode: "CAD",
+                style: .standard,
+                isPrivate: true,
+                site: site,
+                locale: enUS
+            )
+            #expect(shown == String(repeating: PrivateAmountLogic.dot, count: 3))
+            #expect(shown.count == 3)
+            #expect(PrivateAmountLogic.dotStyle(for: site).preferredOpacity == 0.30)
+            #expect(PrivateAmountLogic.dotStyle(for: site).glyphScale == PrivateAmountLogic.dotCapHeightScale)
+            #expect(!PrivateAmountLogic.containsDigit(shown))
+        }
+    }
+
+    @Test("A budget category row shows one masked value")
+    func categoryRowShowsOneMask() throws {
+        let hidden = PrivateAmountLogic.categoryAmountLine(
+            spent: "$120.00",
+            budgeted: "$400.00",
+            isPrivate: true
+        )
+        #expect(hidden == String(repeating: PrivateAmountLogic.dot, count: 3))
+        #expect(!hidden.contains("/"))
+        #expect(PrivateAmountLogic.showsPairedCategoryAmounts(isPrivate: true) == false)
+        let open = PrivateAmountLogic.categoryAmountLine(
+            spent: "$120.00",
+            budgeted: "$400.00",
+            isPrivate: false
+        )
+        #expect(open == "$120.00 / $400.00")
+
+        let budget = try source("Penny/Features/Budget/BudgetView.swift")
+        let row = try slice(budget, from: "struct CategoryBudgetRow", until: "struct CategoryDetailView")
+        #expect(row.contains("showsPairedCategoryAmounts"))
+        #expect(row.contains(".budgetCategorySpent"))
+        #expect(row.contains(".budgetCategoryBudgeted"))
+        let slash = try #require(row.range(of: "Text(\"/\")"))
+        let gate = try #require(row.range(of: "showsPairedCategoryAmounts"))
+        #expect(gate.lowerBound < slash.lowerBound)
+    }
+
+    @Test("Includes amounts are masked when Private mode is on and shown when it is off")
+    func includesAmountsFollowPrivateMode() throws {
+        let debt = Decimal(string: "600.00")!
+        let hiddenDebt = PrivateAmountLogic.displayWithTrailing(
+            amount: debt,
+            currencyCode: "CAD",
+            style: .standard,
+            isPrivate: true,
+            site: .homeIncludesDebtTarget,
+            trailing: PrivateAmountLogic.monthlySuffix,
+            locale: enUS
+        )
+        #expect(hiddenDebt == String(repeating: PrivateAmountLogic.dot, count: 3))
+        #expect(!hiddenDebt.contains("/mo"))
+        #expect(!PrivateAmountLogic.containsDigit(hiddenDebt))
+
+        let goal = Decimal(string: "769.24")!
+        let hiddenGoal = PrivateAmountLogic.displayWithTrailing(
+            amount: goal,
+            currencyCode: "CAD",
+            style: .standard,
+            isPrivate: true,
+            site: .homeIncludesGoalTarget,
+            trailing: PrivateAmountLogic.monthlySuffix,
+            locale: enUS
+        )
+        #expect(hiddenGoal.count == 3)
+        #expect(!PrivateAmountLogic.containsDigit(hiddenGoal))
+        #expect(!hiddenGoal.contains("/mo"))
+
+        let shownDebt = PrivateAmountLogic.displayWithTrailing(
+            amount: debt,
+            currencyCode: "CAD",
+            style: .standard,
+            isPrivate: false,
+            site: .homeIncludesDebtTarget,
+            trailing: PrivateAmountLogic.monthlySuffix,
+            locale: enUS
+        )
+        #expect(shownDebt.contains("600.00"))
+        #expect(shownDebt.hasSuffix("/mo"))
+
+        let shownGoal = PrivateAmountLogic.displayWithTrailing(
+            amount: goal,
+            currencyCode: "CAD",
+            style: .standard,
+            isPrivate: false,
+            site: .homeIncludesGoalTarget,
+            trailing: PrivateAmountLogic.monthlySuffix,
+            locale: enUS
+        )
+        #expect(shownGoal.contains("769.24"))
+        #expect(shownGoal.hasSuffix("/mo"))
+
+        let home = try source("Penny/Features/Home/HomeView.swift")
+        let debtBlock = try slice(home, from: "Includes debt targets", until: "Includes Plan goal targets")
+        #expect(debtBlock.contains("Text(debt.name)"))
+        #expect(debtBlock.contains(".homeIncludesDebtTarget"))
+        #expect(debtBlock.contains("monthlySuffix"))
+        #expect(!debtBlock.contains("MoneyFormatters"))
+        let goalBlock = try slice(home, from: "Includes Plan goal targets", until: ".accessibilityElement(children: .combine)")
+        #expect(goalBlock.contains("Text(goal.name)"))
+        #expect(goalBlock.contains(".homeIncludesGoalTarget"))
+        #expect(goalBlock.contains("monthlySuffix"))
+        #expect(!goalBlock.contains("MoneyFormatters"))
+    }
+
+    @Test("VoiceOver still reads Hidden amount")
+    func voiceOverLabelUnchanged() throws {
+        let spoken = PrivateAmountLogic.accessibilityText(
+            amount: Decimal(string: "600.00")!,
+            currencyCode: "CAD",
+            style: .standard,
+            isPrivate: true,
+            locale: enUS
+        )
+        #expect(spoken == "Hidden amount")
+        #expect(spoken == PrivateAmountLogic.hiddenAccessibilityLabel)
+        let view = try source("Penny/Components/PrivateAmount.swift")
+        let amount = try slice(view, from: "struct PrivateAmount", until: "struct PrivateModeEyeButton")
+        #expect(amount.contains("accessibilityText"))
+        #expect(amount.contains(".accessibilityLabel(spoken)"))
+        #expect(!amount.contains("secure"))
+        #expect(!amount.contains("encrypted"))
+    }
+
+    @Test("Widget masks stay five dots at the original opacity")
+    func widgetMaskUnchanged() throws {
+        let widgetSites: [PrivateTotalSite] = [
+            .widgetSafeToSpend,
+            .widgetLockScreenSafeToSpend,
+            .widgetMonthlyBudgetSpent,
+            .widgetMonthlyBudgetPlanned,
+            .widgetSavingsGoal,
+            .widgetReminderSafeToSpend
+        ]
+        for site in widgetSites {
+            let dots = PrivateAmountLogic.dotStyle(for: site)
+            #expect(dots.text == "●●●●●")
+            #expect(dots.count == 5)
+            #expect(dots.preferredOpacity == 0.60)
+            #expect(dots.glyphScale == 1)
+        }
+        let lock = WidgetPrivateDisplay.safeToSpend(
+            amount: Decimal(string: "3350.40")!,
+            currencyCode: "CAD",
+            isPrivate: true,
+            site: .widgetLockScreenSafeToSpend,
+            locale: enUS
+        )
+        #expect(lock == PrivateAmountLogic.mask)
+        let files = [
+            "PennyWidgets/SafeToSpendWidget.swift",
+            "PennyWidgets/MonthlyBudgetWidget.swift",
+            "PennyWidgets/SavingsGoalWidget.swift",
+            "PennyWidgets/UpcomingReminderWidget.swift",
+            "PennyWidgets/UpcomingBillsWidget.swift"
+        ]
+        for relative in files {
+            let text = try source(relative)
+            #expect(!text.contains("heroDotOpacity"))
+            #expect(!text.contains("rowDotOpacity"))
+            #expect(!text.contains("rowDotCount"))
+            #expect(!text.contains("dotCapHeightScale"))
+        }
+    }
+
+    @Test("Dots meet 3:1 graphic contrast on card surfaces in Dark and Light")
+    func dotContrastOnCardSurfaces() {
+        #expect(PrivateAmountLogic.minimumContrast == 3)
+        let white = PrivateAmountLogic.SRGB(r: 1, g: 1, b: 1)
+        let ink = PennyColors.textPrimary.privateSRGB(.light)
+        let lightInk = PennyColors.textPrimary.privateSRGB(.dark)
+        let secondaryLight = PennyColors.textSecondary.privateSRGB(.light)
+        let secondaryDark = PennyColors.textSecondary.privateSRGB(.dark)
+        let incomeLight = PennyColors.income.privateSRGB(.light)
+        let incomeDark = PennyColors.income.privateSRGB(.dark)
+        let expenseLight = PennyColors.expense.privateSRGB(.light)
+        let expenseDark = PennyColors.expense.privateSRGB(.dark)
+        let paper = PennyColors.surface.privateSRGB(.light)
+        let night = PennyColors.surface.privateSRGB(.dark)
+        let theme = AccentTheme.mint
+        let heroLight = [theme.heroStartLight.privateSRGB(.light), theme.heroEndLight.privateSRGB(.light)]
+        let heroDark = [theme.heroStartDark.privateSRGB(.dark), theme.heroEndDark.privateSRGB(.dark)]
+
+        #expect(abs(paper.r - 1) < 0.02 && abs(paper.g - 1) < 0.02 && abs(paper.b - 1) < 0.02)
+        #expect(abs(night.r - 0.12) < 0.02 && abs(night.g - 0.13) < 0.02 && abs(night.b - 0.15) < 0.02)
+
+        let heroDots = PrivateAmountLogic.dotStyle(for: .homeSafeToSpendHero)
+        let rowDots = PrivateAmountLogic.dotStyle(for: .budgetCategorySpent)
+        let surfaces: [(PrivateAmountLogic.DotStyle, PrivateAmountLogic.SRGB, [PrivateAmountLogic.SRGB])] = [
+            (heroDots, white, heroLight),
+            (heroDots, white, heroDark),
+            (rowDots, white, heroLight),
+            (rowDots, white, heroDark),
+            (rowDots, ink, [paper]),
+            (rowDots, lightInk, [night]),
+            (rowDots, secondaryLight, [paper]),
+            (rowDots, secondaryDark, [night]),
+            (rowDots, incomeLight, [paper]),
+            (rowDots, incomeDark, [night]),
+            (rowDots, expenseLight, [paper]),
+            (rowDots, expenseDark, [night])
+        ]
+        for (dots, amount, backgrounds) in surfaces {
+            let style = PrivateAmountLogic.maskStyle(
+                matching: amount,
+                over: backgrounds,
+                preferredOpacity: dots.preferredOpacity,
+                minimum: PrivateAmountLogic.minimumContrast
+            )
+            let score = PrivateAmountLogic.minimumContrast(
+                of: style.foreground,
+                over: backgrounds,
+                opacity: style.opacity
+            )
+            #expect(score >= 3)
+            #expect(style.opacity + 0.000_001 >= dots.preferredOpacity)
+            if style.opacity > dots.preferredOpacity + 0.011 {
+                let lower = style.opacity - 0.01
+                let lowerInk = PrivateAmountLogic.foreground(
+                    matching: amount,
+                    over: backgrounds,
+                    opacity: lower,
+                    minimum: PrivateAmountLogic.minimumContrast
+                )
+                let lowerScore = PrivateAmountLogic.minimumContrast(
+                    of: lowerInk,
+                    over: backgrounds,
+                    opacity: lower
+                )
+                #expect(lowerScore < PrivateAmountLogic.minimumContrast)
+            }
+        }
+
+        for accent in AccentTheme.allCases {
+            for scheme in [ColorScheme.light, ColorScheme.dark] {
+                let stops = scheme == .dark
+                    ? [accent.heroStartDark, accent.heroEndDark]
+                    : [accent.heroStartLight, accent.heroEndLight]
+                let backgrounds = stops.map { $0.privateSRGB(scheme) }
+                for site in [PrivateTotalSite.homeSafeToSpendHero, .homeBreakdownIncome] {
+                    let dots = PrivateAmountLogic.dotStyle(for: site)
+                    let style = PrivateAmountLogic.maskStyle(
+                        matching: white,
+                        over: backgrounds,
+                        preferredOpacity: dots.preferredOpacity,
+                        minimum: PrivateAmountLogic.minimumContrast
+                    )
+                    let score = PrivateAmountLogic.minimumContrast(
+                        of: style.foreground,
+                        over: backgrounds,
+                        opacity: style.opacity
+                    )
+                    #expect(score >= PrivateAmountLogic.minimumContrast)
+                }
+            }
         }
     }
 

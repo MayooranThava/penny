@@ -9,6 +9,29 @@ struct PennyApp: App {
     @State private var launchError: String?
     @State private var didStartLaunch = false
 
+    init() {
+        // Release and Debug builds both take this path. It no-ops unless XCUITest
+        // supplied the seed argument and its configuration file path.
+        guard UITestSeedLaunch.isEnabled else { return }
+        let result: Result<ModelContainer, Error> = MainActor.assumeIsolated {
+            do {
+                return .success(try UITestSeedLaunch.openSeededContainer())
+            } catch {
+                return .failure(error)
+            }
+        }
+        switch result {
+        case .success(let opened):
+            _container = State(initialValue: opened)
+            _launchError = State(initialValue: nil)
+            _didStartLaunch = State(initialValue: true)
+        case .failure(let error):
+            _container = State(initialValue: nil)
+            _launchError = State(initialValue: error.localizedDescription)
+            _didStartLaunch = State(initialValue: true)
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {

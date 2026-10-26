@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / "Penny.xcodeproj"
 SOURCE_ROOT = ROOT / "Penny"
 TESTS_ROOT = ROOT / "PennyTests"
+UITESTS_ROOT = ROOT / "PennyUITests"
 WIDGETS_ROOT = ROOT / "PennyWidgets"
 
 def uid() -> str:
@@ -92,6 +93,19 @@ WIDGET_ENTITLEMENTS_REF = "A10000000000000000000028"
 WIDGET_INFOPLIST_REF = "A10000000000000000000029"
 RESOURCES_TEST = "A1000000000000000000002A"
 
+# Screenshot UI tests live on the PennyScreenshots scheme, not the Penny scheme,
+# so the ci-gate macOS job does not run them.
+UITESTS_GROUP = "A1000000000000000000002B"
+UI_TEST_TARGET = "A1000000000000000000002C"
+UI_TEST_PRODUCT = "A1000000000000000000002D"
+SOURCES_UI_TEST = "A1000000000000000000002E"
+FRAMEWORKS_UI_TEST = "A1000000000000000000002F"
+UI_TEST_CONFIGS = "A10000000000000000000030"
+UI_TEST_DEBUG = "A10000000000000000000031"
+UI_TEST_RELEASE = "A10000000000000000000032"
+UI_TARGET_DEP = "A10000000000000000000033"
+UI_CONTAINER_PROXY = "A10000000000000000000034"
+
 # Folder reference bundled into PennyTests. Drop a v1.0.4 store here for upgrade tests.
 FIXTURES_DIR = TESTS_ROOT / "Migration" / "Fixtures"
 
@@ -108,6 +122,7 @@ swift_files: list[Path] = sorted(SOURCE_ROOT.rglob("*.swift"))
 test_files: list[Path] = sorted(
     path for path in TESTS_ROOT.rglob("*.swift") if not under_fixtures(path)
 )
+ui_test_files: list[Path] = sorted(UITESTS_ROOT.rglob("*.swift")) if UITESTS_ROOT.is_dir() else []
 test_docs: list[Path] = sorted(
     path for path in TESTS_ROOT.rglob("*.md") if not under_fixtures(path)
 )
@@ -130,7 +145,7 @@ widget_info_plist = WIDGETS_ROOT / "Info.plist"
 file_refs: dict[Path, str] = {}
 build_files: dict[Path, str] = {}
 
-for path in swift_files + test_files + widget_files + asset_catalogs + test_folder_resources:
+for path in swift_files + test_files + ui_test_files + widget_files + asset_catalogs + test_folder_resources:
     phase = "Sources" if path.suffix == ".swift" else "Resources"
     file_refs[path] = reuse(path.name)
     build_files[path] = reuse(f"{path.name} in {phase}")
@@ -141,6 +156,15 @@ for path in WIDGET_SHARED_SOURCES:
 
 widget_shared_build_files: dict[Path, str] = {
     path: reuse(f"{path.name} in Sources") for path in WIDGET_SHARED_SOURCES
+}
+
+# Same Foundation-only file, so the UI test can call the currency-amount regex
+# without linking the app or copying the pattern.
+UI_SHARED_SOURCES = [
+    SOURCE_ROOT / "Services" / "PrivateModeLogic.swift",
+]
+ui_shared_build_files: dict[Path, str] = {
+    path: reuse(f"{path.name} in Sources") for path in UI_SHARED_SOURCES
 }
 
 for path in test_docs:
@@ -155,6 +179,7 @@ file_refs[widget_info_plist] = WIDGET_INFOPLIST_REF
 group_ids: dict[Path, str] = {
     SOURCE_ROOT: PENNY_GROUP,
     TESTS_ROOT: TESTS_GROUP,
+    UITESTS_ROOT: UITESTS_GROUP,
     WIDGETS_ROOT: WIDGETS_GROUP,
 }
 
@@ -163,7 +188,7 @@ def ensure_group(path: Path) -> str:
         return group_ids[path]
     group_ids[path] = reuse(f"group:{path.name}")
     parent = path.parent
-    roots = (SOURCE_ROOT, TESTS_ROOT, WIDGETS_ROOT)
+    roots = (SOURCE_ROOT, TESTS_ROOT, UITESTS_ROOT, WIDGETS_ROOT)
     if parent != ROOT and parent not in group_ids and any(
         r in parent.parents or parent == r for r in roots
     ):
@@ -172,7 +197,7 @@ def ensure_group(path: Path) -> str:
 
 for path in list(swift_files) + list(asset_catalogs):
     ensure_group(path.parent)
-for path in test_files + test_docs + test_folder_resources:
+for path in test_files + test_docs + test_folder_resources + ui_test_files:
     ensure_group(path.parent)
 for path in widget_files:
     ensure_group(path.parent)
@@ -182,7 +207,7 @@ group_children: dict[Path, list[tuple[str, str]]] = {p: [] for p in group_ids}
 
 # Add subgroups to parents
 for path, gid in sorted(group_ids.items(), key=lambda x: len(str(x[0]))):
-    if path in (SOURCE_ROOT, TESTS_ROOT, WIDGETS_ROOT):
+    if path in (SOURCE_ROOT, TESTS_ROOT, UITESTS_ROOT, WIDGETS_ROOT):
         continue
     parent = path.parent
     if parent in group_ids:
@@ -217,6 +242,9 @@ for path, bid in build_files.items():
 for path, bid in widget_shared_build_files.items():
     fid = file_refs[path]
     lines.append(f"\t\t{bid} /* {path.name} in Sources */ = {{isa = PBXBuildFile; fileRef = {fid} /* {path.name} */; }};")
+for path, bid in ui_shared_build_files.items():
+    fid = file_refs[path]
+    lines.append(f"\t\t{bid} /* {path.name} in Sources */ = {{isa = PBXBuildFile; fileRef = {fid} /* {path.name} */; }};")
 # Link Penny.app into tests
 TEST_HOST_BF = reuse("Penny.app in Frameworks")
 lines.append(f"\t\t{TEST_HOST_BF} /* Penny.app in Frameworks */ = {{isa = PBXBuildFile; fileRef = {APP_PRODUCT} /* Penny.app */; }};")
@@ -240,6 +268,13 @@ lines.append(f"\t\t\tcontainerPortal = {PROJECT_ID} /* Project object */;")
 lines.append("\t\t\tproxyType = 1;")
 lines.append(f"\t\t\tremoteGlobalIDString = {WIDGET_TARGET};")
 lines.append("\t\t\tremoteInfo = PennyWidgets;")
+lines.append("\t\t};")
+lines.append(f"\t\t{UI_CONTAINER_PROXY} /* PBXContainerItemProxy */ = {{")
+lines.append("\t\t\tisa = PBXContainerItemProxy;")
+lines.append(f"\t\t\tcontainerPortal = {PROJECT_ID} /* Project object */;")
+lines.append("\t\t\tproxyType = 1;")
+lines.append(f"\t\t\tremoteGlobalIDString = {APP_TARGET};")
+lines.append("\t\t\tremoteInfo = Penny;")
 lines.append("\t\t};")
 lines.append("/* End PBXContainerItemProxy section */")
 lines.append("")
@@ -265,6 +300,7 @@ lines.append("/* Begin PBXFileReference section */")
 lines.append(f'\t\t{APP_PRODUCT} /* Penny.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Penny.app; sourceTree = BUILT_PRODUCTS_DIR; }};')
 lines.append(f'\t\t{WIDGET_PRODUCT} /* PennyWidgets.appex */ = {{isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PennyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; }};')
 lines.append(f'\t\t{TEST_PRODUCT} /* PennyTests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PennyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};')
+lines.append(f'\t\t{UI_TEST_PRODUCT} /* PennyUITests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PennyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};')
 lines.append(f'\t\t{APP_ENTITLEMENTS_REF} /* Penny.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Penny.entitlements; sourceTree = "<group>"; }};')
 lines.append(f'\t\t{WIDGET_ENTITLEMENTS_REF} /* PennyWidgets.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PennyWidgets.entitlements; sourceTree = "<group>"; }};')
 lines.append(f'\t\t{WIDGET_INFOPLIST_REF} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; }};')
@@ -310,6 +346,13 @@ lines.append(f"\t\t\t\t{TEST_HOST_BF} /* Penny.app in Frameworks */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
 lines.append("\t\t};")
+lines.append(f"\t\t{FRAMEWORKS_UI_TEST} /* Frameworks */ = {{")
+lines.append("\t\t\tisa = PBXFrameworksBuildPhase;")
+lines.append("\t\t\tbuildActionMask = 2147483647;")
+lines.append("\t\t\tfiles = (")
+lines.append("\t\t\t);")
+lines.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
+lines.append("\t\t};")
 lines.append("/* End PBXFrameworksBuildPhase section */")
 lines.append("")
 
@@ -321,6 +364,7 @@ lines.append("\t\t\tchildren = (")
 lines.append(f"\t\t\t\t{PENNY_GROUP} /* Penny */,")
 lines.append(f"\t\t\t\t{WIDGETS_GROUP} /* PennyWidgets */,")
 lines.append(f"\t\t\t\t{TESTS_GROUP} /* PennyTests */,")
+lines.append(f"\t\t\t\t{UITESTS_GROUP} /* PennyUITests */,")
 lines.append(f"\t\t\t\t{PRODUCTS_GROUP} /* Products */,")
 lines.append("\t\t\t);")
 lines.append('\t\t\tsourceTree = "<group>";')
@@ -331,6 +375,7 @@ lines.append("\t\t\tchildren = (")
 lines.append(f"\t\t\t\t{APP_PRODUCT} /* Penny.app */,")
 lines.append(f"\t\t\t\t{WIDGET_PRODUCT} /* PennyWidgets.appex */,")
 lines.append(f"\t\t\t\t{TEST_PRODUCT} /* PennyTests.xctest */,")
+lines.append(f"\t\t\t\t{UI_TEST_PRODUCT} /* PennyUITests.xctest */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\tname = Products;")
 lines.append('\t\t\tsourceTree = "<group>";')
@@ -418,6 +463,23 @@ lines.append("\t\t\tproductName = PennyTests;")
 lines.append(f"\t\t\tproductReference = {TEST_PRODUCT} /* PennyTests.xctest */;")
 lines.append("\t\t\tproductType = \"com.apple.product-type.bundle.unit-test\";")
 lines.append("\t\t};")
+lines.append(f"\t\t{UI_TEST_TARGET} /* PennyUITests */ = {{")
+lines.append("\t\t\tisa = PBXNativeTarget;")
+lines.append("\t\t\tbuildConfigurationList = " + UI_TEST_CONFIGS + " /* Build configuration list for PBXNativeTarget \"PennyUITests\" */;")
+lines.append("\t\t\tbuildPhases = (")
+lines.append(f"\t\t\t\t{SOURCES_UI_TEST} /* Sources */,")
+lines.append(f"\t\t\t\t{FRAMEWORKS_UI_TEST} /* Frameworks */,")
+lines.append("\t\t\t);")
+lines.append("\t\t\tbuildRules = (")
+lines.append("\t\t\t);")
+lines.append("\t\t\tdependencies = (")
+lines.append(f"\t\t\t\t{UI_TARGET_DEP} /* PBXTargetDependency */,")
+lines.append("\t\t\t);")
+lines.append("\t\t\tname = PennyUITests;")
+lines.append("\t\t\tproductName = PennyUITests;")
+lines.append(f"\t\t\tproductReference = {UI_TEST_PRODUCT} /* PennyUITests.xctest */;")
+lines.append("\t\t\tproductType = \"com.apple.product-type.bundle.ui-testing\";")
+lines.append("\t\t};")
 lines.append("/* End PBXNativeTarget section */")
 lines.append("")
 
@@ -440,6 +502,10 @@ lines.append(f"\t\t\t\t\t{TEST_TARGET} = {{")
 lines.append("\t\t\t\t\t\tCreatedOnToolsVersion = 16.0;")
 lines.append("\t\t\t\t\t\tTestTargetID = " + APP_TARGET + ";")
 lines.append("\t\t\t\t\t};")
+lines.append(f"\t\t\t\t\t{UI_TEST_TARGET} = {{")
+lines.append("\t\t\t\t\t\tCreatedOnToolsVersion = 16.0;")
+lines.append("\t\t\t\t\t\tTestTargetID = " + APP_TARGET + ";")
+lines.append("\t\t\t\t\t};")
 lines.append("\t\t\t\t};")
 lines.append("\t\t\t};")
 lines.append(f"\t\t\tbuildConfigurationList = {PROJECT_CONFIGS} /* Build configuration list for PBXProject \"Penny\" */;")
@@ -458,6 +524,7 @@ lines.append("\t\t\ttargets = (")
 lines.append(f"\t\t\t\t{APP_TARGET} /* Penny */,")
 lines.append(f"\t\t\t\t{WIDGET_TARGET} /* PennyWidgets */,")
 lines.append(f"\t\t\t\t{TEST_TARGET} /* PennyTests */,")
+lines.append(f"\t\t\t\t{UI_TEST_TARGET} /* PennyUITests */,")
 lines.append("\t\t\t);")
 lines.append("\t\t};")
 lines.append("/* End PBXProject section */")
@@ -524,6 +591,17 @@ for path in test_files:
 lines.append("\t\t\t);")
 lines.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
 lines.append("\t\t};")
+lines.append(f"\t\t{SOURCES_UI_TEST} /* Sources */ = {{")
+lines.append("\t\t\tisa = PBXSourcesBuildPhase;")
+lines.append("\t\t\tbuildActionMask = 2147483647;")
+lines.append("\t\t\tfiles = (")
+for path in ui_test_files:
+    lines.append(f"\t\t\t\t{build_files[path]} /* {path.name} in Sources */,")
+for path in UI_SHARED_SOURCES:
+    lines.append(f"\t\t\t\t{ui_shared_build_files[path]} /* {path.name} in Sources */,")
+lines.append("\t\t\t);")
+lines.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
+lines.append("\t\t};")
 lines.append("/* End PBXSourcesBuildPhase section */")
 lines.append("")
 
@@ -538,6 +616,11 @@ lines.append(f"\t\t{WIDGET_TARGET_DEP} /* PBXTargetDependency */ = {{")
 lines.append("\t\t\tisa = PBXTargetDependency;")
 lines.append(f"\t\t\ttarget = {WIDGET_TARGET} /* PennyWidgets */;")
 lines.append(f"\t\t\ttargetProxy = {WIDGET_CONTAINER_PROXY} /* PBXContainerItemProxy */;")
+lines.append("\t\t};")
+lines.append(f"\t\t{UI_TARGET_DEP} /* PBXTargetDependency */ = {{")
+lines.append("\t\t\tisa = PBXTargetDependency;")
+lines.append(f"\t\t\ttarget = {APP_TARGET} /* Penny */;")
+lines.append(f"\t\t\ttargetProxy = {UI_CONTAINER_PROXY} /* PBXContainerItemProxy */;")
 lines.append("\t\t};")
 lines.append("/* End PBXTargetDependency section */")
 lines.append("")
@@ -695,6 +778,27 @@ for cfg_id, name in [(TEST_DEBUG, "Debug"), (TEST_RELEASE, "Release")]:
     lines.append(f'\t\t\tname = {name};')
     lines.append("\t\t};")
 
+for cfg_id, name in [(UI_TEST_DEBUG, "Debug"), (UI_TEST_RELEASE, "Release")]:
+    lines.append(f"\t\t{cfg_id} /* {name} */ = {{")
+    lines.append("\t\t\tisa = XCBuildConfiguration;")
+    lines.append("\t\t\tbuildSettings = {")
+    lines.append("""
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 2YJ478267N;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Penny;
+""")
+    lines.append(iphoneos_deploy)
+    lines.append("\t\t\t};")
+    lines.append(f'\t\t\tname = {name};')
+    lines.append("\t\t};")
+
 lines.append("/* End XCBuildConfiguration section */")
 lines.append("")
 
@@ -736,6 +840,15 @@ lines.append("\t\t\t);")
 lines.append("\t\t\tdefaultConfigurationIsVisible = 0;")
 lines.append("\t\t\tdefaultConfigurationName = Release;")
 lines.append("\t\t};")
+lines.append(f'\t\t{UI_TEST_CONFIGS} /* Build configuration list for PBXNativeTarget "PennyUITests" */ = {{')
+lines.append("\t\t\tisa = XCConfigurationList;")
+lines.append("\t\t\tbuildConfigurations = (")
+lines.append(f"\t\t\t\t{UI_TEST_DEBUG} /* Debug */,")
+lines.append(f"\t\t\t\t{UI_TEST_RELEASE} /* Release */,")
+lines.append("\t\t\t);")
+lines.append("\t\t\tdefaultConfigurationIsVisible = 0;")
+lines.append("\t\t\tdefaultConfigurationName = Release;")
+lines.append("\t\t};")
 lines.append("/* End XCConfigurationList section */")
 lines.append("\t};")
 lines.append(f"\trootObject = {PROJECT_ID} /* Project object */;")
@@ -748,4 +861,5 @@ print(f"Wrote {out}")
 print(f"App sources: {len(swift_files)}")
 print(f"Widget sources: {len(widget_files)}")
 print(f"Test sources: {len(test_files)}")
+print(f"UI test sources: {len(ui_test_files)}")
 print(f"Assets: {len(asset_catalogs)}")

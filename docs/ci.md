@@ -87,3 +87,15 @@ Any pull request that changes the SwiftData model must pass that upgrade test:
 The stores are written in the test from the frozen v1.0.3 types and the unversioned v1.0.4 model list, then opened the way an update opens them. See `PennyTests/Migration/README.md`. A new shipped schema needs its own `VersionedSchema`, a lightweight or custom stage, and another case in this suite.
 
 `ci-gate` fails if the macOS job fails or does not run, so the upgrade test cannot be dropped from the required check by skipping that job.
+
+## App screenshots
+
+Workflow **App screenshots** (`.github/workflows/screenshots.yml`) is separate from **CI**. It runs on a push to `main` and from **workflow_dispatch**. It does not run on pull requests, and `ci-gate` does not wait for it.
+
+The job uses `scripts/select-stable-xcode.sh`, then `scripts/ci-screenshots.sh`. That script runs the `PennyScreenshots` scheme in the **Release** configuration, so the pixels match a shipped build. `VALIDATE_PRODUCT` and code signing are turned off for the simulator install only. Swift still compiles as Release, without the `DEBUG` flag.
+
+`PennyUITests` is not on the Penny scheme. `build-for-testing` in the macOS CI job does not compile or run it.
+
+The UI tests launch Penny with `-PennyUITestSeed` and copy the runner's `XCTestConfigurationFilePath` into `PENNY_XCUI_CONFIGURATION`. `UITestSeedLaunch` accepts that pair in Debug and Release. A normal launch, including a Release build someone opens from the Home Screen, does not have the XCUITest configuration path, so the seed does not run. The seed loads the fictional demo household, marks onboarding and the walkthrough complete, and sets Light or Dark plus Private mode. A 5,000-transaction count is only added when the performance tests pass `-PennyUITestTransactionCount`.
+
+The tests attach a PNG for Home, Budget, Plan, Activity, and Settings, each with Private mode off and on, in Light and Dark (`home-dark-private.png`). On every Private-mode shot, a total amount label fails the test if it contains a digit. Sentences that also include a percent use `PrivateAmountLogic.containsCurrencyAmount`, the same currency regex as Private mode. The performance tests record `XCTApplicationLaunchMetric` for the 5,000-transaction launch and `XCTOSSignpostMetric` scroll-deceleration metrics. Those metrics include hitch time. `scripts/export-screenshot-artifacts.py` copies the PNGs and the metric report into the `app-screenshots` artifact.

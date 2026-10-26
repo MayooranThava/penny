@@ -125,12 +125,14 @@ struct ReleaseSanityTests {
         let expenses = try context.fetch(FetchDescriptor<Transaction>())
             .filter { $0.transactionType == .expense }
 
-        // Transit used to be "TTC Presto" while the bill was "TTC Pass".
-        #expect(expenses.contains { $0.title == "TTC Pass" })
+        // Transit used to diverge ("TTC Presto" vs "TTC Pass"). The expense title
+        // now matches the bill, and both use a fictional name.
+        #expect(expenses.contains { $0.title == "City Transit Pass" })
         #expect(!expenses.contains { $0.title == "TTC Presto" })
+        #expect(!expenses.contains { $0.title == "TTC Pass" })
 
         let overlapping = expenses.filter { billNames.contains($0.title.lowercased()) }
-        #expect(overlapping.contains { $0.title == "TTC Pass" })
+        #expect(overlapping.contains { $0.title == "City Transit Pass" })
         #expect(overlapping.contains { $0.title == "Streaming" })
     }
 

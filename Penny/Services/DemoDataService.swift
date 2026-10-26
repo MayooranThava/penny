@@ -146,7 +146,7 @@ enum DemoDataService {
         let now = Date.now
         let monthStart = DateHelpers.startOfMonth(for: now)
 
-        // Category budgets tuned to an average single Toronto renter.
+        // Category budgets for a sample one-person household. Merchants below are fictional.
         let budgets: [(String, Decimal)] = [
             ("Housing", 1_900),
             ("Food", 500),
@@ -175,7 +175,7 @@ enum DemoDataService {
 
         context.insert(Budget(monthStart: monthStart, plannedSpending: 3_150))
 
-        // Accounts — typical mix for an average Toronto resident (free-tier limit = 3).
+        // Accounts — sample chequing, savings, and credit card (free-tier limit = 3).
         let chequing = FinancialAccount(name: "Everyday Chequing", accountType: .chequing, balance: 2_140, sortOrder: 0)
         let tfsa = FinancialAccount(name: "TFSA Savings", accountType: .tfsa, balance: 6_800, sortOrder: 1)
         let creditCard = FinancialAccount(name: "Credit Card", accountType: .creditCard, balance: -3_200, sortOrder: 2)
@@ -236,13 +236,13 @@ enum DemoDataService {
             )
         )
 
-        // Bills — typical recurring costs for a single Toronto renter.
+        // Bills — sample recurring costs. Names are generic, not real companies.
         let bills: [(String, Decimal, Int, BillRecurrence, String, String)] = [
             ("Rent", 1_750, 1, .monthly, "Housing", "house.fill"),
             ("Hydro", 85, 12, .monthly, "Housing", "bolt.fill"),
             ("Internet", 75, 15, .monthly, "Subscriptions", "wifi"),
             ("Phone", 55, 20, .monthly, "Subscriptions", "iphone"),
-            ("TTC Pass", 156, 1, .monthly, "Transportation", "tram.fill"),
+            ("City Transit Pass", 156, 1, .monthly, "Transportation", "tram.fill"),
             ("Streaming", 27.99, 8, .monthly, "Subscriptions", "play.tv.fill"),
             ("Gym", 45, 5, .monthly, "Health", "figure.run")
         ]
@@ -277,28 +277,28 @@ enum DemoDataService {
         context.insert(Transaction(title: "Salary", amount: 2_300, date: payday1, transactionType: .income, categoryName: "Income", note: "Bi-weekly pay"))
         context.insert(Transaction(title: "Salary", amount: 2_300, date: min(payday2, now), transactionType: .income, categoryName: "Income", note: "Bi-weekly pay"))
 
-        // Expenses — everyday spending for an average Toronto resident.
+        // Expenses — fictional merchants. Titles that match bill names are excluded
+        // from discretionary “Spent” on Home, so those pairs stay identical.
         let expenseSamples: [(String, Decimal, String, Int)] = [
             ("Rent", 1_750, "Housing", 1),
-            ("Loblaws", 92.40, "Food", 2),
-            // Titles that match bill names are excluded from discretionary “Spent” on Home.
-            ("TTC Pass", 156.00, "Transportation", 1),
-            ("Tim Hortons", 5.85, "Food", 0),
-            ("No Frills", 68.20, "Food", 4),
-            ("Uber", 21.30, "Transportation", 3),
-            ("Cineplex", 28.50, "Entertainment", 6),
+            ("Harbour Grocer", 92.40, "Food", 2),
+            ("City Transit Pass", 156.00, "Transportation", 1),
+            ("Maple Kettle", 5.85, "Food", 0),
+            ("Bargain Basket", 68.20, "Food", 4),
+            ("City Ride", 21.30, "Transportation", 3),
+            ("Reel House", 28.50, "Entertainment", 6),
             ("Streaming", 27.99, "Subscriptions", 8),
-            ("Winners", 74.30, "Shopping", 7),
+            ("Finders Outlet", 74.30, "Shopping", 7),
             ("Gym", 45.00, "Health", 5),
-            ("Shoppers Drug Mart", 32.60, "Health", 9),
-            ("Dinner - King St", 58.40, "Food", 10),
-            ("Indigo", 24.75, "Shopping", 11),
-            ("St. Lawrence Market", 46.15, "Food", 12),
-            ("Raptors Game", 89.00, "Entertainment", 13),
+            ("Corner Pharmacy", 32.60, "Health", 9),
+            ("Oak Street Supper", 58.40, "Food", 10),
+            ("Page & Quill", 24.75, "Shopping", 11),
+            ("Riverside Market", 46.15, "Food", 12),
+            ("Arena Night", 89.00, "Entertainment", 13),
             ("Internet", 75.00, "Subscriptions", 15),
             ("Hydro", 85.00, "Housing", 12),
             ("Phone", 55.00, "Subscriptions", 20),
-            ("Lunch - PATH", 15.20, "Food", 14)
+            ("Food Hall Lunch", 15.20, "Food", 14)
         ]
 
         for sample in expenseSamples {
@@ -324,7 +324,7 @@ enum DemoDataService {
         let priorExpenses: [(String, Decimal, String, Int)] = [
             ("Rent", 1_750, "Housing", 1),
             ("Groceries", 480, "Food", 5),
-            ("TTC Pass", 156, "Transportation", 3),
+            ("City Transit Pass", 156, "Transportation", 3),
             ("Dining", 165, "Food", 12),
             ("Shopping", 190, "Shopping", 15),
             ("Movies", 42, "Entertainment", 18),
@@ -351,9 +351,36 @@ enum DemoDataService {
             billRemindersEnabled: true,
             appearance: .system,
             usingDemoData: true,
-            displayName: "Alex"
+            displayName: "Demo"
         )
         context.insert(settings)
+        try context.save()
+    }
+
+    /// Extra fictional expenses for the XCUITest performance launch. Titles are
+    /// "Sample purchase N" so the Activity list can scroll without real merchants.
+    /// Only the UI-test launch path calls this.
+    static func seedVolumeTransactions(count: Int, in context: ModelContext) throws {
+        guard count > 0 else { return }
+        let calendar = Calendar.current
+        let monthStart = DateHelpers.startOfMonth()
+        let now = Date.now
+        let categories = ["Food", "Transportation", "Shopping", "Entertainment"]
+        for index in 0..<count {
+            let day = index % 28
+            let raw = calendar.date(byAdding: .day, value: day, to: monthStart) ?? now
+            let date = min(raw, now)
+            let dollars = Decimal(1 + (index % 40))
+            context.insert(
+                Transaction(
+                    title: "Sample purchase \(index + 1)",
+                    amount: dollars,
+                    date: date,
+                    transactionType: .expense,
+                    categoryName: categories[index % categories.count]
+                )
+            )
+        }
         try context.save()
     }
 

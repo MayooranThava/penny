@@ -1,0 +1,53 @@
+# Demo screenshots and 5,000-transaction performance metrics.
+# Push to main and manual runs only. This workflow is not part of ci-gate.
+name: App screenshots
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  screenshots:
+    name: Capture app screenshots
+    runs-on: macos-latest
+    timeout-minutes: 70
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        id: xcode
+        run: ./scripts/select-stable-xcode.sh
+
+      - name: Cache SPM and DerivedData
+        uses: actions/cache@v4
+        with:
+          path: |
+            .derivedData
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}-penny-screenshots-${{ steps.xcode.outputs.version }}-${{ hashFiles('Penny.xcodeproj/project.pbxproj', 'Penny/**/*.swift', 'PennyWidgets/**/*.swift', 'PennyUITests/**/*.swift', 'PennyTests/**/*.swift', 'Tools/PennyCoreLogic/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-penny-screenshots-${{ steps.xcode.outputs.version }}-
+
+      - name: Run Release screenshot and performance tests
+        run: ./scripts/ci-screenshots.sh
+
+      - name: Upload app screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-screenshots
+          path: artifacts/app-screenshots/
+          if-no-files-found: ignore
+          retention-days: 14

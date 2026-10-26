@@ -5,9 +5,11 @@ enum PennyAppInfo {
     static let displayName = "Penny"
     static let marketingVersion = "1.1"
     static let buildNumber = "1"
-    /// Settings → Legal & privacy footnote. The view prefixes `LegalCopy.asterisk`.
+    /// Settings → Legal & privacy footnote. The view prefixes one `LegalCopy.asterisk` for both lines.
     static let privacySummary =
         "Penny keeps your financial info on your iPhone and never sends it to us. Purchases are handled by Apple, and Apple may share crash reports with us only if you've turned that on in your iPhone settings."
+    static let budgetingDisclaimer =
+        "Penny is a budgeting tool, not financial, tax or investment advice. Amounts are estimates based on what you enter and may not match your bank."
 
     /// GitHub Pages (same pattern as Void Runner). Keep in sync with `docs/` + App Store Connect.
     static let privacyPolicyURL = URL(string: "https://mayooranthava.github.io/penny/privacy-policy.html")!

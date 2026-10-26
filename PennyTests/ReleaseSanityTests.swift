@@ -320,6 +320,10 @@ struct ReleaseSanityTests {
         let lowered = PennyAppInfo.privacySummary.lowercased()
         #expect(!lowered.contains("to anyone"))
         #expect(!lowered.contains("send analytics"))
+        #expect(
+            PennyAppInfo.budgetingDisclaimer
+                == "Penny is a budgeting tool, not financial, tax or investment advice. Amounts are estimates based on what you enter and may not match your bank."
+        )
     }
 
     // MARK: - Helpers

@@ -487,10 +487,16 @@ struct SettingsView: View {
 
     private var legalSection: some View {
         Section {
-            Text("\(LegalCopy.asterisk) \(PennyAppInfo.privacySummary)")
-                .font(PennyTypography.footnote)
-                .foregroundStyle(PennyColors.textSecondary)
-            Text("Figures marked with \(LegalCopy.asterisk) are estimates from your entries — not bank balances or financial advice. Full details are in the Terms of Use. Penny is intended for adults and is not directed to children under 13.")
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(LegalCopy.asterisk)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(PennyAppInfo.privacySummary)
+                    Text(PennyAppInfo.budgetingDisclaimer)
+                }
+            }
+            .font(PennyTypography.footnote)
+            .foregroundStyle(PennyColors.textSecondary)
+            Text("Full details are in the Terms of Use. Penny is intended for adults and is not directed to children under 13.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Link("Privacy Policy", destination: PennyAppInfo.privacyPolicyURL)

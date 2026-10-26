@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Penny
 
-@Suite("Widget snapshots", .isolatedTestResources)
+@Suite("Widget snapshots", .serialized, .isolatedTestResources)
 struct WidgetSnapshotTests {
     private let enUS = Locale(identifier: "en_US")
     private let germany = Locale(identifier: "de_DE")

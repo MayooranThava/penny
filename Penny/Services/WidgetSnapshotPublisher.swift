@@ -26,9 +26,10 @@ enum WidgetSnapshotPublisher {
         let currency = settings?.currencyCode ?? "CAD"
         let monthTransactions = transactions.filter { DateHelpers.isSameMonth($0.date, month) }
 
-        let billMonthly = bills.reduce(Decimal(0)) {
-            $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
-        }
+        let billMonthly = FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: bills.map { ($0.amount, $0.recurrence, $0.isActive) },
+            debtPayments: []
+        )
         let debtMonthly = debts.reduce(Decimal(0)) { $0 + $1.plannedMonthlyPayment }
         let reserved = Set(bills.map { $0.name.lowercased() } + debts.map { $0.name.lowercased() })
         let discretionary = monthTransactions

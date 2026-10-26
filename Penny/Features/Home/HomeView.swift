@@ -49,9 +49,10 @@ struct HomeView: View {
     private var monthlyIncome: Decimal { settings?.monthlyIncome ?? 0 }
 
     private var billMonthlyCommitted: Decimal {
-        bills.reduce(Decimal(0)) {
-            $0 + FinanceCalculator.monthlyEquivalent(amount: $1.amount, recurrence: $1.recurrence)
-        }
+        FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: bills.map { ($0.amount, $0.recurrence, $0.isActive) },
+            debtPayments: []
+        )
     }
 
     private var debtMonthlyCommitted: Decimal {

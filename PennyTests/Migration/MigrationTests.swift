@@ -27,6 +27,16 @@ struct MigrationTests {
     private static let savingsID = UUID(uuidString: "70000000-0000-0000-0000-000000000002")!
     private static let settingsID = UUID(uuidString: "80000000-0000-0000-0000-000000000001")!
     private static let allocationID = UUID(uuidString: "90000000-0000-0000-0000-000000000001")!
+    private static let v11CoffeeID = UUID(uuidString: "A1000000-0000-0000-0000-000000000001")!
+    private static let v11PhoneID = UUID(uuidString: "A1000000-0000-0000-0000-000000000002")!
+    private static let v11CableID = UUID(uuidString: "A1000000-0000-0000-0000-000000000003")!
+    private static let v11GoalID = UUID(uuidString: "A1000000-0000-0000-0000-000000000004")!
+    private static let v11AccountID = UUID(uuidString: "A1000000-0000-0000-0000-000000000005")!
+    private static let v11AllocationID = UUID(uuidString: "A1000000-0000-0000-0000-000000000006")!
+    private static let v11SettingsID = UUID(uuidString: "A1000000-0000-0000-0000-000000000007")!
+    private static let v11DebtID = UUID(uuidString: "A1000000-0000-0000-0000-000000000008")!
+    private static let v11CategoryID = UUID(uuidString: "A1000000-0000-0000-0000-000000000009")!
+    private static let v11BudgetID = UUID(uuidString: "A1000000-0000-0000-0000-00000000000A")!
 
     private static let longNote = String(repeating: "Rent is paid from the joint account. ", count: 12)
 
@@ -60,6 +70,94 @@ struct MigrationTests {
             secondAccountType: "tfsa"
         )
         try assertSafeToSpendAndWidget(in: container)
+    }
+
+    @Test("v11 store with deleted bills opens on v1.2 with the correct total")
+    @MainActor
+    func v11StoreWithDeletedBillsOpensOnV12() throws {
+        #expect(PennyAppInfo.marketingVersion == "1.2")
+        #expect(PennySchemaV1.versionIdentifier == Schema.Version(1, 0, 4))
+
+        let url = try storeURL("Penny-v1.1.store")
+        try writeV11StoreWithDeletedBill(at: url)
+        let container = try PennyPersistence.makeContainer(at: url)
+        let context = ModelContext(container)
+        let transactions = try context.fetch(FetchDescriptor<Transaction>())
+        let categories = try context.fetch(FetchDescriptor<BudgetCategory>())
+        let budgets = try context.fetch(FetchDescriptor<Budget>())
+        let bills = try context.fetch(FetchDescriptor<RecurringBill>())
+        let goals = try context.fetch(FetchDescriptor<SavingsGoal>())
+        let debts = try context.fetch(FetchDescriptor<Debt>())
+        let accounts = try context.fetch(FetchDescriptor<FinancialAccount>())
+        let allocations = try context.fetch(FetchDescriptor<GoalFundingAllocation>())
+        let settings = try context.fetch(FetchDescriptor<UserSettings>())
+
+        #expect(transactions.count == 1)
+        #expect(categories.count == 1)
+        #expect(budgets.count == 1)
+        #expect(bills.count == 2)
+        #expect(goals.count == 1)
+        #expect(debts.count == 1)
+        #expect(accounts.count == 1)
+        #expect(allocations.count == 1)
+        #expect(settings.count == 1)
+
+        let coffee = try #require(transactions.first)
+        #expect(coffee.id == Self.v11CoffeeID)
+        #expect(coffee.title == "Coffee")
+        #expect(coffee.amount == money("10.25"))
+        #expect(coffee.note == Self.longNote)
+
+        let phone = try #require(bills.first { $0.id == Self.v11PhoneID })
+        let cable = try #require(bills.first { $0.id == Self.v11CableID })
+        #expect(phone.name == "Phone")
+        #expect(phone.isActive)
+        #expect(phone.paidCycleKey.isEmpty)
+        #expect(phone.amount == money("80.10"))
+        #expect(cable.name == "Cable")
+        #expect(!cable.isActive)
+        #expect(cable.amount == money("60.00"))
+        #expect(cable.paidCycleKey == "2026-10")
+
+        let goal = try #require(goals.first)
+        #expect(goal.currentAmount == money("5.00"))
+        #expect(goal.targetAmount == money("100.00"))
+        let debt = try #require(debts.first)
+        #expect(debt.currentBalance == money("40.00"))
+        #expect(debt.plannedMonthlyPayment == money("25.00"))
+        let account = try #require(accounts.first)
+        #expect(account.balance == money("99.99"))
+        #expect(account.name == "Everyday Chequing")
+        let allocation = try #require(allocations.first)
+        #expect(allocation.amount == money("12.34"))
+        #expect(allocation.accountID == Self.v11AccountID)
+        #expect(allocation.goalID == Self.v11GoalID)
+        let saved = try #require(settings.first)
+        #expect(saved.displayName == "Avery")
+        #expect(saved.monthlyIncome == money("3000.00"))
+        #expect(saved.plannedMonthlySavings == money("100.00"))
+        #expect(saved.currencyCode == "CAD")
+        #expect(categories.first?.budgetedAmount == money("400.00"))
+        #expect(budgets.first?.plannedSpending == money("400.00"))
+
+        // 3000 income − 80.10 phone − 25 debt − 10.25 coffee − 100 savings.
+        // The deleted $60 cable bill is still in the store and is not in the total.
+        let expected = money("2784.65")
+        WidgetSnapshotPublisher.publish(
+            transactions: transactions,
+            categories: categories,
+            bills: bills,
+            debts: debts,
+            goals: goals,
+            allocations: allocations,
+            settings: saved,
+            month: sampleDate()
+        )
+        let snapshot = try #require(WidgetSnapshotStore.load())
+        #expect(snapshot.safeToSpend == expected)
+        #expect(snapshot.safeToSpend != expected - money("60.00"))
+        #expect(snapshot.currencyCode == "CAD")
+        #expect(snapshot.displayName == "Avery")
     }
 
     @Test("fiveThousandTransactionUpgradeFinishesWithinAFewSeconds")
@@ -377,6 +475,77 @@ struct MigrationTests {
             plannedMonthlySavings: money("200.00"), hasCompletedOnboarding: true,
             billRemindersEnabled: true, appearance: .dark, usingDemoData: false,
             displayName: "Avery", applePayCaptureConfigured: true, accentTheme: .ocean,
+            hasCompletedWalkthrough: true
+        ))
+        try context.save()
+    }
+
+    /// v1.1 used the same on-disk shape as v1.2 (schema 1.0.4). The file is written
+    /// the way that build wrote a store, including a bill Plan → Delete had turned off.
+    @MainActor
+    private func writeV11StoreWithDeletedBill(at url: URL) throws {
+        let schema = Schema([
+            Transaction.self,
+            BudgetCategory.self,
+            Budget.self,
+            RecurringBill.self,
+            SavingsGoal.self,
+            Debt.self,
+            FinancialAccount.self,
+            GoalFundingAllocation.self,
+            UserSettings.self
+        ])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(url: url)])
+        let context = ModelContext(container)
+        let date = sampleDate()
+        context.insert(Transaction(
+            id: Self.v11CoffeeID, title: "Coffee", amount: money("10.25"), date: date,
+            transactionType: .expense, categoryName: "Food", note: Self.longNote, createdAt: date
+        ))
+        context.insert(BudgetCategory(
+            id: Self.v11CategoryID, name: "Food", icon: "fork.knife",
+            budgetedAmount: money("400.00"), colourIdentifier: "food", sortOrder: 1
+        ))
+        context.insert(Budget(
+            id: Self.v11BudgetID, monthStart: DateHelpers.startOfMonth(for: date),
+            plannedSpending: money("400.00"), notes: "October"
+        ))
+        context.insert(RecurringBill(
+            id: Self.v11PhoneID, name: "Phone", amount: money("80.10"), dueDay: 12,
+            categoryName: "Subscriptions", recurrence: .monthly, nextDueDate: date, startDate: date,
+            reminderEnabled: true, reminderDaysBefore: 2, isActive: true, icon: "phone.fill",
+            paidCycleKey: ""
+        ))
+        context.insert(RecurringBill(
+            id: Self.v11CableID, name: "Cable", amount: money("60.00"), dueDay: 3,
+            categoryName: "Subscriptions", recurrence: .monthly, nextDueDate: date, startDate: date,
+            reminderEnabled: false, reminderDaysBefore: 1, isActive: false, icon: "tv",
+            paidCycleKey: "2026-10"
+        ))
+        context.insert(SavingsGoal(
+            id: Self.v11GoalID, name: "Vacation", targetAmount: money("100.00"),
+            currentAmount: money("5.00"), targetDate: nil, icon: "airplane",
+            createdAt: date, colourIdentifier: "savings"
+        ))
+        context.insert(Debt(
+            id: Self.v11DebtID, name: "Visa", originalBalance: money("80.00"),
+            currentBalance: money("40.00"), interestRate: money("19.99"),
+            minimumPayment: money("15.00"), plannedMonthlyPayment: money("25.00"),
+            dueDay: 15, icon: "creditcard.fill"
+        ))
+        context.insert(FinancialAccount(
+            id: Self.v11AccountID, name: "Everyday Chequing", accountType: .chequing,
+            balance: money("99.99"), isIncludedInNetWorth: true, sortOrder: 0
+        ))
+        context.insert(GoalFundingAllocation(
+            id: Self.v11AllocationID, accountID: Self.v11AccountID, goalID: Self.v11GoalID,
+            amount: money("12.34"), createdAt: date
+        ))
+        context.insert(UserSettings(
+            id: Self.v11SettingsID, currencyCode: "CAD", monthlyIncome: money("3000.00"),
+            plannedMonthlySavings: money("100.00"), hasCompletedOnboarding: true,
+            billRemindersEnabled: true, appearance: .system, usingDemoData: false,
+            displayName: "Avery", applePayCaptureConfigured: false, accentTheme: .mint,
             hasCompletedWalkthrough: true
         ))
         try context.save()

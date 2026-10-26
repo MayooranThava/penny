@@ -54,7 +54,7 @@ Symlinks or a shared Xcode source list would not work: the package has to be `pu
 
 `Decimal.from` and Apple Pay cent rounding match in both copies. `Decimal.from` rejects broken input such as `1.2.3`, `12-3`, and `--5`. Apple Pay amounts are rounded to cents with integer math, not `Decimal(Double)` and not a locale-sensitive `String(format:)`. `FinanceCalculator` builds one cent with `Decimal(sign:exponent:significand:)` so `Decimal(0.01)` never comes from a Double.
 
-Deleting a bill sets `RecurringBill.isActive` to false. `BillPaymentCycle.includesInCommittedSpend(isActive:)` is that rule in both copies. The app UI still assigns `isActive` directly and does not call the helper. The old `paidCycleKey == key` checklist is not how a bill is marked paid.
+Deleting a bill sets `RecurringBill.isActive` to false. `BillPaymentCycle.includesInCommittedSpend(isActive:)` is that rule in both copies. Safe to Spend totals bills through `FinanceCalculator.totalMonthlyCommitted`, which calls the helper, so a deleted or inactive bill does not reduce the number in the app or the widget snapshot. The app UI still assigns `isActive` directly. The old `paidCycleKey == key` checklist is not how a bill is marked paid.
 
 It covers:
 

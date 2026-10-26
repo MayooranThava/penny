@@ -42,7 +42,7 @@ struct FinanceCalculatorTests {
         #expect(yearly == 100)
 
         let committed = FinanceCalculator.totalMonthlyCommitted(
-            billAmountsAndRecurrence: [(50, .weekly), (1_500, .monthly)],
+            billAmountsAndRecurrence: [(50, .weekly, true), (1_500, .monthly, true)],
             debtPayments: [800]
         )
         #expect(committed == weekly + 1_500 + 800)
@@ -238,6 +238,33 @@ struct FinanceCalculatorTests {
         #expect(FinanceCalculator.percentChange(current: 82, previous: 100) == -0.18)
         #expect(FinanceCalculator.percentChange(current: 0, previous: 0) == 0)
         #expect(FinanceCalculator.percentChange(current: 50, previous: 0) == nil)
+    }
+
+    @Test("App and PennyCoreLogic agree deleted bills are left out of Safe to Spend")
+    func appAndCoreLogicAgreeOnDeletedBills() {
+        // Same cents as PennyCoreLogicTests.FinanceCalculatorTests. A deleted
+        // monthly bill and an inactive weekly bill are left out; the active
+        // unpaid bill and the debt payment stay in.
+        let deletedRent = (Decimal(string: "2000.00")!, BillRecurrence.monthly, false)
+        let pausedWeekly = (Decimal(string: "12.50")!, BillRecurrence.weekly, false)
+        let activeUnpaid = (Decimal(string: "80.10")!, BillRecurrence.monthly, true)
+        let weeklyEquivalent = FinanceCalculator.monthlyEquivalent(
+            amount: Decimal(string: "12.50")!,
+            recurrence: .weekly
+        )
+        #expect(weeklyEquivalent == Decimal(string: "54.17"))
+        let committed = FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: [deletedRent, pausedWeekly, activeUnpaid],
+            debtPayments: [Decimal(string: "25.00")!]
+        )
+        #expect(committed == Decimal(string: "105.10"))
+        let safe = FinanceCalculator.safeToSpend(
+            monthlyIncome: Decimal(string: "3000.00")!,
+            recurringCommitted: committed,
+            discretionarySpent: Decimal(string: "10.25")!,
+            plannedSavings: Decimal(string: "100.00")!
+        )
+        #expect(safe == Decimal(string: "2784.65"))
     }
 }
 

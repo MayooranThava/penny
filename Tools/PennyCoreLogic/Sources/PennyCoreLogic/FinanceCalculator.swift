@@ -66,12 +66,16 @@ enum FinanceCalculator {
     }
 
     /// Bills (monthlyized) + planned debt payments.
+    /// Each bill is `(amount, recurrence, isActive)`. A bill counts only when
+    /// `BillPaymentCycle.includesInCommittedSpend` says so, so a deleted or
+    /// inactive bill does not reduce Safe to Spend.
     static func totalMonthlyCommitted(
-        billAmountsAndRecurrence: [(Decimal, BillRecurrence)],
+        billAmountsAndRecurrence: [(Decimal, BillRecurrence, Bool)],
         debtPayments: [Decimal]
     ) -> Decimal {
         let bills = billAmountsAndRecurrence.reduce(Decimal(0)) { partial, item in
-            partial + monthlyEquivalent(amount: item.0, recurrence: item.1)
+            guard BillPaymentCycle.includesInCommittedSpend(isActive: item.2) else { return partial }
+            return partial + monthlyEquivalent(amount: item.0, recurrence: item.1)
         }
         let debts = debtPayments.reduce(Decimal(0), +)
         return bills + debts

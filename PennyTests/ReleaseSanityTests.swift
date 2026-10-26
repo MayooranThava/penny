@@ -309,6 +309,19 @@ struct ReleaseSanityTests {
         #expect(csv.contains("2026-09-01"))
     }
 
+    // MARK: - Settings copy
+
+    @Test("Settings privacy line names on-device storage and Apple crash reports")
+    func settingsPrivacyLine() {
+        #expect(
+            PennyAppInfo.privacySummary
+                == "Penny keeps your financial info on your iPhone and never sends it to us. Purchases are handled by Apple, and Apple may share crash reports with us only if you've turned that on in your iPhone settings."
+        )
+        let lowered = PennyAppInfo.privacySummary.lowercased()
+        #expect(!lowered.contains("to anyone"))
+        #expect(!lowered.contains("send analytics"))
+    }
+
     // MARK: - Helpers
 
     private func locateStoreKitConfig() throws -> URL {

@@ -487,8 +487,8 @@ struct SettingsView: View {
 
     private var legalSection: some View {
         Section {
-            Text("Penny keeps your financial information on this device. App updates keep your data. Deleting the app, or using Reset/Delete in Data, clears local data. Optional Wallet tap capture uses Shortcuts on your iPhone — amounts stay local. Penny does not connect to banks or send analytics to the developer. Widgets may show a local summary snapshot via an App Group.")
-                .font(PennyTypography.caption)
+            Text("\(LegalCopy.asterisk) \(PennyAppInfo.privacySummary)")
+                .font(PennyTypography.footnote)
                 .foregroundStyle(PennyColors.textSecondary)
             Text("Figures marked with \(LegalCopy.asterisk) are estimates from your entries — not bank balances or financial advice. Full details are in the Terms of Use. Penny is intended for adults and is not directed to children under 13.")
                 .font(PennyTypography.caption)

@@ -387,6 +387,38 @@ struct ReleaseSanityTests {
         try expectNoBackupOrWidget(at: storeURL)
     }
 
+    @Test("Reset removes a deleted transaction title from the .store, -wal, and -shm bytes")
+    @MainActor
+    func resetErasesCanaryFromStoreFiles() throws {
+        let canary = "PENNY-ERASE-CANARY-\(UUID().uuidString)"
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("PennyErase-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Penny.store")
+        let needle = Data(canary.utf8)
+
+        do {
+            let container = try PennyPersistence.makeContainer(at: storeURL)
+            let context = ModelContext(container)
+            context.insert(sampleExpense(title: canary))
+            try context.save()
+            try PennyPersistence.reset(in: context)
+
+            for url in PennyStoreBackup.relatedURLs(for: storeURL) {
+                let bytes = try Data(contentsOf: url)
+                if bytes.range(of: needle) != nil {
+                    Issue.record("\(url.lastPathComponent) still contains \(canary)")
+                }
+                #expect(bytes.range(of: needle) == nil)
+            }
+        }
+
+        let reopened = try PennyPersistence.makeContainer(at: storeURL)
+        let transactions = try ModelContext(reopened).fetch(FetchDescriptor<Transaction>())
+        #expect(transactions.isEmpty)
+    }
+
     @Test("Delete all data uses the same cleanup and leaves no transactions")
     @MainActor
     func deleteAllDataUsesReset() throws {

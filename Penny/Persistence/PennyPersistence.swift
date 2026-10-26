@@ -1,5 +1,6 @@
 import Foundation
 import os
+import SQLite3
 import SwiftData
 import WidgetKit
 
@@ -28,17 +29,93 @@ enum PennyPersistence {
     /// Shared Settings → Reset / Delete all data cleanup.
     ///
     /// Deletes every model through the open context and saves before touching
-    /// files. The live `.store` / `-wal` / `-shm` files stay in place so the
-    /// open `ModelContainer` is still valid. Only the pre-migration backup
-    /// snapshot, its marker, and the widget snapshot are removed.
+    /// files. A second SQLite connection then runs `PRAGMA wal_checkpoint(TRUNCATE)`
+    /// and `VACUUM` so deleted rows are removed from the file. That step is
+    /// best-effort: a failure is logged and Reset still finishes. The live
+    /// `.store` / `-wal` / `-shm` files are never removed, so the open
+    /// `ModelContainer` stays valid. Only the pre-migration backup snapshot,
+    /// its marker, and the widget snapshot are removed.
     @MainActor
     static func reset(in context: ModelContext) throws {
         try DemoDataService.deleteAll(in: context)
         if let storeURL = onDiskStoreURL(in: context.container) {
+            compactOpenStore(at: storeURL)
             PennyStoreBackup.discard(storeAt: storeURL)
         }
         WidgetSnapshotStore.clear()
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Checkpoint and vacuum an on-disk store while SwiftData still has it open.
+    ///
+    /// Opens a separate connection, runs `PRAGMA wal_checkpoint(TRUNCATE)` then
+    /// `VACUUM`, and closes it. Does not unlink the live `.store`, `-wal`, or
+    /// `-shm` files. SQLite errors are logged and do not fail Reset.
+    private static func compactOpenStore(at storeURL: URL) {
+        var db: OpaquePointer?
+        let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX
+        let opened = sqlite3_open_v2(storeURL.path, &db, flags, nil)
+        guard opened == SQLITE_OK, let db else {
+            let detail = db.map { String(cString: sqlite3_errmsg($0)) } ?? "unable to open the store"
+            if let db {
+                sqlite3_close(db)
+            }
+            PennyLog.persistence.error("Store compact skipped: \(detail, privacy: .public)")
+            return
+        }
+        defer { sqlite3_close(db) }
+
+        sqlite3_busy_timeout(db, 500)
+        if let checkpointError = truncateWal(db) {
+            PennyLog.persistence.error("WAL checkpoint failed: \(checkpointError, privacy: .public)")
+        }
+        if let vacuumError = executeSQL(db, "VACUUM;") {
+            PennyLog.persistence.error("VACUUM failed: \(vacuumError, privacy: .public)")
+        }
+    }
+
+    /// `PRAGMA wal_checkpoint(TRUNCATE)` returns one row: busy, log, checkpointed.
+    /// A non-zero busy count means readers stopped the WAL from being fully truncated.
+    private static func truncateWal(_ db: OpaquePointer) -> String? {
+        let sql = "PRAGMA wal_checkpoint(TRUNCATE);"
+        var lastFailure = "wal_checkpoint(TRUNCATE) did not finish"
+        for attempt in 0..<4 {
+            var statement: OpaquePointer?
+            let prepared = sqlite3_prepare_v2(db, sql, -1, &statement, nil)
+            guard prepared == SQLITE_OK, let statement else {
+                return String(cString: sqlite3_errmsg(db))
+            }
+            let stepped = sqlite3_step(statement)
+            let failure: String?
+            if stepped == SQLITE_ROW {
+                let busy = sqlite3_column_int(statement, 0)
+                failure = busy == 0 ? nil : "wal_checkpoint(TRUNCATE) busy (\(busy))"
+            } else {
+                failure = String(cString: sqlite3_errmsg(db))
+            }
+            sqlite3_finalize(statement)
+            if failure == nil {
+                return nil
+            }
+            lastFailure = failure ?? lastFailure
+            if attempt < 3 {
+                Thread.sleep(forTimeInterval: 0.05)
+            }
+        }
+        return lastFailure
+    }
+
+    private static func executeSQL(_ db: OpaquePointer, _ sql: String) -> String? {
+        var errorPointer: UnsafeMutablePointer<CChar>?
+        let result = sqlite3_exec(db, sql, nil, nil, &errorPointer)
+        defer { sqlite3_free(errorPointer) }
+        guard result == SQLITE_OK else {
+            if let errorPointer {
+                return String(cString: errorPointer)
+            }
+            return "SQLite error \(result)"
+        }
+        return nil
     }
 
     /// Settings → Reset demo data. Erases local data, then loads the sample household.

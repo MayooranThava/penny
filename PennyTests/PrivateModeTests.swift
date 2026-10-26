@@ -146,7 +146,9 @@ struct PrivateModeTests {
                 income: Decimal(string: "5000")!,
                 spent: Decimal(string: "999.35")!,
                 billsMonthly: Decimal(string: "1750")!,
-                safeToSpend: Decimal(string: "1234.56")!
+                safeToSpend: Decimal(string: "1234.56")!,
+                categoryLines: [],
+                billLines: []
             ),
             locale: enUS
         )
@@ -172,6 +174,7 @@ struct PrivateModeTests {
     }
 
     @Test("The flag lives in the App Group suite, defaults off, and survives a new reader")
+    @MainActor
     func persistenceSurvivesRelaunch() throws {
         let suite = WidgetSnapshotStore.activeDefaultsSuite
         #expect(suite.hasPrefix("PennyTests."))
@@ -212,7 +215,7 @@ struct PrivateModeTests {
         settings.setEnabled(false)
         #expect(PrivateModeDefaults.isEnabled(in: defaults) == false)
 
-        try await TogglePrivateModeIntent().perform()
+        _ = try await TogglePrivateModeIntent().perform()
         #expect(PrivateModeDefaults.isEnabled(in: defaults))
         let afterShortcut = PrivateModeController(reloader: RecordingPrivateReloader())
         #expect(afterShortcut.isEnabled)
@@ -403,7 +406,7 @@ struct PrivateModeTests {
         let controller = PrivateModeController(reloader: reloader)
         controller.reloadCoalescer.debounce = 0.05
 
-        try PennyDataAccessProbe.$counter.withValue(probe) {
+        PennyDataAccessProbe.$counter.withValue(probe) {
             #expect(context.saveOrSurfaceError())
         }
         let proofDeadline = Date().addingTimeInterval(1)

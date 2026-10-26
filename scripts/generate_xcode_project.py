@@ -158,9 +158,11 @@ widget_shared_build_files: dict[Path, str] = {
     path: reuse(f"{path.name} in Sources") for path in WIDGET_SHARED_SOURCES
 }
 
-# Same Foundation-only file, so the UI test can call the currency-amount regex
-# without linking the app or copying the pattern.
+# PrivateModeLogic calls MoneyFormatters. Both files are Foundation-only, so the
+# UI test can use the currency-amount regex without linking the app or copying
+# the pattern. Omitting MoneyFormatters fails the screenshot target at compile time.
 UI_SHARED_SOURCES = [
+    SOURCE_ROOT / "Utilities" / "MoneyFormatters.swift",
     SOURCE_ROOT / "Services" / "PrivateModeLogic.swift",
 ]
 ui_shared_build_files: dict[Path, str] = {

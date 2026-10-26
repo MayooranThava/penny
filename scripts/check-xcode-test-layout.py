@@ -237,6 +237,32 @@ def screenshot_isolation_failures(project: str, penny_scheme: str) -> list[str]:
         failures.append("PennyScreenshots test action must use the Release configuration")
     if f'productType = "com.apple.product-type.bundle.ui-testing"' not in project:
         failures.append("PennyUITests product type is missing")
+    failures.extend(ui_test_shared_source_failures(project))
+    return failures
+
+
+def ui_test_shared_source_failures(project: str) -> list[str]:
+    """PrivateModeLogic formats money, so the UI test target must compile both files."""
+    ui = next((target for target in native_targets(project) if target["name"] == SCREENSHOT_UI_TEST), None)
+    if ui is None:
+        return ["PennyUITests target is missing"]
+    phase_ids = re.findall(r"([A-F0-9]{24}) /\*", ui["phases"])
+    sources_body = ""
+    for phase_id in phase_ids:
+        match = re.search(
+            rf"{phase_id} /\* Sources \*/ = \{{\s*isa = PBXSourcesBuildPhase;(.*?)\n\t\t\}};",
+            project,
+            re.S,
+        )
+        if match:
+            sources_body = match.group(1)
+            break
+    failures: list[str] = []
+    for filename in ("PrivateModeLogic.swift", "MoneyFormatters.swift"):
+        if f"{filename} in Sources" not in sources_body:
+            failures.append(
+                f"PennyUITests must compile {filename}; PrivateModeLogic calls MoneyFormatters"
+            )
     return failures
 
 

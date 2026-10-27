@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Release UI tests: demo screenshots plus 5,000-transaction launch and scroll metrics.
+# Screenshot UI tests: demo screenshots plus 5,000-transaction launch and scroll metrics.
 # Not part of ci-gate. GitHub Actions runs this on push to main and workflow_dispatch.
 #
 #   ./scripts/ci-screenshots.sh
 #
-# Uses the active Xcode unless PENNY_SELECT_XCODE=1 (Actions selects a stable Xcode first).
+# Uses the Screenshots configuration (Release settings, plus SCREENSHOT_SEED on the
+# app target). Uses the active Xcode unless PENNY_SELECT_XCODE=1.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -68,9 +69,9 @@ fi
 echo "Xcode: $(xcodebuild -version | tr '\n' ' ')"
 echo "Destination: $DESTINATION (${SIM_NAME} ${SIM_OS})"
 
-# Release matches the shipped app. Signing and product validation are skipped
-# so the simulator can install the build; Swift optimization and the missing
-# DEBUG flag stay on the Release configuration.
+# Screenshots copies Release. Signing and product validation are skipped so the
+# simulator can install the build. Swift optimization stays on the Release
+# settings and DEBUG stays off. SCREENSHOT_SEED comes from the app target.
 SIGNING=(
   CODE_SIGNING_ALLOWED=NO
   CODE_SIGNING_REQUIRED=NO
@@ -82,12 +83,12 @@ RESULT="$ROOT/artifacts/PennyScreenshots.xcresult"
 LOG="$ROOT/artifacts/xcodebuild-screenshots.log"
 rm -rf "$RESULT"
 
-echo "Running PennyUITests in Release (screenshots and performance)..."
+echo "Running PennyUITests in the Screenshots configuration..."
 set +e
 xcodebuild test \
   -project "$ROOT/Penny.xcodeproj" \
   -scheme PennyScreenshots \
-  -configuration Release \
+  -configuration Screenshots \
   -destination "$DESTINATION" \
   -derivedDataPath "$DD" \
   -parallel-testing-enabled NO \

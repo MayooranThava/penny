@@ -1,5 +1,6 @@
 # Demo screenshots and 5,000-transaction performance metrics.
 # Push to main and manual runs only. This workflow is not part of ci-gate.
+# The job builds the Screenshots configuration (Release settings plus SCREENSHOT_SEED).
 name: App screenshots
 
 on:
@@ -40,7 +41,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-penny-screenshots-${{ steps.xcode.outputs.version }}-
 
-      - name: Run Release screenshot and performance tests
+      - name: Run Screenshots configuration tests
         run: ./scripts/ci-screenshots.sh
 
       - name: Upload app screenshots

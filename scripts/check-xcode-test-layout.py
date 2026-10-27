@@ -3,8 +3,9 @@
 
 - Every unit-test target, and every UI-test target except PennyUITests, is on the
   Penny scheme and not skipped.
-- PennyUITests is only on the PennyScreenshots scheme (Release). ci-gate does
-  not run it. The screenshot workflow is push-to-main and workflow_dispatch.
+- PennyUITests is only on the PennyScreenshots scheme (Screenshots configuration).
+  ci-gate does not run it. The screenshot workflow is push-to-main and
+  workflow_dispatch. The demo seed compiles only with SCREENSHOT_SEED.
 - --list-products prints only test bundles the Penny scheme builds and does
   not skip. The macOS job requires those products after build-for-testing.
   PennyUITests.xctest is omitted because that job never compiles it.
@@ -25,6 +26,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -192,8 +194,10 @@ def asset_catalog_failures(project: str) -> list[str]:
 
     # Xcode does not copy a user-defined INFOPLIST_KEY_CFBundleIconName into
     # the generated Info.plist. The app target merges Penny/Info.plist instead.
-    if project.count("INFOPLIST_FILE = Penny/Info.plist;") < 2:
-        failures.append("App target is missing INFOPLIST_FILE = Penny/Info.plist for Debug and Release")
+    if project.count("INFOPLIST_FILE = Penny/Info.plist;") < 3:
+        failures.append(
+            "App target is missing INFOPLIST_FILE = Penny/Info.plist for Debug, Release, and Screenshots"
+        )
     icon_plist = ROOT / "Penny" / "Info.plist"
     if not icon_plist.is_file():
         failures.append("Penny/Info.plist is missing")
@@ -233,8 +237,15 @@ def screenshot_isolation_failures(project: str, penny_scheme: str) -> list[str]:
         failures.append("PennyScreenshots scheme must include PennyUITests and not skip it")
     if "PennyTests" in names:
         failures.append("PennyScreenshots scheme must not run PennyTests")
-    if 'buildConfiguration = "Release"' not in screen.split("<TestAction", 1)[-1].split("</TestAction>", 1)[0]:
-        failures.append("PennyScreenshots test action must use the Release configuration")
+    test_action = screen.split("<TestAction", 1)[-1].split("</TestAction>", 1)[0]
+    launch_action = screen.split("<LaunchAction", 1)[-1].split("</LaunchAction>", 1)[0]
+    archive_action = screen.split("<ArchiveAction", 1)[-1].split("</ArchiveAction>", 1)[0]
+    if 'buildConfiguration = "Screenshots"' not in test_action:
+        failures.append("PennyScreenshots test action must use the Screenshots configuration")
+    if 'buildConfiguration = "Screenshots"' not in launch_action:
+        failures.append("PennyScreenshots launch action must use the Screenshots configuration")
+    if 'buildConfiguration = "Release"' not in archive_action:
+        failures.append("PennyScreenshots archive action must stay on Release")
     if f'productType = "com.apple.product-type.bundle.ui-testing"' not in project:
         failures.append("PennyUITests product type is missing")
     failures.extend(ui_test_shared_source_failures(project))
@@ -266,26 +277,69 @@ def ui_test_shared_source_failures(project: str) -> list[str]:
     return failures
 
 
+def strip_code_comments(source: str) -> str:
+    return "\n".join(line.split("//", 1)[0] for line in source.splitlines())
+
+
+def outside_screenshot_seed(source: str) -> str:
+    """Source with `//` comments and `#if SCREENSHOT_SEED` regions removed."""
+    code = strip_code_comments(source)
+    kept: list[str] = []
+    index = 0
+    token = "#if SCREENSHOT_SEED"
+    while True:
+        start = code.find(token, index)
+        if start < 0:
+            kept.append(code[index:])
+            break
+        kept.append(code[index:start])
+        end = code.find("#endif", start)
+        if end < 0:
+            raise ValueError("unclosed #if SCREENSHOT_SEED")
+        index = end + len("#endif")
+    return "".join(kept)
+
+
 def launch_contract_failures() -> list[str]:
     app_path = ROOT / "Penny" / "App" / "UITestSeedLaunch.swift"
     test_path = ROOT / "PennyUITests" / "ScreenshotLaunch.swift"
     penny_path = ROOT / "Penny" / "App" / "PennyApp.swift"
+    demo_path = ROOT / "Penny" / "Services" / "DemoDataService.swift"
     if not app_path.is_file() or not test_path.is_file():
         return ["UITestSeedLaunch.swift and PennyUITests/ScreenshotLaunch.swift are required"]
     app = app_path.read_text()
     test = test_path.read_text()
     penny = penny_path.read_text()
+    demo = demo_path.read_text()
     failures: list[str] = []
-    code = "\n".join(line.split("//", 1)[0] for line in app.splitlines())
-    if "#if" in code or "#if" in "\n".join(line.split("//", 1)[0] for line in penny.splitlines()):
-        failures.append("UITestSeedLaunch must stay compiled into Release; do not wrap it in #if")
-    if "xctestconfiguration" not in app.lower():
-        failures.append("UITestSeedLaunch must require the XCUITest configuration path")
-    if "UITestSeedLaunch.isEnabled" not in penny:
+    for label, source in (
+        ("UITestSeedLaunch.swift", app),
+        ("ScreenshotLaunch.swift", test),
+        ("PennyApp.swift", penny),
+    ):
+        lowered = strip_code_comments(source).lower()
+        if "xctestconfiguration" in lowered or "penny_xcui_configuration" in lowered:
+            failures.append(f"{label} still string-matches the XCUITest configuration path")
+    try:
+        app_outside = outside_screenshot_seed(app)
+        penny_outside = outside_screenshot_seed(penny)
+        demo_outside = outside_screenshot_seed(demo)
+    except ValueError as error:
+        return failures + [str(error)]
+    if "#if SCREENSHOT_SEED" not in strip_code_comments(app):
+        failures.append("UITestSeedLaunch must be wrapped in #if SCREENSHOT_SEED")
+    if "enum UITestSeedLaunch" in app_outside or "replaceExisting" in app_outside:
+        failures.append("UITestSeedLaunch seed code must stay inside #if SCREENSHOT_SEED")
+    if "UITestSeedLaunch" in penny_outside:
+        failures.append("PennyApp must call UITestSeedLaunch only inside #if SCREENSHOT_SEED")
+    if "UITestSeedLaunch.isEnabled" not in penny or "openSeededContainer" not in penny:
         failures.append("PennyApp does not consult UITestSeedLaunch.isEnabled")
+    if "func seedDemo" not in demo_outside or "func seedFresh" not in demo_outside:
+        failures.append("User-facing seedDemo and seedFresh must stay compiled in Release")
+    if "func seedVolumeTransactions" not in demo or "func seedVolumeTransactions" in demo_outside:
+        failures.append("seedVolumeTransactions must be compiled only for SCREENSHOT_SEED")
     for literal in (
         "-PennyUITestSeed",
-        "PENNY_XCUI_CONFIGURATION",
         "-PennyAppearance",
         "-PennyPrivateMode",
         "-PennyUITestTransactionCount",
@@ -303,6 +357,92 @@ def launch_contract_failures() -> list[str]:
     }
     if hits != allowed:
         failures.append(f"seedVolumeTransactions references must be {sorted(allowed)}, found {sorted(hits)}")
+    return failures
+
+
+def _normalized_settings(body: str) -> str:
+    lines: list[str] = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("SWIFT_ACTIVE_COMPILATION_CONDITIONS"):
+            continue
+        lines.append(stripped)
+    return "\n".join(lines)
+
+
+def screenshot_configuration_failures(project: str) -> list[str]:
+    """Screenshots copies Release. Only the app target adds SCREENSHOT_SEED."""
+    failures: list[str] = []
+    blocks = re.findall(
+        r"\t\t([A-F0-9]{24}) /\* (?P<comment>[^*]+) \*/ = \{\n"
+        r"\t\t\tisa = XCBuildConfiguration;\n"
+        r"\t\t\tbuildSettings = \{(?P<body>.*?)\n\t\t\t\};\n"
+        r"\t\t\tname = (?P<name>[^;]+);\n"
+        r"\t\t\};",
+        project,
+        re.S,
+    )
+    by_id = {item[0]: (item[1], item[2], item[3]) for item in blocks}
+    if len(by_id) != 15:
+        failures.append(f"expected 15 build configurations (Debug, Release, Screenshots), found {len(by_id)}")
+    for cfg_id, (comment, _body, name) in by_id.items():
+        if comment != name:
+            failures.append(f"build configuration {cfg_id} comment {comment!r} does not match name {name!r}")
+
+    lists = re.findall(
+        r"/\* Build configuration list for (?P<owner>[^*]+) \*/ = \{\n"
+        r"\t\t\tisa = XCConfigurationList;\n"
+        r"\t\t\tbuildConfigurations = \((?P<body>.*?)\n\t\t\t\);\n"
+        r"\t\t\tdefaultConfigurationIsVisible = 0;\n"
+        r"\t\t\tdefaultConfigurationName = (?P<default>[^;]+);",
+        project,
+        re.S,
+    )
+    required = {
+        'PBXProject "Penny"',
+        'PBXNativeTarget "Penny"',
+        'PBXNativeTarget "PennyWidgets"',
+        'PBXNativeTarget "PennyTests"',
+        'PBXNativeTarget "PennyUITests"',
+    }
+    found_owners = {owner for owner, _body, _default in lists}
+    if found_owners != required:
+        failures.append(f"configuration lists must be {sorted(required)}, found {sorted(found_owners)}")
+
+    app_screenshots = ""
+    for owner, body, default_name in lists:
+        if default_name != "Release":
+            failures.append(f"{owner} default configuration must stay Release")
+        names: list[str] = []
+        release_body = ""
+        screenshots_body = ""
+        for cfg_id, comment in re.findall(r"([A-F0-9]{24}) /\* ([^*]+) \*/", body):
+            parsed = by_id.get(cfg_id)
+            if parsed is None:
+                failures.append(f"{owner} lists unknown configuration {cfg_id}")
+                continue
+            _comment, settings, name = parsed
+            if name != comment:
+                failures.append(f"{owner} lists {comment} but the block is named {name}")
+            names.append(name)
+            if name == "Release":
+                release_body = settings
+            elif name == "Screenshots":
+                screenshots_body = settings
+        if names != ["Debug", "Release", "Screenshots"]:
+            failures.append(f"{owner} configurations must be Debug, Release, Screenshots (found {names})")
+            continue
+        if _normalized_settings(release_body) != _normalized_settings(screenshots_body):
+            failures.append(f"{owner} Screenshots configuration must copy Release")
+        if owner == 'PBXNativeTarget "Penny"':
+            app_screenshots = screenshots_body
+        elif "SCREENSHOT_SEED" in screenshots_body:
+            failures.append(f"{owner} must not set SCREENSHOT_SEED")
+    expected = 'SWIFT_ACTIVE_COMPILATION_CONDITIONS = "SCREENSHOT_SEED $(inherited)";'
+    if expected not in app_screenshots:
+        failures.append("Penny app Screenshots configuration must set SCREENSHOT_SEED")
+    if app_screenshots.count("SCREENSHOT_SEED") != 1:
+        failures.append("SCREENSHOT_SEED must appear once on the Penny app Screenshots configuration")
     return failures
 
 
@@ -359,12 +499,43 @@ def screenshot_workflow_failures() -> list[str]:
     if not CI_SCREENSHOTS.is_file():
         return failures + ["scripts/ci-screenshots.sh is missing"]
     script = CI_SCREENSHOTS.read_text()
-    if "-scheme PennyScreenshots" not in script or "-configuration Release" not in script:
-        failures.append("ci-screenshots.sh must test the PennyScreenshots scheme in Release")
+    if "-scheme PennyScreenshots" not in script or "-configuration Screenshots" not in script:
+        failures.append("ci-screenshots.sh must test the PennyScreenshots scheme in the Screenshots configuration")
+    if "-configuration Release" in script:
+        failures.append("ci-screenshots.sh must not build the screenshot tests as Release")
+    if "check-release-omits-uitest-seed.sh" not in ci:
+        failures.append("ci.yml must build Release and reject a UITestSeedLaunch symbol")
     if "-only-testing" in script or "-skip-testing" in script:
         failures.append("ci-screenshots.sh must not filter tests")
     if "export-screenshot-artifacts.py" not in script:
         failures.append("ci-screenshots.sh must export screenshots and metrics")
+    return failures
+
+
+def release_seed_symbol_script_failures() -> list[str]:
+    """The macOS job must build Release and reject a UITestSeedLaunch symbol."""
+    script = ROOT / "scripts" / "check-release-omits-uitest-seed.sh"
+    if not script.is_file():
+        return ["scripts/check-release-omits-uitest-seed.sh is missing"]
+    text = script.read_text()
+    failures: list[str] = []
+    if "-configuration Release" not in text or "-scheme Penny" not in text:
+        failures.append("Release seed check must build the Penny scheme in Release")
+    if "UITestSeedLaunch" not in text:
+        failures.append("Release seed check must look for UITestSeedLaunch")
+    if "nm -a" not in text or "strings -a" not in text:
+        failures.append("Release seed check must use nm and strings on the built executable")
+    if "Release-iphonesimulator" not in text:
+        failures.append("Release seed check must inspect the Release simulator product")
+    completed = subprocess.run(
+        ["bash", str(script), "--self-test"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stdout + completed.stderr).strip() or "self-test failed"
+        failures.append(f"Release seed-symbol filter self-test failed: {detail}")
     return failures
 
 
@@ -450,9 +621,11 @@ def main() -> int:
 
     failures.extend(asset_catalog_failures(project))
     failures.extend(screenshot_isolation_failures(project, scheme))
+    failures.extend(screenshot_configuration_failures(project))
     failures.extend(launch_contract_failures())
     failures.extend(demo_seed_failures())
     failures.extend(screenshot_workflow_failures())
+    failures.extend(release_seed_symbol_script_failures())
 
     if failures:
         print("Xcode test layout check failed:", file=sys.stderr)
@@ -472,6 +645,8 @@ def main() -> int:
     print("[pass] every .xcassets reference is folder.assetcatalog", file=sys.stderr)
     print("[pass] ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon", file=sys.stderr)
     print("[pass] Penny/Info.plist sets CFBundleIconName to AppIcon", file=sys.stderr)
+    print("[pass] Screenshots configuration copies Release and seeds only the app", file=sys.stderr)
+    print("[pass] UITestSeedLaunch is compiled only for SCREENSHOT_SEED", file=sys.stderr)
     if list_products:
         # ci-macos.sh requires each printed product after the Penny scheme
         # build. PennyUITests is a test target, but only PennyScreenshots

@@ -106,6 +106,15 @@ UI_TEST_RELEASE = "A10000000000000000000032"
 UI_TARGET_DEP = "A10000000000000000000033"
 UI_CONTAINER_PROXY = "A10000000000000000000034"
 
+# Screenshots copies Release. The app target adds SCREENSHOT_SEED so the
+# demo-launch seed is compiled only for that configuration. Every target has
+# the configuration so `xcodebuild -configuration Screenshots` can resolve.
+PROJ_SCREENSHOTS = "A10000000000000000000035"
+APP_SCREENSHOTS = "A10000000000000000000036"
+WIDGET_SCREENSHOTS = "A10000000000000000000037"
+TEST_SCREENSHOTS = "A10000000000000000000038"
+UI_TEST_SCREENSHOTS = "A10000000000000000000039"
+
 # Folder reference bundled into PennyTests. Drop a v1.0.4 store here for upgrade tests.
 FIXTURES_DIR = TESTS_ROOT / "Migration" / "Fixtures"
 
@@ -738,18 +747,29 @@ lines.append(iphoneos_deploy)
 lines.append("\t\t\t};")
 lines.append('\t\t\tname = Release;')
 lines.append("\t\t};")
+lines.append(f"\t\t{PROJ_SCREENSHOTS} /* Screenshots */ = {{")
+lines.append("\t\t\tisa = XCBuildConfiguration;")
+lines.append("\t\t\tbuildSettings = {")
+lines.append(common_project_release)
+lines.append(iphoneos_deploy)
+lines.append("\t\t\t};")
+lines.append('\t\t\tname = Screenshots;')
+lines.append("\t\t};")
 
-for cfg_id, name in [(APP_DEBUG, "Debug"), (APP_RELEASE, "Release")]:
+for cfg_id, name in [(APP_DEBUG, "Debug"), (APP_RELEASE, "Release"), (APP_SCREENSHOTS, "Screenshots")]:
     lines.append(f"\t\t{cfg_id} /* {name} */ = {{")
     lines.append("\t\t\tisa = XCBuildConfiguration;")
     lines.append("\t\t\tbuildSettings = {")
     lines.append(app_settings)
+    if name == "Screenshots":
+        # App target only. Widgets and tests stay on the Release copy.
+        lines.append('\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = "SCREENSHOT_SEED $(inherited)";')
     lines.append(iphoneos_deploy)
     lines.append("\t\t\t};")
     lines.append(f'\t\t\tname = {name};')
     lines.append("\t\t};")
 
-for cfg_id, name in [(WIDGET_DEBUG, "Debug"), (WIDGET_RELEASE, "Release")]:
+for cfg_id, name in [(WIDGET_DEBUG, "Debug"), (WIDGET_RELEASE, "Release"), (WIDGET_SCREENSHOTS, "Screenshots")]:
     lines.append(f"\t\t{cfg_id} /* {name} */ = {{")
     lines.append("\t\t\tisa = XCBuildConfiguration;")
     lines.append("\t\t\tbuildSettings = {")
@@ -759,7 +779,7 @@ for cfg_id, name in [(WIDGET_DEBUG, "Debug"), (WIDGET_RELEASE, "Release")]:
     lines.append(f'\t\t\tname = {name};')
     lines.append("\t\t};")
 
-for cfg_id, name in [(TEST_DEBUG, "Debug"), (TEST_RELEASE, "Release")]:
+for cfg_id, name in [(TEST_DEBUG, "Debug"), (TEST_RELEASE, "Release"), (TEST_SCREENSHOTS, "Screenshots")]:
     lines.append(f"\t\t{cfg_id} /* {name} */ = {{")
     lines.append("\t\t\tisa = XCBuildConfiguration;")
     lines.append("\t\t\tbuildSettings = {")
@@ -780,7 +800,7 @@ for cfg_id, name in [(TEST_DEBUG, "Debug"), (TEST_RELEASE, "Release")]:
     lines.append(f'\t\t\tname = {name};')
     lines.append("\t\t};")
 
-for cfg_id, name in [(UI_TEST_DEBUG, "Debug"), (UI_TEST_RELEASE, "Release")]:
+for cfg_id, name in [(UI_TEST_DEBUG, "Debug"), (UI_TEST_RELEASE, "Release"), (UI_TEST_SCREENSHOTS, "Screenshots")]:
     lines.append(f"\t\t{cfg_id} /* {name} */ = {{")
     lines.append("\t\t\tisa = XCBuildConfiguration;")
     lines.append("\t\t\tbuildSettings = {")
@@ -811,6 +831,7 @@ lines.append("\t\t\tisa = XCConfigurationList;")
 lines.append("\t\t\tbuildConfigurations = (")
 lines.append(f"\t\t\t\t{PROJ_DEBUG} /* Debug */,")
 lines.append(f"\t\t\t\t{PROJ_RELEASE} /* Release */,")
+lines.append(f"\t\t\t\t{PROJ_SCREENSHOTS} /* Screenshots */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\tdefaultConfigurationIsVisible = 0;")
 lines.append("\t\t\tdefaultConfigurationName = Release;")
@@ -820,6 +841,7 @@ lines.append("\t\t\tisa = XCConfigurationList;")
 lines.append("\t\t\tbuildConfigurations = (")
 lines.append(f"\t\t\t\t{APP_DEBUG} /* Debug */,")
 lines.append(f"\t\t\t\t{APP_RELEASE} /* Release */,")
+lines.append(f"\t\t\t\t{APP_SCREENSHOTS} /* Screenshots */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\tdefaultConfigurationIsVisible = 0;")
 lines.append("\t\t\tdefaultConfigurationName = Release;")
@@ -829,6 +851,7 @@ lines.append("\t\t\tisa = XCConfigurationList;")
 lines.append("\t\t\tbuildConfigurations = (")
 lines.append(f"\t\t\t\t{WIDGET_DEBUG} /* Debug */,")
 lines.append(f"\t\t\t\t{WIDGET_RELEASE} /* Release */,")
+lines.append(f"\t\t\t\t{WIDGET_SCREENSHOTS} /* Screenshots */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\tdefaultConfigurationIsVisible = 0;")
 lines.append("\t\t\tdefaultConfigurationName = Release;")
@@ -838,6 +861,7 @@ lines.append("\t\t\tisa = XCConfigurationList;")
 lines.append("\t\t\tbuildConfigurations = (")
 lines.append(f"\t\t\t\t{TEST_DEBUG} /* Debug */,")
 lines.append(f"\t\t\t\t{TEST_RELEASE} /* Release */,")
+lines.append(f"\t\t\t\t{TEST_SCREENSHOTS} /* Screenshots */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\tdefaultConfigurationIsVisible = 0;")
 lines.append("\t\t\tdefaultConfigurationName = Release;")
@@ -847,6 +871,7 @@ lines.append("\t\t\tisa = XCConfigurationList;")
 lines.append("\t\t\tbuildConfigurations = (")
 lines.append(f"\t\t\t\t{UI_TEST_DEBUG} /* Debug */,")
 lines.append(f"\t\t\t\t{UI_TEST_RELEASE} /* Release */,")
+lines.append(f"\t\t\t\t{UI_TEST_SCREENSHOTS} /* Screenshots */,")
 lines.append("\t\t\t);")
 lines.append("\t\t\tdefaultConfigurationIsVisible = 0;")
 lines.append("\t\t\tdefaultConfigurationName = Release;")

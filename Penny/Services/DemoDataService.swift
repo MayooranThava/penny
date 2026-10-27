@@ -357,9 +357,10 @@ enum DemoDataService {
         try context.save()
     }
 
-    /// Extra fictional expenses for the XCUITest performance launch. Titles are
+    /// Extra fictional expenses for the screenshot performance launch. Titles are
     /// "Sample purchase N" so the Activity list can scroll without real merchants.
-    /// Only the UI-test launch path calls this.
+    /// Compiled only for Screenshots. Only `UITestSeedLaunch` calls this.
+    #if SCREENSHOT_SEED
     static func seedVolumeTransactions(count: Int, in context: ModelContext) throws {
         guard count > 0 else { return }
         let calendar = Calendar.current
@@ -383,6 +384,7 @@ enum DemoDataService {
         }
         try context.save()
     }
+    #endif
 
     /// Recreate or refresh settings without deleting transactions/bills/goals.
     private static func restoreSettingsIfMissing(

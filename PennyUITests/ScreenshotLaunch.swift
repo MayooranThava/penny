@@ -1,18 +1,14 @@
 import XCTest
 
-/// Builds an `XCUIApplication` that can seed demo data.
+/// Builds an `XCUIApplication` that seeds demo data.
 ///
-/// The app honors the seed only when this runner copies `XCTestConfigurationFilePath`
-/// into `PENNY_XCUI_CONFIGURATION`. A normal launch cannot satisfy that check.
+/// The app compiles the seed only in the Screenshots configuration
+/// (`SCREENSHOT_SEED`). These tests run that configuration and pass
+/// `-PennyUITestSeed` so the launch replaces the simulator store with the
+/// fictional household.
 enum ScreenshotLaunch {
     static func makeApp(appearance: String, privateMode: String, transactions: Int?) -> XCUIApplication {
         let app = XCUIApplication()
-        let config = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] ?? ""
-        XCTAssertTrue(
-            config.lowercased().contains("xctestconfiguration"),
-            "The demo seed is only available when XCUITest is running"
-        )
-        app.launchEnvironment = [UITestLaunchContract.configurationEnvironment: config]
         var arguments = [
             UITestLaunchContract.seedArgument,
             UITestLaunchContract.appearanceArgument, appearance,
@@ -32,7 +28,6 @@ enum ScreenshotLaunch {
 /// UI test target does not need to compile the app target.
 enum UITestLaunchContract {
     static let seedArgument = "-PennyUITestSeed"
-    static let configurationEnvironment = "PENNY_XCUI_CONFIGURATION"
     static let appearanceArgument = "-PennyAppearance"
     static let privateModeArgument = "-PennyPrivateMode"
     static let transactionCountArgument = "-PennyUITestTransactionCount"

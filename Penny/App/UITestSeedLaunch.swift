@@ -1,29 +1,20 @@
+/// Demo seed for the screenshot and performance UI tests.
+///
+/// Compiled only for the Screenshots configuration (`SCREENSHOT_SEED`).
+/// Debug and Release do not include this type, so a Home Screen launch cannot
+/// replace a real store. The UI tests pass `-PennyUITestSeed` to turn it on.
+#if SCREENSHOT_SEED
 import Foundation
 import SwiftData
 
-/// Demo seed used by the screenshot and performance UI tests.
-///
-/// Honored in Debug and Release, but only when XCUITest launched the app.
-/// The test runner passes `-PennyUITestSeed` and copies its own
-/// `XCTestConfigurationFilePath` into `PENNY_XCUI_CONFIGURATION`. A person
-/// opening Penny, including a Release build from the Home Screen, does not
-/// have that configuration path, so this seed never runs. There is no
-/// `#if DEBUG` gate: the screenshot job builds Release so the pixels match
-/// the shipped app, and the XCUITest check is what keeps the path closed.
 enum UITestSeedLaunch {
     static let seedArgument = "-PennyUITestSeed"
-    static let configurationEnvironment = "PENNY_XCUI_CONFIGURATION"
     static let appearanceArgument = "-PennyAppearance"
     static let privateModeArgument = "-PennyPrivateMode"
     static let transactionCountArgument = "-PennyUITestTransactionCount"
 
     static var isEnabled: Bool {
-        let process = ProcessInfo.processInfo
-        guard process.arguments.contains(seedArgument) else { return false }
-        guard let token = process.environment[configurationEnvironment], !token.isEmpty else {
-            return false
-        }
-        return token.lowercased().contains("xctestconfiguration")
+        ProcessInfo.processInfo.arguments.contains(seedArgument)
     }
 
     @MainActor
@@ -85,3 +76,4 @@ enum UITestSeedLaunch {
         return next
     }
 }
+#endif

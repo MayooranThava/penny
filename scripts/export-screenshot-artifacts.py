@@ -212,9 +212,9 @@ def main() -> int:
             failures.append(f"missing {name}")
     if "testFiveThousandTransactionLaunch" not in blob and "App Launch" not in blob and "AppLaunch" not in blob:
         failures.append("launch metric was not found in the log or xcresult")
-    if not re.search(r"hitch", blob, re.I):
-        failures.append("scroll hitch metric was not found in the log or xcresult")
-    if "scroll" not in blob.lower() and "Scroll" not in blob:
+    # Xcode 26's simulator signpost metric records Scroll_Deceleration duration
+    # and does not include hitch time. Keep hitch text when a toolchain emits it.
+    if "Scroll_Deceleration" not in blob and "scroll deceleration" not in blob.lower():
         failures.append("scroll deceleration metric was not found in the log or xcresult")
     if failures:
         for message in failures:

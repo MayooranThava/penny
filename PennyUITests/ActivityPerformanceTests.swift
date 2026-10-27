@@ -1,8 +1,8 @@
 import XCTest
 
 /// Launch and Activity scroll metrics for a 5,000-transaction demo seed.
-/// Hitch time is reported by the scroll signpost metrics (Hitch Time and
-/// Hitch Time Ratio) inside the xcresult, next to the screenshots.
+/// Xcode 26's scroll signpost metrics report duration only. Hitch time is
+/// measured with `XCTHitchMetric` so the xcresult still contains it.
 final class ActivityPerformanceTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -25,7 +25,8 @@ final class ActivityPerformanceTests: XCTestCase {
         XCTAssertTrue(list.waitForExistence(timeout: 30))
         measure(metrics: [
             XCTOSSignpostMetric.scrollDecelerationMetric,
-            XCTOSSignpostMetric.scrollingAndDecelerationMetric
+            XCTOSSignpostMetric.scrollingAndDecelerationMetric,
+            XCTHitchMetric(application: app)
         ]) {
             list.swipeUp(velocity: .fast)
         }

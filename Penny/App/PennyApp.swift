@@ -10,8 +10,9 @@ struct PennyApp: App {
     @State private var didStartLaunch = false
 
     init() {
-        // Release and Debug builds both take this path. It no-ops unless XCUITest
-        // supplied the seed argument and its configuration file path.
+        // Compiled only for Screenshots. Debug and Release do not contain this
+        // path, so a normal launch cannot replace the on-disk store.
+        #if SCREENSHOT_SEED
         guard UITestSeedLaunch.isEnabled else { return }
         let result: Result<ModelContainer, Error> = MainActor.assumeIsolated {
             do {
@@ -30,6 +31,7 @@ struct PennyApp: App {
             _launchError = State(initialValue: error.localizedDescription)
             _didStartLaunch = State(initialValue: true)
         }
+        #endif
     }
 
     var body: some Scene {

@@ -84,6 +84,26 @@ final class AppScreenshotTests: XCTestCase {
                 }
                 continue
             }
+            if let clause = goalProgressClause(in: label) {
+                // Currency inside "Name, 42 percent complete" is a leak.
+                // A button concatenates that sentence with later lines (funding
+                // caption, monthly pace). Those lines are not the goal total.
+                // Currency that this element itself appends after the clause,
+                // with no descendant owning that trailing text, still fails.
+                let trailing = trailingText(after: clause, in: label)
+                if PrivateAmountLogic.containsCurrencyAmount(clause) {
+                    checked += 1
+                    failures.append("\(screen) total: \(label)")
+                } else if trailing.isEmpty {
+                    checked += 1
+                } else if !trailingBelongsToDescendant(element, trailing: trailing) {
+                    checked += 1
+                    if PrivateAmountLogic.containsCurrencyAmount(label) {
+                        failures.append("\(screen) total: \(label)")
+                    }
+                }
+                continue
+            }
             guard isTotalSentence(label) else { continue }
             checked += 1
             if PrivateAmountLogic.containsCurrencyAmount(label) {
@@ -112,8 +132,37 @@ final class AppScreenshotTests: XCTestCase {
         let lowered = label.lowercased()
         if lowered.contains("safe to spend") { return true }
         if lowered.contains("percent used") && lowered.contains("remaining") { return true }
-        if lowered.contains("percent complete") { return true }
         if lowered.contains("net worth") { return true }
+        return false
+    }
+
+    /// Text from the start of `label` through the goal progress phrase.
+    private func goalProgressClause(in label: String) -> String? {
+        guard let range = label.range(of: "percent complete", options: [.caseInsensitive]) else { return nil }
+        return String(label[..<range.upperBound])
+    }
+
+    private func trailingText(after clause: String, in label: String) -> String {
+        guard label.count >= clause.count else { return "" }
+        let tail = label.dropFirst(clause.count)
+        return tail.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters))
+    }
+
+    /// True when `trailing` is other accessibility elements joined onto the goal clause.
+    private func trailingBelongsToDescendant(_ element: XCUIElement, trailing: String) -> Bool {
+        let children = element.children(matching: .any)
+        for index in 0..<children.count {
+            let child = children.element(boundBy: index)
+            let childLabel = child.label.trimmingCharacters(in: .whitespacesAndNewlines)
+            if childLabel.count > 3,
+               !childLabel.localizedCaseInsensitiveContains("percent complete"),
+               trailing.localizedCaseInsensitiveContains(childLabel) {
+                return true
+            }
+            if trailingBelongsToDescendant(child, trailing: trailing) {
+                return true
+            }
+        }
         return false
     }
 

@@ -29,7 +29,7 @@ The database uses a **stable store name** (`Penny`). `PennyMigrationPlan` is pas
 3. **Restore on failure.** If the open throws, or the process died after the copy and before the open finished, Penny puts that copy back and tells the user **“Your data is safe”**.
 4. **`repairIfNeeded`** — if transactions/bills/etc. exist but settings were missing, settings are recreated with onboarding complete so you are not forced through a destructive setup. A repair failure is shown, not ignored.
 5. **Saves are visible.** `modelContext.saveOrSurfaceError()` reports a failure on a banner (`PennySaveReporter`). Do not add `try? save()`.
-6. **Seed helpers default to non-destructive** unless `replaceExisting: true` (used only for onboarding choices and Settings reset/delete).
+6. **Seed helpers default to non-destructive** unless `replaceExisting: true` (onboarding choices and Settings reset/delete). The screenshot launch seed is compiled only into the Screenshots configuration.
 
 ## Widget snapshots
 

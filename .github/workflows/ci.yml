@@ -1,6 +1,7 @@
 # Penny CI.
 # Ubuntu: product IDs, PennyCoreLogic, and the source drift check.
 # macOS: build the app, PennyWidgets, and every test target, then run PennyTests.
+# The macOS job also builds Release and fails if that binary contains UITestSeedLaunch.
 # ci-gate is the single check to require on main. It fails unless every job succeeded
 # (a skipped or cancelled macOS job is not success).
 name: CI
@@ -126,6 +127,9 @@ jobs:
             exit 1
           fi
           echo "Verified $app has CFBundleIconName=$icon_name and Assets.car"
+
+      - name: Release binary must not contain UITestSeedLaunch
+        run: ./scripts/check-release-omits-uitest-seed.sh
 
       - name: Job summary
         if: always()

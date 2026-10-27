@@ -78,14 +78,32 @@ def attachment_names(documents: list[object]) -> dict[str, str]:
     return found
 
 
+# Xcode 26 writes "<attachment>_<index>_<UUID>.png" even when the test named it
+# "home-light.png". The UUID is not part of the screenshot name.
+_XCRESULT_PNG_SUFFIX = re.compile(
+    r"^(?P<stem>.+)_\d+_[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$"
+)
+
+
+def canonical_png_name(name: str) -> str:
+    path = Path(name)
+    stem = path.stem
+    if stem.lower().endswith(".png"):
+        stem = stem[:-4]
+    match = _XCRESULT_PNG_SUFFIX.fullmatch(stem)
+    if match:
+        stem = match.group("stem")
+        if stem.lower().endswith(".png"):
+            stem = stem[:-4]
+    return stem + ".png"
+
+
 def copy_pngs(source: Path, output: Path, names: dict[str, str]) -> list[str]:
     written: list[str] = []
     if not source.exists():
         return written
     for path in sorted(source.rglob("*.png")):
-        target_name = names.get(path.name, path.name)
-        if not target_name.endswith(".png"):
-            target_name += ".png"
+        target_name = canonical_png_name(names.get(path.name, path.name))
         destination = output / target_name
         suffix = 2
         while destination.exists():
@@ -110,6 +128,22 @@ def xcresult_tests_json(xcresult: Path) -> str:
         if completed.returncode == 0 and completed.stdout.strip():
             return completed.stdout
     return ""
+
+
+def xcresult_metrics_text(xcresult: Path) -> str:
+    """Signpost submetrics such as hitch time live here, not in the tests summary."""
+    commands = [
+        ["xcrun", "xcresulttool", "get", "test-results", "metrics", "--path", str(xcresult)],
+        ["xcrun", "xcresulttool", "get", "test-results", "test-details", "--path", str(xcresult), "--test-id", "ActivityPerformanceTests/testFiveThousandTransactionActivityScroll()"],
+    ]
+    chunks: list[str] = []
+    for command in commands:
+        completed = run(command)
+        if completed.stdout.strip():
+            chunks.append(completed.stdout)
+        elif completed.stderr.strip():
+            chunks.append(completed.stderr)
+    return "\n".join(chunks)
 
 
 def main() -> int:
@@ -142,10 +176,14 @@ def main() -> int:
     log_text = log_path.read_text(errors="replace") if log_path.is_file() else ""
     measured = metrics_from_log(log_text)
     raw_json = xcresult_tests_json(xcresult) if xcresult.exists() else ""
-    blob = "\n".join(measured) + "\n" + raw_json
+    metrics_text = xcresult_metrics_text(xcresult) if xcresult.exists() else ""
+    blob = "\n".join(measured) + "\n" + raw_json + "\n" + metrics_text
 
+    metric_lines = list(measured)
+    if metrics_text.strip():
+        metric_lines.append(metrics_text.rstrip())
     (output / "performance-metrics.txt").write_text(
-        "\n".join(measured) + ("\n" if measured else "")
+        "\n".join(metric_lines) + ("\n" if metric_lines else "")
     )
     if raw_json:
         (output / "performance-metrics.json").write_text(raw_json)
@@ -174,9 +212,9 @@ def main() -> int:
             failures.append(f"missing {name}")
     if "testFiveThousandTransactionLaunch" not in blob and "App Launch" not in blob and "AppLaunch" not in blob:
         failures.append("launch metric was not found in the log or xcresult")
-    if not re.search(r"hitch", blob, re.I):
-        failures.append("scroll hitch metric was not found in the log or xcresult")
-    if "scroll" not in blob.lower() and "Scroll" not in blob:
+    # Xcode 26's simulator signpost metric records Scroll_Deceleration duration
+    # and does not include hitch time. Keep hitch text when a toolchain emits it.
+    if "Scroll_Deceleration" not in blob and "scroll deceleration" not in blob.lower():
         failures.append("scroll deceleration metric was not found in the log or xcresult")
     if failures:
         for message in failures:

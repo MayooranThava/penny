@@ -1,10 +1,20 @@
 # Demo screenshots and 5,000-transaction performance metrics.
-# Push to main and manual runs only. This workflow is not part of ci-gate.
+# Push to main, manual runs, and path-filtered pull requests.
+# This workflow is not part of ci-gate.
+# The job builds the Screenshots configuration (Release settings plus SCREENSHOT_SEED).
+# scripts/export-screenshot-artifacts.py turns Xcode's attachment filenames into
+# home-light.png and keeps the launch and scroll-duration metrics.
 name: App screenshots
 
 on:
   push:
     branches: [main]
+  pull_request:
+    paths:
+      - 'Penny/**'
+      - 'PennyUITests/**'
+      - 'Penny.xcodeproj/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 concurrency:
@@ -40,7 +50,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-penny-screenshots-${{ steps.xcode.outputs.version }}-
 
-      - name: Run Release screenshot and performance tests
+      - name: Run Screenshots configuration tests
         run: ./scripts/ci-screenshots.sh
 
       - name: Upload app screenshots

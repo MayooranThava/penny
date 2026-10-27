@@ -23,13 +23,22 @@ final class ActivityPerformanceTests: XCTestCase {
         activity.tap()
         let list = activityList(in: app)
         XCTAssertTrue(list.waitForExistence(timeout: 30))
-        measure(metrics: [
-            XCTOSSignpostMetric.scrollDecelerationMetric,
-            XCTOSSignpostMetric.scrollingAndDecelerationMetric,
-            XCTHitchMetric(application: app)
-        ]) {
+        measure(metrics: scrollMetrics(for: app)) {
             list.swipeUp(velocity: .fast)
         }
+    }
+
+    /// Scroll duration, plus hitch time on iOS 26 where `XCTHitchMetric` exists.
+    /// The app still deploys to iOS 17, so the new metric stays behind an availability check.
+    private func scrollMetrics(for app: XCUIApplication) -> [XCTMetric] {
+        var metrics: [XCTMetric] = [
+            XCTOSSignpostMetric.scrollDecelerationMetric,
+            XCTOSSignpostMetric.scrollingAndDecelerationMetric
+        ]
+        if #available(iOS 26.0, *) {
+            metrics.append(XCTHitchMetric(application: app))
+        }
+        return metrics
     }
 
     private func activityList(in app: XCUIApplication) -> XCUIElement {

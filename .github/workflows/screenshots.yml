@@ -2,6 +2,8 @@
 # Push to main, manual runs, and path-filtered pull requests.
 # This workflow is not part of ci-gate.
 # The job builds the Screenshots configuration (Release settings plus SCREENSHOT_SEED).
+# scripts/export-screenshot-artifacts.py turns Xcode's attachment filenames into
+# home-light.png and reads scroll hitch time from xcresulttool metrics.
 name: App screenshots
 
 on:

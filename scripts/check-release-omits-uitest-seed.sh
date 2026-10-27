@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Build Penny in the Release configuration and fail if the executable contains
-# UITestSeedLaunch. The screenshot seed is compiled only for Screenshots.
+# Build Penny in Release and fail if the executable contains UITestSeedLaunch.
+# Then build the Screenshots configuration and fail unless that same scan finds
+# UITestSeedLaunch. The second build is the positive control: if nm and strings
+# cannot see the seed where it is compiled in, a clean Release result is not
+# evidence. The screenshot seed is compiled only for Screenshots.
 #
 #   ./scripts/check-release-omits-uitest-seed.sh
 #   ./scripts/check-release-omits-uitest-seed.sh --self-test
 #
-# `--self-test` checks the symbol filter without Xcode. The real build runs on
+# `--self-test` checks the symbol filter without Xcode. The real builds run on
 # the macOS CI job, which ci-gate requires.
 set -euo pipefail
 
@@ -121,50 +124,91 @@ SIGNING=(
   VALIDATE_PRODUCT=NO
 )
 
-LOG="$ROOT/artifacts/xcodebuild-release-seed-guard.log"
-echo "Building Penny in Release..."
-set +e
-xcodebuild build \
-  -project "$ROOT/Penny.xcodeproj" \
-  -scheme Penny \
-  -configuration Release \
-  -destination "$DESTINATION" \
-  -derivedDataPath "$DD" \
-  COMPILER_INDEX_STORE_ENABLE=NO \
-  "${SIGNING[@]}" \
-  | tee "$LOG"
-status=${PIPESTATUS[0]}
-set -e
-if [[ "$status" -ne 0 ]]; then
-  echo "Release build failed (exit $status). See $LOG" >&2
-  exit "$status"
-fi
+# configuration is Release or Screenshots. Both use the Penny scheme so the
+# product is Penny.app, not the UI-test bundle.
+build_penny() {
+  local configuration="$1"
+  local log="$2"
+  echo "Building Penny in ${configuration}..."
+  set +e
+  xcodebuild build \
+    -project "$ROOT/Penny.xcodeproj" \
+    -scheme Penny \
+    -configuration "$configuration" \
+    -destination "$DESTINATION" \
+    -derivedDataPath "$DD" \
+    COMPILER_INDEX_STORE_ENABLE=NO \
+    "${SIGNING[@]}" \
+    | tee "$log"
+  status=${PIPESTATUS[0]}
+  set -e
+  if [[ "$status" -ne 0 ]]; then
+    echo "${configuration} build failed (exit $status). See $log" >&2
+    exit "$status"
+  fi
+}
 
-binary=""
-while IFS= read -r line; do
-  binary="$line"
-  break
-done < <(find "$DD/Build/Products/Release-iphonesimulator" -type f -path '*/Penny.app/Penny' -print)
-if [[ -z "$binary" || ! -s "$binary" ]]; then
-  echo "Release Penny executable not found under $DD/Build/Products/Release-iphonesimulator" >&2
-  find "$DD/Build/Products" -name 'Penny.app' -print >&2 || true
-  exit 1
-fi
+# Sets PENNY_BINARY to Penny.app/Penny under ${configuration}-iphonesimulator.
+penny_executable() {
+  local configuration="$1"
+  local products="$DD/Build/Products/${configuration}-iphonesimulator"
+  PENNY_BINARY=""
+  local binary=""
+  while IFS= read -r line; do
+    binary="$line"
+    break
+  done < <(find "$products" -type f -path '*/Penny.app/Penny' -print)
+  if [[ -z "$binary" || ! -s "$binary" ]]; then
+    echo "${configuration} Penny executable not found under $products" >&2
+    find "$DD/Build/Products" -name 'Penny.app' -print >&2 || true
+    exit 1
+  fi
+  PENNY_BINARY="$binary"
+}
 
-echo "Checking $binary for UITestSeedLaunch"
-nm_hits="$(nm -a "$binary" | filter_seed_hits)"
-string_hits="$(strings -a "$binary" | filter_seed_hits)"
-if [[ -n "$nm_hits" || -n "$string_hits" ]]; then
-  echo "Release Penny executable contains UITestSeedLaunch. The screenshot seed must be compiled only for the Screenshots configuration." >&2
-  if [[ -n "$nm_hits" ]]; then
+# Sets NM_HITS and STRING_HITS. The Release check fails if either is non-empty.
+read_seed_hits() {
+  local binary="$1"
+  NM_HITS="$(nm -a "$binary" | filter_seed_hits)"
+  STRING_HITS="$(strings -a "$binary" | filter_seed_hits)"
+}
+
+report_seed_hits() {
+  if [[ -n "$NM_HITS" ]]; then
     echo "nm:" >&2
-    printf '%s\n' "$nm_hits" >&2
+    printf '%s\n' "$NM_HITS" >&2
   fi
-  if [[ -n "$string_hits" ]]; then
+  if [[ -n "$STRING_HITS" ]]; then
     echo "strings:" >&2
-    printf '%s\n' "$string_hits" >&2
+    printf '%s\n' "$STRING_HITS" >&2
   fi
+}
+
+build_penny Release "$ROOT/artifacts/xcodebuild-release-seed-guard.log"
+penny_executable Release
+echo "Checking $PENNY_BINARY for UITestSeedLaunch"
+read_seed_hits "$PENNY_BINARY"
+if [[ -n "$NM_HITS" || -n "$STRING_HITS" ]]; then
+  echo "Release Penny executable contains UITestSeedLaunch. The screenshot seed must be compiled only for the Screenshots configuration." >&2
+  report_seed_hits
   exit 1
 fi
-
 echo "Release Penny executable has no UITestSeedLaunch symbol."
+
+# Positive control. Screenshots compiles UITestSeedLaunch. If nm and strings
+# both miss it, the Release absence check above cannot be trusted.
+build_penny Screenshots "$ROOT/artifacts/xcodebuild-screenshots-seed-control.log"
+penny_executable Screenshots
+echo "Checking $PENNY_BINARY for UITestSeedLaunch (Screenshots positive control)"
+read_seed_hits "$PENNY_BINARY"
+if [[ -z "$NM_HITS" && -z "$STRING_HITS" ]]; then
+  echo "Screenshots Penny executable is missing UITestSeedLaunch. nm and strings did not see the seed, so a Release miss would pass silently." >&2
+  exit 1
+fi
+echo "Screenshots Penny executable contains UITestSeedLaunch."
+if [[ -n "$NM_HITS" ]]; then
+  echo "nm saw UITestSeedLaunch"
+fi
+if [[ -n "$STRING_HITS" ]]; then
+  echo "strings saw UITestSeedLaunch"
+fi

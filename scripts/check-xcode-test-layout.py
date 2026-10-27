@@ -4,8 +4,9 @@
 - Every unit-test target, and every UI-test target except PennyUITests, is on the
   Penny scheme and not skipped.
 - PennyUITests is only on the PennyScreenshots scheme (Screenshots configuration).
-  ci-gate does not run it. The screenshot workflow is push-to-main and
-  workflow_dispatch. The demo seed compiles only with SCREENSHOT_SEED.
+  ci-gate does not run it. The screenshot workflow is push-to-main,
+  workflow_dispatch, and a path-filtered pull_request. The demo seed compiles
+  only with SCREENSHOT_SEED.
 - --list-products prints only test bundles the Penny scheme builds and does
   not skip. The macOS job requires those products after build-for-testing.
   PennyUITests.xctest is omitted because that job never compiles it.
@@ -476,18 +477,53 @@ def demo_seed_failures() -> list[str]:
     return [f"DemoDataService contains real brand or personal name {name!r}" for name in banned if name in text]
 
 
+def workflow_event_body(workflow: str, event: str) -> str | None:
+    """Return the indented body of one top-level `on:` event, or None."""
+    lines = workflow.splitlines()
+    start = None
+    for index, line in enumerate(lines):
+        if line == f"  {event}:":
+            start = index + 1
+            break
+    if start is None:
+        return None
+    body: list[str] = []
+    for line in lines[start:]:
+        if line.startswith("  ") and not line.startswith("   ") and line.strip():
+            break
+        if line and not line.startswith((" ", "#")):
+            break
+        body.append(line)
+    return "\n".join(body)
+
+
 def screenshot_workflow_failures() -> list[str]:
     failures: list[str] = []
     if not SCREENSHOT_WORKFLOW.is_file():
         return ["screenshots workflow is missing"]
     workflow = SCREENSHOT_WORKFLOW.read_text()
     ci = WORKFLOW.read_text()
-    if "pull_request" in workflow:
-        failures.append("screenshots workflow must not run on pull_request")
-    if "workflow_dispatch" not in workflow:
+    push = workflow_event_body(workflow, "push")
+    pull_request = workflow_event_body(workflow, "pull_request")
+    if workflow_event_body(workflow, "workflow_dispatch") is None:
         failures.append("screenshots workflow must allow workflow_dispatch")
-    if "branches: [main]" not in workflow:
+    if push is None or "branches: [main]" not in push:
         failures.append("screenshots workflow must run on push to main")
+    elif "paths:" in push:
+        failures.append("screenshots push to main must stay unfiltered")
+    if pull_request is None:
+        failures.append("screenshots workflow must run on pull_request")
+    else:
+        for path in (
+            "Penny/**",
+            "PennyUITests/**",
+            "Penny.xcodeproj/**",
+            ".github/workflows/**",
+        ):
+            if path not in pull_request:
+                failures.append(f"screenshots pull_request paths must include {path}")
+        if "paths:" not in pull_request:
+            failures.append("screenshots pull_request must be path-filtered")
     if "select-stable-xcode.sh" not in workflow:
         failures.append("screenshots workflow must select the same stable Xcode as the Mac job")
     if "ci-screenshots.sh" not in workflow:
@@ -496,6 +532,8 @@ def screenshot_workflow_failures() -> list[str]:
         failures.append("screenshots artifact must be named app-screenshots")
     if "screenshots.yml" in ci or "ci-screenshots" in ci or "PennyUITests" in ci:
         failures.append("ci.yml must not run the screenshot job or PennyUITests")
+    if "needs: [sanity, macos]" not in ci:
+        failures.append("ci-gate must keep depending only on sanity and macos")
     if not CI_SCREENSHOTS.is_file():
         return failures + ["scripts/ci-screenshots.sh is missing"]
     script = CI_SCREENSHOTS.read_text()
@@ -513,20 +551,32 @@ def screenshot_workflow_failures() -> list[str]:
 
 
 def release_seed_symbol_script_failures() -> list[str]:
-    """The macOS job must build Release and reject a UITestSeedLaunch symbol."""
+    """Release must omit UITestSeedLaunch, and Screenshots must still contain it."""
     script = ROOT / "scripts" / "check-release-omits-uitest-seed.sh"
     if not script.is_file():
         return ["scripts/check-release-omits-uitest-seed.sh is missing"]
     text = script.read_text()
     failures: list[str] = []
-    if "-configuration Release" not in text or "-scheme Penny" not in text:
+    if "-scheme Penny" not in text or 'build_penny Release' not in text:
         failures.append("Release seed check must build the Penny scheme in Release")
+    if 'build_penny Screenshots' not in text or "-configuration" not in text:
+        failures.append(
+            "Release seed check must build the Screenshots configuration as a positive control"
+        )
     if "UITestSeedLaunch" not in text:
         failures.append("Release seed check must look for UITestSeedLaunch")
     if "nm -a" not in text or "strings -a" not in text:
         failures.append("Release seed check must use nm and strings on the built executable")
-    if "Release-iphonesimulator" not in text:
-        failures.append("Release seed check must inspect the Release simulator product")
+    if "${configuration}-iphonesimulator" not in text:
+        failures.append("Release seed check must inspect each configuration's simulator product")
+    if "missing UITestSeedLaunch" not in text:
+        failures.append(
+            "Screenshots positive control must fail when UITestSeedLaunch is absent"
+        )
+    if '[[ -z "$NM_HITS" && -z "$STRING_HITS" ]]' not in text:
+        failures.append(
+            "Screenshots positive control must fail when both nm and strings miss UITestSeedLaunch"
+        )
     completed = subprocess.run(
         ["bash", str(script), "--self-test"],
         check=False,
@@ -647,6 +697,14 @@ def main() -> int:
     print("[pass] Penny/Info.plist sets CFBundleIconName to AppIcon", file=sys.stderr)
     print("[pass] Screenshots configuration copies Release and seeds only the app", file=sys.stderr)
     print("[pass] UITestSeedLaunch is compiled only for SCREENSHOT_SEED", file=sys.stderr)
+    print(
+        "[pass] Release omits UITestSeedLaunch and Screenshots must still contain it",
+        file=sys.stderr,
+    )
+    print(
+        "[pass] screenshot workflow is push, workflow_dispatch, and path-filtered pull_request",
+        file=sys.stderr,
+    )
     if list_products:
         # ci-macos.sh requires each printed product after the Penny scheme
         # build. PennyUITests is a test target, but only PennyScreenshots

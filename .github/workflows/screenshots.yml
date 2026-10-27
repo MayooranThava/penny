@@ -1,11 +1,18 @@
 # Demo screenshots and 5,000-transaction performance metrics.
-# Push to main and manual runs only. This workflow is not part of ci-gate.
+# Push to main, manual runs, and path-filtered pull requests.
+# This workflow is not part of ci-gate.
 # The job builds the Screenshots configuration (Release settings plus SCREENSHOT_SEED).
 name: App screenshots
 
 on:
   push:
     branches: [main]
+  pull_request:
+    paths:
+      - 'Penny/**'
+      - 'PennyUITests/**'
+      - 'Penny.xcodeproj/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 concurrency:

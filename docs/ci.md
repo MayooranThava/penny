@@ -5,7 +5,7 @@ GitHub Actions workflow **CI** (`.github/workflows/ci.yml`) runs on every pull r
 | Job | What it does |
 | --- | --- |
 | Product IDs + core logic | Ubuntu. Product IDs, `PennyCoreLogic` tests, and the shared-logic drift check. |
-| macOS build and PennyTests | Newest **stable** Xcode on `macos-latest`. `build-for-testing` for the iOS Simulator (Penny, PennyWidgets, and every test target on the Penny scheme), then the **entire** PennyTests bundle. It then builds **Release** and fails if the Penny executable contains a `UITestSeedLaunch` symbol. |
+| macOS build and PennyTests | Newest **stable** Xcode on `macos-latest`. `build-for-testing` for the iOS Simulator (Penny, PennyWidgets, and every test target on the Penny scheme), then the **entire** PennyTests bundle. It then builds **Release** and fails if the Penny executable contains a `UITestSeedLaunch` symbol, and builds **Screenshots** and fails if that symbol is missing. |
 | `ci-gate` | Depends on both jobs. Fails unless each one **succeeded**. A failed, skipped, or cancelled job fails `ci-gate`. |
 
 Require **`ci-gate`** (shown as `CI / ci-gate`) as the single required status check on `main`.
@@ -28,7 +28,7 @@ Mac, full simulator build and every PennyTests case (same script Actions runs):
 ./scripts/ci-macos.sh
 ```
 
-`./scripts/pre-release-sanity.sh --xcode` does the Linux checks and then `ci-macos.sh`. On a Mac, `./scripts/check-release-omits-uitest-seed.sh` is the Release build that rejects a `UITestSeedLaunch` symbol. Actions runs it in the macOS job.
+`./scripts/pre-release-sanity.sh --xcode` does the Linux checks and then `ci-macos.sh`. On a Mac, `./scripts/check-release-omits-uitest-seed.sh` builds Release and rejects a `UITestSeedLaunch` symbol, then builds Screenshots and requires that same scan to find the symbol. Actions runs it in the macOS job.
 
 Use the Xcode you already have selected. To match Actions and pick the newest stable Xcode under `/Applications` (skipping beta, preview, and release candidates):
 
@@ -90,7 +90,7 @@ The stores are written in the test from the frozen v1.0.3 types and the unversio
 
 ## App screenshots
 
-Workflow **App screenshots** (`.github/workflows/screenshots.yml`) is separate from **CI**. It runs on a push to `main` and from **workflow_dispatch**. It does not run on pull requests, and `ci-gate` does not wait for it.
+Workflow **App screenshots** (`.github/workflows/screenshots.yml`) is separate from **CI**. It runs on a push to `main`, from **workflow_dispatch**, and on a pull request that changes the app (`Penny/**`), the UI tests (`PennyUITests/**`), the Xcode project (`Penny.xcodeproj/**`), or a workflow file (`.github/workflows/**`). `ci-gate` does not wait for it.
 
 The job uses `scripts/select-stable-xcode.sh`, then `scripts/ci-screenshots.sh`. That script runs the `PennyScreenshots` scheme in the **Screenshots** configuration. Screenshots copies Release and adds the `SCREENSHOT_SEED` Swift compilation condition on the app target, so optimization matches a shipped build and the demo seed is compiled in. `VALIDATE_PRODUCT` and code signing are turned off for the simulator install only. Swift does not set the `DEBUG` flag.
 
@@ -98,6 +98,6 @@ The job uses `scripts/select-stable-xcode.sh`, then `scripts/ci-screenshots.sh`.
 
 `UITestSeedLaunch`, the launch path in `PennyApp`, and `DemoDataService.seedVolumeTransactions` are wrapped in `#if SCREENSHOT_SEED`. Debug and Release do not compile them. The UI tests pass `-PennyUITestSeed` plus appearance, Private mode, and an optional transaction count. The seed loads the fictional demo household, marks onboarding and the walkthrough complete, and sets Light or Dark plus Private mode. A 5,000-transaction count is only added when the performance tests pass `-PennyUITestTransactionCount`. Onboarding and Settings still call `seedDemo` / `seedFresh` in every configuration; those paths are unchanged.
 
-The macOS CI job runs `scripts/check-release-omits-uitest-seed.sh` after PennyTests. That builds the Penny scheme in **Release** and fails if `nm` or `strings` finds `UITestSeedLaunch` in `Penny.app/Penny`. `ci-gate` depends on that job, so a seeded Release binary fails the required check.
+The macOS CI job runs `scripts/check-release-omits-uitest-seed.sh` after PennyTests. That builds the Penny scheme in **Release** and fails if `nm` or `strings` finds `UITestSeedLaunch` in `Penny.app/Penny`. It then builds the same scheme in **Screenshots** and fails if both `nm` and `strings` miss `UITestSeedLaunch` there. That positive control stops a tool miss from making a seeded Release binary look clean. `ci-gate` depends on that job, so a seeded Release binary fails the required check.
 
 The tests attach a PNG for Home, Budget, Plan, Activity, and Settings, each with Private mode off and on, in Light and Dark (`home-dark-private.png`). On every Private-mode shot, a total amount label fails the test if it contains a digit. Sentences that also include a percent use `PrivateAmountLogic.containsCurrencyAmount`, the same currency regex as Private mode. The performance tests record `XCTApplicationLaunchMetric` for the 5,000-transaction launch and `XCTOSSignpostMetric` scroll-deceleration metrics. Those metrics include hitch time. `scripts/export-screenshot-artifacts.py` copies the PNGs and the metric report into the `app-screenshots` artifact.

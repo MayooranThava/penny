@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Screenshot UI tests: demo screenshots plus 5,000-transaction launch and scroll metrics.
-# Not part of ci-gate. GitHub Actions runs this on push to main and workflow_dispatch.
+# Not part of ci-gate. GitHub Actions runs this on push to main, workflow_dispatch,
+# and a pull request that changes the app, UI tests, Xcode project, or workflows.
 #
 #   ./scripts/ci-screenshots.sh
 #

@@ -60,9 +60,13 @@
 		34423B0212A24F6CB905CA4A /* ApplePayCaptureLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0B3B192461413AAF8A4037 /* ApplePayCaptureLogicTests.swift */; };
 		8EC6D9CBDAFB4FAC8B893247 /* ApplePayCaptureServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4588CEDC95F94C64965B6456 /* ApplePayCaptureServiceTests.swift */; };
 		FD15812124FB4480B6B0A37F /* ApplePayShortcutsGuideTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689D1823EFB2453C820C2094 /* ApplePayShortcutsGuideTests.swift */; };
+		2D329B87397A4ABD8D3CBC48 /* BillReminderScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5419FF21381B40158BCD86A6 /* BillReminderScheduleTests.swift */; };
 		1C6B7CD3B4294168A538A548 /* FinanceCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DDF720BCEBA4614AB2B5A88 /* FinanceCalculatorTests.swift */; };
 		1B3E61C714E944478E10B0C9 /* GoalFundingLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFADE2F836264E7289852EA2 /* GoalFundingLogicTests.swift */; };
+		4D730D86BB8C4380BD5B7FF5 /* LogApplePayPurchaseIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AEBF4F5C1E461990577162 /* LogApplePayPurchaseIntentTests.swift */; };
 		B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E56848AF87D941B9B7326B77 /* MigrationTests.swift */; };
+		4E523E2D423C47DB804CBB23 /* MonthBoundaryBucketingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45B97867714F8D93CB71E9 /* MonthBoundaryBucketingTests.swift */; };
+		F4C17336404D47ABB0767A02 /* MonthlySummaryPDFServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3828993A707B4D6AB210733F /* MonthlySummaryPDFServiceTests.swift */; };
 		1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */; };
 		DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */; };
 		FCC388B0A0C345EDBC733153 /* SafeToSpendDeletedBillTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */; };
@@ -191,9 +195,13 @@
 		6E0B3B192461413AAF8A4037 /* ApplePayCaptureLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayCaptureLogicTests.swift; sourceTree = "<group>"; };
 		4588CEDC95F94C64965B6456 /* ApplePayCaptureServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayCaptureServiceTests.swift; sourceTree = "<group>"; };
 		689D1823EFB2453C820C2094 /* ApplePayShortcutsGuideTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayShortcutsGuideTests.swift; sourceTree = "<group>"; };
+		5419FF21381B40158BCD86A6 /* BillReminderScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BillReminderScheduleTests.swift; sourceTree = "<group>"; };
 		9DDF720BCEBA4614AB2B5A88 /* FinanceCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceCalculatorTests.swift; sourceTree = "<group>"; };
 		DFADE2F836264E7289852EA2 /* GoalFundingLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalFundingLogicTests.swift; sourceTree = "<group>"; };
+		A9AEBF4F5C1E461990577162 /* LogApplePayPurchaseIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogApplePayPurchaseIntentTests.swift; sourceTree = "<group>"; };
 		E56848AF87D941B9B7326B77 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
+		7D45B97867714F8D93CB71E9 /* MonthBoundaryBucketingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBoundaryBucketingTests.swift; sourceTree = "<group>"; };
+		3828993A707B4D6AB210733F /* MonthlySummaryPDFServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlySummaryPDFServiceTests.swift; sourceTree = "<group>"; };
 		A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeTests.swift; sourceTree = "<group>"; };
 		41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseSanityTests.swift; sourceTree = "<group>"; };
 		9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeToSpendDeletedBillTests.swift; sourceTree = "<group>"; };
@@ -464,9 +472,13 @@
 				6E0B3B192461413AAF8A4037 /* ApplePayCaptureLogicTests.swift */,
 				4588CEDC95F94C64965B6456 /* ApplePayCaptureServiceTests.swift */,
 				689D1823EFB2453C820C2094 /* ApplePayShortcutsGuideTests.swift */,
+				5419FF21381B40158BCD86A6 /* BillReminderScheduleTests.swift */,
 				9DDF720BCEBA4614AB2B5A88 /* FinanceCalculatorTests.swift */,
 				DFADE2F836264E7289852EA2 /* GoalFundingLogicTests.swift */,
+				A9AEBF4F5C1E461990577162 /* LogApplePayPurchaseIntentTests.swift */,
 				C0EDC57A0B474EC28AF7D73D /* Migration */,
+				7D45B97867714F8D93CB71E9 /* MonthBoundaryBucketingTests.swift */,
+				3828993A707B4D6AB210733F /* MonthlySummaryPDFServiceTests.swift */,
 				A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */,
 				41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */,
 				9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */,
@@ -743,9 +755,13 @@
 				34423B0212A24F6CB905CA4A /* ApplePayCaptureLogicTests.swift in Sources */,
 				8EC6D9CBDAFB4FAC8B893247 /* ApplePayCaptureServiceTests.swift in Sources */,
 				FD15812124FB4480B6B0A37F /* ApplePayShortcutsGuideTests.swift in Sources */,
+				2D329B87397A4ABD8D3CBC48 /* BillReminderScheduleTests.swift in Sources */,
 				1C6B7CD3B4294168A538A548 /* FinanceCalculatorTests.swift in Sources */,
 				1B3E61C714E944478E10B0C9 /* GoalFundingLogicTests.swift in Sources */,
+				4D730D86BB8C4380BD5B7FF5 /* LogApplePayPurchaseIntentTests.swift in Sources */,
 				B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */,
+				4E523E2D423C47DB804CBB23 /* MonthBoundaryBucketingTests.swift in Sources */,
+				F4C17336404D47ABB0767A02 /* MonthlySummaryPDFServiceTests.swift in Sources */,
 				1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */,
 				DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */,
 				FCC388B0A0C345EDBC733153 /* SafeToSpendDeletedBillTests.swift in Sources */,

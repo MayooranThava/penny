@@ -226,9 +226,10 @@ enum PennyPersistence {
     }
 
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
-        // PennyTests sets `isolatedStoreName` so parallel cases do not share a store.
+        // PennyTests sets `isolatedStoreName` so cases (and Shortcuts-style
+        // `makeContainer()` / `captureUsingSharedStore` calls) do not share a store.
         // The app never sets it: on-disk and preview containers stay named `Penny`.
-        if inMemory, let override = isolatedStoreName, !override.isEmpty {
+        if let override = isolatedStoreName, !override.isEmpty {
             return try makeIsolatedTestContainer(directoryName: override)
         }
         // Leave schema off the configuration. Passing a Schema here makes SwiftData

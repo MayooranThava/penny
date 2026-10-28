@@ -9,7 +9,8 @@ final class NotificationService {
 
     /// Day the reminder should fire: `daysBefore` days before due, or the due
     /// date itself when that day is already in the past.
-    static func reminderTriggerDate(
+    /// Pure calendar math — safe off the main actor (and from sync tests).
+    nonisolated static func reminderTriggerDate(
         dueDate: Date,
         daysBefore: Int,
         now: Date = .now,
@@ -24,7 +25,7 @@ final class NotificationService {
     }
 
     /// Calendar components for the local 9:00 notification on the trigger day.
-    static func reminderTriggerComponents(
+    nonisolated static func reminderTriggerComponents(
         dueDate: Date,
         daysBefore: Int,
         now: Date = .now,

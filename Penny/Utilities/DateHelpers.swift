@@ -3,12 +3,12 @@ import Foundation
 enum DateHelpers {
     static var calendar: Calendar { Calendar.current }
 
-    static func startOfMonth(for date: Date = .now) -> Date {
+    static func startOfMonth(for date: Date = .now, calendar: Calendar = .current) -> Date {
         let comps = calendar.dateComponents([.year, .month], from: date)
         return calendar.date(from: comps) ?? date
     }
 
-    static func endOfMonth(for date: Date = .now) -> Date {
+    static func endOfMonth(for date: Date = .now, calendar: Calendar = .current) -> Date {
         guard let start = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
               let next = calendar.date(byAdding: .month, value: 1, to: start),
               let end = calendar.date(byAdding: .second, value: -1, to: next) else {
@@ -17,11 +17,11 @@ enum DateHelpers {
         return end
     }
 
-    static func isSameDay(_ lhs: Date, _ rhs: Date) -> Bool {
+    static func isSameDay(_ lhs: Date, _ rhs: Date, calendar: Calendar = .current) -> Bool {
         calendar.isDate(lhs, inSameDayAs: rhs)
     }
 
-    static func isSameMonth(_ lhs: Date, _ rhs: Date) -> Bool {
+    static func isSameMonth(_ lhs: Date, _ rhs: Date, calendar: Calendar = .current) -> Bool {
         calendar.isDate(lhs, equalTo: rhs, toGranularity: .month)
     }
 

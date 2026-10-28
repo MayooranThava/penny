@@ -9,7 +9,7 @@ struct LogApplePayPurchaseIntentTests {
 
     @Test("perform() inserts a Wallet expense through the shared store")
     func performInsertsExpense() async throws {
-        var intent = LogApplePayPurchaseIntent()
+        let intent = LogApplePayPurchaseIntent()
         intent.amount = 12.34
         intent.merchant = "Intent Cafe"
         intent.currencyCode = "CAD"
@@ -17,9 +17,7 @@ struct LogApplePayPurchaseIntentTests {
 
         _ = try await intent.perform()
 
-        let container = try PennyPersistence.makeContainer()
-        let context = ModelContext(container)
-        let rows = try context.fetch(FetchDescriptor<Transaction>())
+        let rows = try fetchWalletExpenses()
         #expect(rows.count == 1)
         #expect(rows.first?.title == "Intent Cafe")
         #expect(rows.first?.amount == Decimal(string: "12.34"))
@@ -29,7 +27,7 @@ struct LogApplePayPurchaseIntentTests {
 
     @Test("perform() dedupes the same Wallet tap")
     func performDedupesSameTap() async throws {
-        var intent = LogApplePayPurchaseIntent()
+        let intent = LogApplePayPurchaseIntent()
         intent.amount = 7.50
         intent.merchant = "Duplicate Cafe"
         intent.currencyCode = "CAD"
@@ -38,16 +36,15 @@ struct LogApplePayPurchaseIntentTests {
         _ = try await intent.perform()
         _ = try await intent.perform()
 
-        let container = try PennyPersistence.makeContainer()
-        let context = ModelContext(container)
-        let rows = try context.fetch(FetchDescriptor<Transaction>())
+        let rows = try fetchWalletExpenses()
         #expect(rows.count == 1)
-        #expect(rows.first?.amount == Decimal(string: "7.50"))
+        #expect(rows.first?.title == "Duplicate Cafe")
+        #expect(rows.first?.amount == Decimal(string: "7.5") || rows.first?.amount == Decimal(string: "7.50"))
     }
 
     @Test("perform() rejects a zero amount")
     func performRejectsZero() async {
-        var intent = LogApplePayPurchaseIntent()
+        let intent = LogApplePayPurchaseIntent()
         intent.amount = 0
         intent.merchant = "Cafe"
         intent.currencyCode = "CAD"
@@ -57,6 +54,13 @@ struct LogApplePayPurchaseIntentTests {
         } catch {
             // App Intent surfaces this as a parameter needs-value error.
         }
+    }
+
+    private func fetchWalletExpenses() throws -> [Transaction] {
+        let container = try PennyPersistence.makeContainer()
+        let context = ModelContext(container)
+        return try context.fetch(FetchDescriptor<Transaction>())
+            .filter { $0.importSource == .applePayShortcut }
     }
 
     @Test("Intent title avoids the banned Apple brand word")

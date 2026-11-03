@@ -692,7 +692,7 @@ app_settings = """
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -716,7 +716,7 @@ widget_settings = """
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.widgets;
 				PRODUCT_NAME = PennyWidgets;
 				SKIP_INSTALL = NO;
@@ -788,7 +788,7 @@ for cfg_id, name in [(TEST_DEBUG, "Debug"), (TEST_RELEASE, "Release"), (TEST_SCR
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -809,7 +809,7 @@ for cfg_id, name in [(UI_TEST_DEBUG, "Debug"), (UI_TEST_RELEASE, "Release"), (UI
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 2YJ478267N;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;

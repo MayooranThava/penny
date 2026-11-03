@@ -34,6 +34,15 @@ enum PennyProductCatalog {
     }
 }
 
+/// Paywall and product lines the app shows. StoreKit still supplies the price.
+enum PaywallCopy {
+    static let purchasesUnavailable = "Purchases are unavailable right now. Please try again later."
+
+    static func priceSubtitle(displayPrice: String) -> String {
+        "\(displayPrice) · one-time purchase"
+    }
+}
+
 /// StoreKit 2 façade that owns product loading, purchase, restore, and the
 /// Penny Pro entitlement. Injected into the environment and long-lived for the
 /// whole app session.
@@ -44,10 +53,20 @@ final class StoreManager {
     /// True when the user currently holds any Penny Pro entitlement.
     private(set) var isPro = false
     private(set) var isLoadingProducts = false
+    private(set) var hasLoadedProducts = false
     private(set) var purchaseInFlight = false
     var lastErrorMessage: String?
 
-    init() {
+    private let loadProductsFromStore: (Set<String>) async throws -> [Product]
+
+    init(
+        loadProductsFromStore: @escaping (Set<String>) async throws -> [Product] = { ids in
+            try await Product.products(for: ids)
+        },
+        observeTransactionUpdates: Bool = true
+    ) {
+        self.loadProductsFromStore = loadProductsFromStore
+        guard observeTransactionUpdates else { return }
         // Listen for transactions that arrive outside an explicit purchase:
         // renewals, Ask-to-Buy approvals, and purchases made on other devices.
         Task { [weak self] in
@@ -55,6 +74,14 @@ final class StoreManager {
                 await self?.handle(update)
             }
         }
+    }
+
+    /// Shown after a product request fails or returns nothing. Nil before that
+    /// attempt finishes, while a load is in flight, or once a product is available,
+    /// so the paywall is not left blank or spinning.
+    var purchasesUnavailableMessage: String? {
+        guard hasLoadedProducts, products.isEmpty, !isLoadingProducts else { return nil }
+        return PaywallCopy.purchasesUnavailable
     }
 
     var lifetimeProduct: Product? { products.first { $0.id == PennyProductCatalog.lifetimeProductID } }
@@ -67,9 +94,12 @@ final class StoreManager {
 
     func loadProducts() async {
         isLoadingProducts = true
-        defer { isLoadingProducts = false }
+        defer {
+            isLoadingProducts = false
+            hasLoadedProducts = true
+        }
         do {
-            let loaded = try await Product.products(for: PennyProductCatalog.allProductIDs)
+            let loaded = try await loadProductsFromStore(PennyProductCatalog.allProductIDs)
             products = loaded.sorted { $0.id < $1.id }
             if products.isEmpty {
                 lastErrorMessage = "No products returned from the App Store. Confirm Penny Pro Lifetime (\(PennyProductCatalog.lifetimeProductID)) is a Non-Consumable with a price, Paid Applications is Active, and you’re testing via TestFlight sandbox."

@@ -806,28 +806,14 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var purchaseOptions: some View {
-        if store.products.isEmpty {
-            if store.isLoadingProducts {
-                ProgressView().frame(maxWidth: .infinity).padding()
-            } else {
-                VStack(spacing: PennySpacing.sm) {
-                    Text("Purchases are unavailable right now.")
-                        .font(PennyTypography.callout)
-                        .foregroundStyle(PennyColors.textSecondary)
-                    if let detail = store.lastErrorMessage, !detail.isEmpty {
-                        Text(detail)
-                            .font(PennyTypography.caption)
-                            .foregroundStyle(PennyColors.textTertiary)
-                            .multilineTextAlignment(.center)
-                    }
-                    Text("If this continues, check your connection and try again later. Restore purchases if you already bought Penny Pro.")
-                        .font(PennyTypography.caption)
-                        .foregroundStyle(PennyColors.textTertiary)
-                        .multilineTextAlignment(.center)
-                    Button("Try again") { Task { await store.loadProducts() } }
-                        .buttonStyle(.pennySecondary)
-                }
-            }
+        if let message = store.purchasesUnavailableMessage {
+            Text(message)
+                .font(PennyTypography.callout)
+                .foregroundStyle(PennyColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+        } else if store.products.isEmpty {
+            ProgressView().frame(maxWidth: .infinity).padding()
         } else if let lifetime = store.lifetimeProduct {
             productButton(lifetime)
         } else {
@@ -852,7 +838,7 @@ struct PaywallView: View {
             VStack(spacing: 2) {
                 Text(product.displayName.isEmpty ? "Penny Pro — Lifetime" : product.displayName)
                     .font(PennyTypography.bodyEmphasized)
-                Text("\(product.displayPrice) once · yours forever")
+                Text(PaywallCopy.priceSubtitle(displayPrice: product.displayPrice))
                     .font(PennyTypography.caption)
             }
         }

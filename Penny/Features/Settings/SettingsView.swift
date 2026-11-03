@@ -807,11 +807,15 @@ struct PaywallView: View {
     @ViewBuilder
     private var purchaseOptions: some View {
         if let message = store.purchasesUnavailableMessage {
-            Text(message)
-                .font(PennyTypography.callout)
-                .foregroundStyle(PennyColors.textSecondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+            VStack(spacing: PennySpacing.sm) {
+                Text(message)
+                    .font(PennyTypography.callout)
+                    .foregroundStyle(PennyColors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                Button("Try again") { Task { await store.loadProducts() } }
+                    .buttonStyle(.pennySecondary)
+            }
         } else if store.products.isEmpty {
             ProgressView().frame(maxWidth: .infinity).padding()
         } else if let lifetime = store.lifetimeProduct {

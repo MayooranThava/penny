@@ -43,18 +43,55 @@ struct PaywallTests {
         #expect(failed.purchasesUnavailableMessage == Self.unavailable)
 
         let empty = StoreManager(
-            loadProductsFromStore: { _ in [] },
+            loadProductsFromStore: { _ in PennyLoadedCatalog(offered: []) },
             observeTransactionUpdates: false
         )
         await empty.loadProducts()
         #expect(empty.isLoadingProducts == false)
         #expect(empty.products.isEmpty)
+        #expect(empty.offeredProducts.isEmpty)
         #expect(empty.purchasesUnavailableMessage == Self.unavailable)
 
         let paywall = try String(contentsOf: settingsViewURL(), encoding: .utf8)
         #expect(paywall.contains("if let message = store.purchasesUnavailableMessage"))
         #expect(paywall.contains("Text(message)"))
+        #expect(paywall.contains("Button(\"Try again\") { Task { await store.loadProducts() } }"))
+        #expect(paywall.contains("Button(\"Restore purchases\")"))
         #expect(!paywall.localizedCaseInsensitiveContains("forever"))
+    }
+
+    @Test("A retry after a failed product load clears the message once products load")
+    @MainActor
+    func retryAfterFailureClearsUnavailableMessage() async {
+        let attempts = LoadAttempts()
+        let store = StoreManager(
+            loadProductsFromStore: { _ in
+                let attempt = attempts.next()
+                if attempt == 1 { throw FailedProductLoad() }
+                return PennyLoadedCatalog(offered: [
+                    PennyOfferedProduct(
+                        id: PennyProductCatalog.lifetimeProductID,
+                        displayName: "Penny Pro — Lifetime",
+                        displayPrice: "$4.99"
+                    )
+                ])
+            },
+            observeTransactionUpdates: false
+        )
+
+        await store.loadProducts()
+        #expect(store.purchasesUnavailableMessage == Self.unavailable)
+        #expect(store.offeredProducts.isEmpty)
+
+        await store.loadProducts()
+        #expect(store.isLoadingProducts == false)
+        #expect(store.offeredProducts.count == 1)
+        #expect(store.purchasesUnavailableMessage == nil)
+        #expect(store.lifetimeProduct == nil)
+        #expect(
+            PaywallCopy.priceSubtitle(displayPrice: store.offeredProducts[0].displayPrice)
+                == "$4.99 · one-time purchase"
+        )
     }
 
     private func appSwiftSources() throws -> [URL] {
@@ -134,6 +171,15 @@ struct PaywallTests {
 }
 
 private struct FailedProductLoad: Error {}
+
+private final class LoadAttempts {
+    private var count = 0
+
+    func next() -> Int {
+        count += 1
+        return count
+    }
+}
 
 private enum PaywallTestError: Error {
     case missingDirectory(String)

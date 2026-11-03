@@ -43,6 +43,33 @@ enum PaywallCopy {
     }
 }
 
+/// A StoreKit product reduced to the fields the paywall displays.
+/// Tests can build one without a StoreKit `Product`.
+struct PennyOfferedProduct: Equatable, Identifiable, Sendable {
+    var id: String
+    var displayName: String
+    var displayPrice: String
+}
+
+/// Result of a product load. Production fills both from StoreKit.
+/// Tests can report offered products without constructing `Product`.
+struct PennyLoadedCatalog {
+    var products: [Product]
+    var offered: [PennyOfferedProduct]
+
+    init(products: [Product]) {
+        self.products = products
+        self.offered = products.map {
+            PennyOfferedProduct(id: $0.id, displayName: $0.displayName, displayPrice: $0.displayPrice)
+        }
+    }
+
+    init(offered: [PennyOfferedProduct]) {
+        self.products = []
+        self.offered = offered
+    }
+}
+
 /// StoreKit 2 façade that owns product loading, purchase, restore, and the
 /// Penny Pro entitlement. Injected into the environment and long-lived for the
 /// whole app session.
@@ -57,11 +84,13 @@ final class StoreManager {
     private(set) var purchaseInFlight = false
     var lastErrorMessage: String?
 
-    private let loadProductsFromStore: (Set<String>) async throws -> [Product]
+    private(set) var offeredProducts: [PennyOfferedProduct] = []
+
+    private let loadProductsFromStore: (Set<String>) async throws -> PennyLoadedCatalog
 
     init(
-        loadProductsFromStore: @escaping (Set<String>) async throws -> [Product] = { ids in
-            try await Product.products(for: ids)
+        loadProductsFromStore: @escaping (Set<String>) async throws -> PennyLoadedCatalog = { ids in
+            PennyLoadedCatalog(products: try await Product.products(for: ids))
         },
         observeTransactionUpdates: Bool = true
     ) {
@@ -80,7 +109,7 @@ final class StoreManager {
     /// attempt finishes, while a load is in flight, or once a product is available,
     /// so the paywall is not left blank or spinning.
     var purchasesUnavailableMessage: String? {
-        guard hasLoadedProducts, products.isEmpty, !isLoadingProducts else { return nil }
+        guard hasLoadedProducts, offeredProducts.isEmpty, !isLoadingProducts else { return nil }
         return PaywallCopy.purchasesUnavailable
     }
 
@@ -100,14 +129,16 @@ final class StoreManager {
         }
         do {
             let loaded = try await loadProductsFromStore(PennyProductCatalog.allProductIDs)
-            products = loaded.sorted { $0.id < $1.id }
-            if products.isEmpty {
+            products = loaded.products.sorted { $0.id < $1.id }
+            offeredProducts = loaded.offered.sorted { $0.id < $1.id }
+            if offeredProducts.isEmpty {
                 lastErrorMessage = "No products returned from the App Store. Confirm Penny Pro Lifetime (\(PennyProductCatalog.lifetimeProductID)) is a Non-Consumable with a price, Paid Applications is Active, and you’re testing via TestFlight sandbox."
             } else {
                 lastErrorMessage = nil
             }
         } catch {
             products = []
+            offeredProducts = []
             lastErrorMessage = error.localizedDescription
         }
     }

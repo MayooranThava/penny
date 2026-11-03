@@ -72,10 +72,10 @@ struct MigrationTests {
         try assertSafeToSpendAndWidget(in: container)
     }
 
-    @Test("v11 store with deleted bills opens on v1.2 with the correct total")
+    @Test("v11 store with deleted bills opens on v1.3 with the correct total")
     @MainActor
     func v11StoreWithDeletedBillsOpensOnV12() throws {
-        #expect(PennyAppInfo.marketingVersion == "1.2")
+        #expect(PennyAppInfo.marketingVersion == "1.3")
         #expect(PennySchemaV1.versionIdentifier == Schema.Version(1, 0, 4))
 
         let url = try storeURL("Penny-v1.1.store")

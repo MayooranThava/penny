@@ -28,6 +28,7 @@
 		C6254C689DCA44F08F788A53 /* AccountEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B683A8A6C9B4E8B9B6D42CE /* AccountEditorView.swift */; };
 		2F47CB12D47E43339A1803BF /* ApplePayCaptureSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450287322B254ACEBBBE00BF /* ApplePayCaptureSetupView.swift */; };
 		37E48A542CA24ED794D73C4F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF4378DF13D8452F93BFB93E /* SettingsView.swift */; };
+		6B04DF188F8C45EFB0BA1E61 /* AddExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1AC80A2291495A9AF747FC /* AddExpenseIntent.swift */; };
 		7BF4C4125F1E46F98026A161 /* LogApplePayPurchaseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1398C03D424006A33B9911 /* LogApplePayPurchaseIntent.swift */; };
 		28EB26E5F3FB421FBAF54B2A /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F902C72C1DAB4C50BE90E9C3 /* Models.swift */; };
 		F5567065E91648FCAEA355D4 /* PennyPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF17CC2E7F0E461DABA7BDC2 /* PennyPersistence.swift */; };
@@ -50,6 +51,7 @@
 		B48E5CFD90A3435CB5075CE2 /* PennyDataAccessProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7421B539D15F4035B4F24174 /* PennyDataAccessProbe.swift */; };
 		8700B521443D4EBF9A9720E4 /* PrivateModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */; };
 		9031163FF69B460A8E91D167 /* PrivateModeLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */; };
+		E1C28059905B42D59CA71A63 /* QuickAddExpenseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7EF1CAA393C4A71998A5198 /* QuickAddExpenseService.swift */; };
 		6407F9FA18C64DB487C0E64E /* WidgetSnapshotPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05B3F147F9E4547B96DB932 /* WidgetSnapshotPublisher.swift */; };
 		872CB7618BF04E6A9A9265CB /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */; };
 		10ACAB5C1D5745DC908B2F37 /* DateHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7752989F86DF4C388A63D6C0 /* DateHelpers.swift */; };
@@ -57,6 +59,7 @@
 		0C0E59BE96BF41F59E573E45 /* Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57EBA2C8EDCA41F8B1C573F6 /* Keyboard.swift */; };
 		B2DEC1E9255A409BA4072346 /* MoneyFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72FD3E021844BA99F186F61 /* MoneyFormatters.swift */; };
 		CEABB110A08E41B599A3805C /* PennyAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B7D4CD255B4E72A9AB57E7 /* PennyAppInfo.swift */; };
+		E8C5BE63F76645BB9C243FE0 /* AddExpenseIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5222B4C330254CB89FE145FE /* AddExpenseIntentTests.swift */; };
 		34423B0212A24F6CB905CA4A /* ApplePayCaptureLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0B3B192461413AAF8A4037 /* ApplePayCaptureLogicTests.swift */; };
 		8EC6D9CBDAFB4FAC8B893247 /* ApplePayCaptureServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4588CEDC95F94C64965B6456 /* ApplePayCaptureServiceTests.swift */; };
 		FD15812124FB4480B6B0A37F /* ApplePayShortcutsGuideTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689D1823EFB2453C820C2094 /* ApplePayShortcutsGuideTests.swift */; };
@@ -163,6 +166,7 @@
 		6B683A8A6C9B4E8B9B6D42CE /* AccountEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountEditorView.swift; sourceTree = "<group>"; };
 		450287322B254ACEBBBE00BF /* ApplePayCaptureSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayCaptureSetupView.swift; sourceTree = "<group>"; };
 		FF4378DF13D8452F93BFB93E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8F1AC80A2291495A9AF747FC /* AddExpenseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExpenseIntent.swift; sourceTree = "<group>"; };
 		4B1398C03D424006A33B9911 /* LogApplePayPurchaseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogApplePayPurchaseIntent.swift; sourceTree = "<group>"; };
 		F902C72C1DAB4C50BE90E9C3 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		CF17CC2E7F0E461DABA7BDC2 /* PennyPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyPersistence.swift; sourceTree = "<group>"; };
@@ -185,6 +189,7 @@
 		7421B539D15F4035B4F24174 /* PennyDataAccessProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyDataAccessProbe.swift; sourceTree = "<group>"; };
 		420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeController.swift; sourceTree = "<group>"; };
 		514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeLogic.swift; sourceTree = "<group>"; };
+		B7EF1CAA393C4A71998A5198 /* QuickAddExpenseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddExpenseService.swift; sourceTree = "<group>"; };
 		E05B3F147F9E4547B96DB932 /* WidgetSnapshotPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotPublisher.swift; sourceTree = "<group>"; };
 		5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotStore.swift; sourceTree = "<group>"; };
 		7752989F86DF4C388A63D6C0 /* DateHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateHelpers.swift; sourceTree = "<group>"; };
@@ -192,6 +197,7 @@
 		57EBA2C8EDCA41F8B1C573F6 /* Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keyboard.swift; sourceTree = "<group>"; };
 		A72FD3E021844BA99F186F61 /* MoneyFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatters.swift; sourceTree = "<group>"; };
 		65B7D4CD255B4E72A9AB57E7 /* PennyAppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PennyAppInfo.swift; sourceTree = "<group>"; };
+		5222B4C330254CB89FE145FE /* AddExpenseIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExpenseIntentTests.swift; sourceTree = "<group>"; };
 		6E0B3B192461413AAF8A4037 /* ApplePayCaptureLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayCaptureLogicTests.swift; sourceTree = "<group>"; };
 		4588CEDC95F94C64965B6456 /* ApplePayCaptureServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayCaptureServiceTests.swift; sourceTree = "<group>"; };
 		689D1823EFB2453C820C2094 /* ApplePayShortcutsGuideTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayShortcutsGuideTests.swift; sourceTree = "<group>"; };
@@ -397,6 +403,7 @@
 		895FDB9E6FFF4425B64FEB22 /* Intents */ = {
 			isa = PBXGroup;
 			children = (
+				8F1AC80A2291495A9AF747FC /* AddExpenseIntent.swift */,
 				4B1398C03D424006A33B9911 /* LogApplePayPurchaseIntent.swift */,
 			);
 			path = Intents;
@@ -448,6 +455,7 @@
 				7421B539D15F4035B4F24174 /* PennyDataAccessProbe.swift */,
 				420DDDDCF3964E1398EE7D9F /* PrivateModeController.swift */,
 				514D0C02B2194F6FBB4EF683 /* PrivateModeLogic.swift */,
+				B7EF1CAA393C4A71998A5198 /* QuickAddExpenseService.swift */,
 				E05B3F147F9E4547B96DB932 /* WidgetSnapshotPublisher.swift */,
 				5601DB028A984E7087F79D36 /* WidgetSnapshotStore.swift */,
 			);
@@ -469,6 +477,7 @@
 		A10000000000000000000005 /* PennyTests */ = {
 			isa = PBXGroup;
 			children = (
+				5222B4C330254CB89FE145FE /* AddExpenseIntentTests.swift */,
 				6E0B3B192461413AAF8A4037 /* ApplePayCaptureLogicTests.swift */,
 				4588CEDC95F94C64965B6456 /* ApplePayCaptureServiceTests.swift */,
 				689D1823EFB2453C820C2094 /* ApplePayShortcutsGuideTests.swift */,
@@ -699,6 +708,7 @@
 				C6254C689DCA44F08F788A53 /* AccountEditorView.swift in Sources */,
 				2F47CB12D47E43339A1803BF /* ApplePayCaptureSetupView.swift in Sources */,
 				37E48A542CA24ED794D73C4F /* SettingsView.swift in Sources */,
+				6B04DF188F8C45EFB0BA1E61 /* AddExpenseIntent.swift in Sources */,
 				7BF4C4125F1E46F98026A161 /* LogApplePayPurchaseIntent.swift in Sources */,
 				28EB26E5F3FB421FBAF54B2A /* Models.swift in Sources */,
 				F5567065E91648FCAEA355D4 /* PennyPersistence.swift in Sources */,
@@ -721,6 +731,7 @@
 				B48E5CFD90A3435CB5075CE2 /* PennyDataAccessProbe.swift in Sources */,
 				8700B521443D4EBF9A9720E4 /* PrivateModeController.swift in Sources */,
 				9031163FF69B460A8E91D167 /* PrivateModeLogic.swift in Sources */,
+				E1C28059905B42D59CA71A63 /* QuickAddExpenseService.swift in Sources */,
 				6407F9FA18C64DB487C0E64E /* WidgetSnapshotPublisher.swift in Sources */,
 				872CB7618BF04E6A9A9265CB /* WidgetSnapshotStore.swift in Sources */,
 				10ACAB5C1D5745DC908B2F37 /* DateHelpers.swift in Sources */,
@@ -752,6 +763,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E8C5BE63F76645BB9C243FE0 /* AddExpenseIntentTests.swift in Sources */,
 				34423B0212A24F6CB905CA4A /* ApplePayCaptureLogicTests.swift in Sources */,
 				8EC6D9CBDAFB4FAC8B893247 /* ApplePayCaptureServiceTests.swift in Sources */,
 				FD15812124FB4480B6B0A37F /* ApplePayShortcutsGuideTests.swift in Sources */,

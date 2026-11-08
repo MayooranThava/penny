@@ -16,6 +16,8 @@ enum PennyAppInfo {
         "Penny is a budgeting tool, not financial, tax or investment advice. Amounts are estimates based on what you enter and may not match your bank."
     static let localCaptureSummary =
         "Penny doesn't connect to your bank. Wallet tap capture and widgets keep their data on this iPhone."
+    static let siriSummary =
+        "If you use Siri with Penny, your request is processed by Apple under Apple's privacy policy. Penny only receives the details it needs to save the entry."
     static let deletionSummary =
         "Deleting Penny or using Reset permanently erases your data from this iPhone."
     static let audienceSummary =
@@ -24,6 +26,7 @@ enum PennyAppInfo {
         privacySummary,
         budgetingDisclaimer,
         localCaptureSummary,
+        siriSummary,
         deletionSummary,
         audienceSummary
     ]

@@ -59,17 +59,10 @@ enum ApplePayCaptureService {
             merchantName: draft.merchant,
             cardName: draft.cardName
         )
-        let hadOtherPendingChanges = context.hasChanges
-        context.insert(transaction)
         do {
-            try saveOrThrow(context)
-        } catch {
-            if hadOtherPendingChanges {
-                context.delete(transaction)
-            } else {
-                context.rollback()
-            }
-            throw error
+            try TransactionInsert.saveNew(transaction, in: context)
+        } catch let error as TransactionSaveError {
+            throw ApplePayCaptureSaveError.failed(error.detail)
         }
         return .inserted(title: draft.title, amount: draft.amount, categoryName: draft.categoryName)
     }
@@ -123,15 +116,39 @@ enum ApplePayCaptureService {
         }
     }
 
-    private static func saveOrThrow(_ context: ModelContext) throws {
+}
+
+/// Inserts one new row and saves it. A failed save undoes that insert and throws.
+/// Other unsaved edits in the context stay in place.
+@MainActor
+enum TransactionInsert {
+    static func saveNew(_ transaction: Transaction, in context: ModelContext) throws {
+        let hadOtherPendingChanges = context.hasChanges
+        context.insert(transaction)
         do {
             if let forced = PennySaveTesting.forcedError {
                 throw forced
             }
             try context.save()
         } catch {
+            if hadOtherPendingChanges {
+                context.delete(transaction)
+            } else {
+                context.rollback()
+            }
             let detail = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-            throw ApplePayCaptureSaveError.failed(detail)
+            throw TransactionSaveError(detail: detail)
         }
+    }
+}
+
+struct TransactionSaveError: LocalizedError, Equatable {
+    var detail: String
+
+    var errorDescription: String? {
+        if detail.isEmpty {
+            return "Penny couldn’t save this entry."
+        }
+        return "Penny couldn’t save this entry. \(detail)"
     }
 }

@@ -1,6 +1,7 @@
 import AppIntents
 import Foundation
 import SwiftData
+import WidgetKit
 
 /// Shortcuts action used by a Wallet / Transaction personal automation.
 ///
@@ -25,11 +26,25 @@ struct LogApplePayPurchaseIntent: AppIntent {
     var amount: Double
 
     @Parameter(
+        title: "Amount (text)",
+        description: "Optional. Used when Amount is written with a comma, such as 12,50.",
+        default: ""
+    )
+    var amountText: String
+
+    @Parameter(
         title: "Merchant",
-        description: "Map this to Name from Shortcut Input.",
+        description: "Map this to Merchant from Shortcut Input.",
         default: ""
     )
     var merchant: String
+
+    @Parameter(
+        title: "Name",
+        description: "Used when Merchant is empty. Map this to Name from Shortcut Input.",
+        default: ""
+    )
+    var transactionName: String
 
     @Parameter(
         title: "Currency Code",
@@ -47,6 +62,8 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     static var parameterSummary: some ParameterSummary {
         Summary("Log \(\.$amount) at \(\.$merchant)") {
+            \.$amountText
+            \.$transactionName
             \.$currencyCode
             \.$cardName
         }
@@ -55,25 +72,75 @@ struct LogApplePayPurchaseIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let result = try ApplePayCaptureService.captureUsingSharedStore(
-            amount: amount,
+            amount: try resolvedAmount(),
             merchant: merchant,
+            name: transactionName,
             currencyCode: currencyCode,
             cardName: cardName
         )
 
+        let isPrivate = Self.privateModeIsOn
         switch result {
         case .inserted(let title, let amountValue, let categoryName):
+            reloadTransactionAndTotalWidgets()
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
-                dialog: IntentDialog("Logged \(money) at \(title) under \(categoryName).")
+                dialog: IntentDialog(String.LocalizationValue(stringLiteral: WalletPurchaseDialog.logged(
+                    merchant: title,
+                    amountText: money,
+                    categoryName: categoryName,
+                    isPrivate: isPrivate
+                )))
             )
         case .duplicate(let title, let amountValue):
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
-                dialog: IntentDialog("Already logged \(money) at \(title) today.")
+                dialog: IntentDialog(String.LocalizationValue(stringLiteral: WalletPurchaseDialog.duplicate(
+                    merchant: title,
+                    amountText: money,
+                    isPrivate: isPrivate
+                )))
             )
         case .invalidAmount:
             throw $amount.needsValueError("Amount must be greater than zero.")
+        }
+    }
+
+    /// `amountText` wins when it parses. Otherwise the 1.3 numeric `amount` is used.
+    @MainActor
+    private func resolvedAmount() throws -> Double {
+        let text = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty,
+           let parsed = ApplePayCaptureLogic.money(fromShortcutAmount: text, currencyCode: currencyCode) {
+            return NSDecimalNumber(decimal: parsed).doubleValue
+        }
+        guard amount > 0 else {
+            throw $amount.needsValueError("Amount must be greater than zero.")
+        }
+        return amount
+    }
+
+    @MainActor
+    private static var privateModeIsOn: Bool {
+        guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
+            return false
+        }
+        return PrivateModeDefaults.isEnabled(in: defaults)
+    }
+
+    /// Safe to Spend, monthly budget, the savings goal, upcoming bills, and the
+    /// reminder each show a total or a list of transactions. Other timelines stay put.
+    @MainActor
+    private func reloadTransactionAndTotalWidgets() {
+        let kinds = [
+            PrivateWidgetKinds.safeToSpend,
+            PrivateWidgetKinds.monthlyBudget,
+            PrivateWidgetKinds.savingsGoal,
+            PrivateWidgetKinds.upcomingBills,
+            PrivateWidgetKinds.upcomingReminder
+        ]
+        for kind in kinds {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
         }
     }
 
@@ -90,6 +157,22 @@ struct LogApplePayPurchaseIntent: AppIntent {
         } catch {
             return "CAD"
         }
+    }
+}
+
+enum WalletPurchaseDialog {
+    static func logged(merchant: String, amountText: String, categoryName: String, isPrivate: Bool) -> String {
+        if isPrivate {
+            return "Logged a purchase at \(merchant)."
+        }
+        return "Logged \(amountText) at \(merchant) under \(categoryName)."
+    }
+
+    static func duplicate(merchant: String, amountText: String, isPrivate: Bool) -> String {
+        if isPrivate {
+            return "Already logged a purchase at \(merchant)."
+        }
+        return "Already logged \(amountText) at \(merchant)."
     }
 }
 

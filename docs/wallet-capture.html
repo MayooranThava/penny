@@ -55,24 +55,34 @@
       <h1>Wallet capture setup</h1>
       <p class="muted">Optional · My Penny · <code>com.mayooran.penny</code></p>
 
-      <p>Penny cannot install a Wallet tap automation for you — Apple requires each person to approve that Personal Automation once. The fastest help is pasting the prompt below into ChatGPT, Claude, or Apple Intelligence.</p>
+      <p>Penny cannot install a Wallet tap automation for you — Apple requires each person to approve that Personal Automation once. You can paste the prompt below into an AI assistant of your choice. Anything you paste into another app follows that app's terms.</p>
 
-      <h2>AI / Siri prompt (copy)</h2>
-      <pre id="prompt">Create an iPhone Shortcuts Personal Automation for me:
+      <h2>Setup prompt (copy)</h2>
+      <pre id="prompt">Create an iPhone Shortcuts automation that logs Wallet taps into Penny.
 
-1. Trigger: Transaction / Wallet → When I tap → include my cards
-2. Run Immediately, Ask Before Running OFF, Show When Run OFF
-3. Receive transaction as input
-4. Add action from the Penny app: “Log Wallet Purchase”
-   (Add Action → Apps → Penny — open Penny once first if it’s missing)
-5. Map:
-   - Amount → Shortcut Input → Currency Amount (or Amount)
-   - Merchant → Shortcut Input → Name (or Merchant)
-   - Currency Code → type CAD (do not leave as Ask Each Time)
-   - Card Name → Shortcut Input → Card or Pass (optional)
-6. Save the automation
+iOS 27 (do this first):
+1. Open Shortcuts. Touch and hold a shortcut and tap Edit. If a screen asks you to describe a change, tap Edit again.
+2. Add a Transaction trigger: When I tap, and include the cards you pay with. Tap the arrow beside the trigger, leave Automation on, and turn Confirm Before Run off.
+3. Tap the info button, then Privacy, and turn on Allow Running When Locked.
+4. Add the action from the Penny app: “Log Wallet Purchase”
+   (Add Action → Apps → Penny — open Penny once first if it is missing)
+5. Always map Amount → Currency Amount. If Penny saves the wrong amount, also map Amount (text).
+6. Map Merchant → Shortcut Input → Merchant. If Merchant is empty, use Name.
+7. Currency Code → use the currency your Penny account uses (for example CAD or USD). Do not leave it as Ask Each Time.
+8. Card Name → Shortcut Input → Card or Pass (optional).
+9. Save.
 
-Goal: every Wallet tap quietly logs an expense in Penny.</pre>
+iOS 26 (if you do not see Confirm Before Run):
+1. Shortcuts → Automation → New Automation.
+2. Trigger: Transaction / Wallet → When I tap → include your cards.
+3. Run Immediately, turn Ask Before Running off, and turn Show When Run off.
+4. Add the same Penny action. Map Amount, Merchant (or Name), Currency Code, and Card Name the same way.
+5. Save.
+
+You can paste this into an AI assistant of your choice and ask it to walk you through Shortcuts. Anything you paste into another app follows that app's terms.
+
+Goal: Wallet taps can log expenses in Penny without asking first.
+</pre>
 
       <h2>Why not a share link?</h2>
       <p>Shared Shortcuts links work for normal shortcuts, but <strong>Wallet / Transaction Personal Automations are not something apps (or links) can install for someone else</strong>. Each iPhone owner must create or approve that trigger.</p>

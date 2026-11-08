@@ -58,26 +58,85 @@ struct ApplePayCaptureLogicTests {
         #expect(ApplePayCaptureLogic.suggestCategory(for: "Shell Gas") == "Transportation")
     }
 
-    @Test("External IDs match for the same tap details on the same day")
-    func externalIDStable() {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    @Test("External IDs match inside the duplicate window and differ after it")
+    func externalIDUsesTimeWindow() {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let soon = date.addingTimeInterval(30)
+        let later = date.addingTimeInterval(ApplePayCaptureLogic.duplicateWindow + 1)
 
         let a = ApplePayCaptureLogic.externalIdentifier(
             amount: Decimal(string: "21.30")!,
             merchant: "Uber",
             cardName: "Visa",
-            date: date,
-            calendar: calendar
+            date: date
         )
         let b = ApplePayCaptureLogic.externalIdentifier(
             amount: Decimal(string: "21.30")!,
             merchant: "uber",
             cardName: "Visa",
-            date: date,
-            calendar: calendar
+            date: soon
+        )
+        let c = ApplePayCaptureLogic.externalIdentifier(
+            amount: Decimal(string: "21.30")!,
+            merchant: "Uber",
+            cardName: "Visa",
+            date: later
         )
         #expect(a == b)
+        #expect(a != c)
+    }
+
+    @Test("Merchant falls back from Merchant to Name, then Apple Pay")
+    func merchantFallsBackToNameThenApplePay() {
+        #expect(ApplePayCaptureLogic.merchantTitle(merchant: " Cafe ", name: "Other") == "Cafe")
+        #expect(ApplePayCaptureLogic.merchantTitle(merchant: "  ", name: " Name Cafe ") == "Name Cafe")
+        #expect(ApplePayCaptureLogic.merchantTitle(merchant: nil, name: nil) == "Apple Pay")
+        let draft = ApplePayCaptureLogic.makeDraft(
+            amount: 4,
+            merchant: "",
+            name: "Name Cafe",
+            currencyCode: "CAD",
+            cardName: nil
+        )
+        #expect(draft?.title == "Name Cafe")
+    }
+
+    @Test("Parses currency text in the Amount field")
+    func parsesCurrencyAmountText() {
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "$12.34") == Decimal(string: "12.34"))
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "CA$4.50") == Decimal(string: "4.50"))
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "1,234.56") == Decimal(string: "1234.56"))
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "0") == nil)
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "not money") == nil)
+    }
+
+    @Test("Duplicate check uses amount, merchant, and a short time window")
+    func duplicateCheckUsesTimeWindow() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let amount = Decimal(string: "8.25")!
+        #expect(ApplePayCaptureLogic.isDuplicate(
+            amount: amount,
+            merchant: "Cafe",
+            date: start,
+            existingAmount: amount,
+            existingMerchant: "cafe",
+            existingDate: start.addingTimeInterval(45)
+        ))
+        #expect(!ApplePayCaptureLogic.isDuplicate(
+            amount: amount,
+            merchant: "Cafe",
+            date: start,
+            existingAmount: amount,
+            existingMerchant: "Cafe",
+            existingDate: start.addingTimeInterval(ApplePayCaptureLogic.duplicateWindow + 5)
+        ))
+        #expect(!ApplePayCaptureLogic.isDuplicate(
+            amount: amount,
+            merchant: "Cafe",
+            date: start,
+            existingAmount: Decimal(string: "9.00")!,
+            existingMerchant: "Cafe",
+            existingDate: start
+        ))
     }
 }

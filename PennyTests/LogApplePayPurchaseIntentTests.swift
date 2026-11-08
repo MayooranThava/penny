@@ -42,6 +42,62 @@ struct LogApplePayPurchaseIntentTests {
         #expect(rows.first?.amount == Decimal(string: "7.5") || rows.first?.amount == Decimal(string: "7.50"))
     }
 
+    @Test("An empty Merchant falls back to Name, then Apple Pay")
+    func merchantFallsBack() async throws {
+        let named = LogApplePayPurchaseIntent()
+        named.amount = 4.25
+        named.merchant = " "
+        named.transactionName = "Name Cafe"
+        named.currencyCode = "CAD"
+        _ = try await named.perform()
+
+        let plain = LogApplePayPurchaseIntent()
+        plain.amount = 4.25
+        plain.merchant = ""
+        plain.transactionName = ""
+        plain.currencyCode = "CAD"
+        _ = try await plain.perform()
+
+        let rows = try fetchWalletExpenses()
+        #expect(rows.contains { $0.title == "Name Cafe" })
+        #expect(rows.contains { $0.title == "Apple Pay" })
+    }
+
+    @Test("Private mode on still stores the Wallet amount")
+    func privateModeKeepsStoredAmount() async throws {
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        PrivateModeDefaults.setEnabled(true, in: defaults)
+        let intent = LogApplePayPurchaseIntent()
+        intent.amount = 15.75
+        intent.merchant = "Private Cafe"
+        intent.currencyCode = "CAD"
+        _ = try await intent.perform()
+
+        let rows = try fetchWalletExpenses()
+        #expect(rows.count == 1)
+        #expect(rows.first?.amount == Decimal(string: "15.75"))
+        #expect(rows.first?.title == "Private Cafe")
+        #expect(PrivateModeDefaults.isEnabled(in: defaults))
+    }
+
+    @Test("A failed save is reported to Shortcuts")
+    func saveErrorReachesShortcuts() async {
+        let intent = LogApplePayPurchaseIntent()
+        intent.amount = 2.00
+        intent.merchant = "Save Fail"
+        intent.currencyCode = "CAD"
+        await PennySaveTesting.$forcedError.withValue(PennyForcedSaveFailure()) {
+            do {
+                _ = try await intent.perform()
+                Issue.record("Expected perform() to throw when the save fails")
+            } catch let error as ApplePayCaptureSaveError {
+                #expect(error.localizedDescription.localizedCaseInsensitiveContains("save"))
+            } catch {
+                Issue.record("Unexpected error: \(error)")
+            }
+        }
+    }
+
     @Test("perform() rejects a zero amount")
     func performRejectsZero() async {
         let intent = LogApplePayPurchaseIntent()
@@ -75,5 +131,8 @@ struct LogApplePayPurchaseIntentTests {
         #expect(source.contains("Log Wallet Purchase"))
         #expect(!source.contains("title: LocalizedStringResource = \"Log Apple"))
         #expect(source.contains("captureUsingSharedStore"))
+        #expect(source.contains("WidgetCenter.shared.reloadTimelines(ofKind: kind)"))
+        #expect(!source.contains("reloadAllTimelines"))
+        #expect(source.contains("struct TogglePrivateModeIntent"))
     }
 }

@@ -24,15 +24,15 @@ enum ApplePayShortcutsGuide {
         .init(
             id: "amount",
             pennyParameter: "Amount",
-            shortcutInput: "Currency Amount",
-            hint: "The money value from the Wallet tap",
+            shortcutInput: "Amount",
+            hint: "The Amount field from the Wallet tap, or Currency Amount",
             isOptional: false
         ),
         .init(
             id: "merchant",
             pennyParameter: "Merchant",
-            shortcutInput: "Name",
-            hint: "Store or merchant name",
+            shortcutInput: "Merchant or Name",
+            hint: "Use Merchant. If that is empty, use Name",
             isOptional: false
         ),
         .init(
@@ -51,25 +51,33 @@ enum ApplePayShortcutsGuide {
         )
     ]
 
-    /// Paste into ChatGPT, Claude, Apple Intelligence, or Notes → ask Siri/Shortcuts to build it.
-    /// Apple does not let Penny install Wallet automations for you — a prompt is the fastest assist.
+    /// Apple does not let Penny install Wallet automations. The prompt is a guide the user can follow or paste elsewhere.
     static var aiSetupPrompt: String {
         """
-        Create an iPhone Shortcuts Personal Automation for me:
+        Create an iPhone Shortcuts automation that logs Wallet taps into Penny.
 
-        1. Trigger: Transaction / Wallet → When I tap → include my cards
-        2. Run Immediately, Ask Before Running OFF, Show When Run OFF
-        3. Receive transaction as input
-        4. Add action from the Penny app: “\(actionName)”
-           (Add Action → Apps → Penny — open Penny once first if it’s missing)
-        5. Map:
-           - Amount → Shortcut Input → Currency Amount (or Amount)
-           - Merchant → Shortcut Input → Name (or Merchant)
-           - Currency Code → type CAD (do not leave as Ask Each Time)
-           - Card Name → Shortcut Input → Card or Pass (optional)
-        6. Save the automation
+        iOS 27 (do this first):
+        1. Open Shortcuts. Touch and hold a shortcut and tap Edit. If a screen asks you to describe a change, tap Edit again.
+        2. Add a Transaction trigger: When I tap, and include the cards you pay with. Tap the arrow beside the trigger, leave Automation on, and turn Confirm Before Run off.
+        3. Tap the info button, then Privacy, and turn on Allow Running When Locked.
+        4. Add the action from the Penny app: “\(actionName)”
+           (Add Action → Apps → Penny — open Penny once first if it is missing)
+        5. Map the Amount field: Shortcut Input → Amount (or Currency Amount).
+        6. Map Merchant → Shortcut Input → Merchant. If Merchant is empty, use Name.
+        7. Currency Code → type CAD (do not leave as Ask Each Time).
+        8. Card Name → Shortcut Input → Card or Pass (optional).
+        9. Save.
 
-        Goal: every Wallet tap quietly logs an expense in Penny.
+        iOS 26 (if you do not see Confirm Before Run):
+        1. Shortcuts → Automation → New Automation.
+        2. Trigger: Transaction / Wallet → When I tap → include your cards.
+        3. Run Immediately, turn Ask Before Running off, and turn Show When Run off.
+        4. Add the same Penny action. Map Amount, Merchant (or Name), Currency Code, and Card Name the same way.
+        5. Save.
+
+        You can paste this into an AI assistant of your choice and ask it to walk you through Shortcuts. Anything you paste into another app follows that app's terms.
+
+        Goal: every Wallet tap logs an expense in Penny without asking first.
         """
     }
 
@@ -80,18 +88,24 @@ enum ApplePayShortcutsGuide {
             "",
             "Skip this entirely if you prefer logging expenses by hand.",
             "",
-            "Easiest assist: copy the AI prompt from Penny Settings and paste it into ChatGPT / Apple Intelligence / Claude, then follow what it builds in Shortcuts.",
+            "Easiest assist: copy the prompt from Penny Settings and paste it into an AI assistant of your choice. Anything you paste into another app follows that app's terms.",
             "",
             "Note: Apple does not allow apps (or shared links) to install Wallet tap automations for you — you still approve the automation once.",
             "",
             "Before Shortcuts: open Penny once (so iOS registers its actions).",
             "",
-            "1. Shortcuts → Automation → New Automation",
-            "2. Choose Transaction (or Wallet) → When I tap → your cards",
-            "3. Run Immediately · turn off Ask Before Running · Show When Run off",
-            "4. New Blank Automation → Add Action",
-            "5. Tap Apps → Penny → \(actionName)",
-            "6. Map Shortcut Input:",
+            "iOS 27 first:",
+            "1. Shortcuts → touch and hold a shortcut → Edit",
+            "2. Transaction trigger → When I tap → your cards",
+            "3. Leave Automation on · turn Confirm Before Run off",
+            "4. Info button → Privacy → turn on Allow Running When Locked",
+            "5. Add Action → Apps → Penny → \(actionName)",
+            "6. Map the Amount field, then Merchant (or Name):",
+            "",
+            "iOS 26 if you do not see Confirm Before Run:",
+            "Shortcuts → Automation → New Automation → Transaction / Wallet → When I tap.",
+            "Run Immediately · turn off Ask Before Running · Show When Run off.",
+            "Map the same Amount and Merchant fields.",
             ""
         ]
         for map in fieldMaps {
@@ -122,10 +136,10 @@ struct ApplePayCaptureSetupView: View {
 
     private let checklist: [(id: String, title: String, detail: String)] = [
         ("open", "Open Penny once first", "iOS only lists Penny in Shortcuts after the app has launched."),
-        ("trigger", "Pick Transaction / Wallet", "When I tap · choose the cards you pay with."),
-        ("run", "Run Immediately", "Turn off Ask Before Running so taps stay quiet."),
+        ("trigger", "Add a Transaction trigger", "iOS 27: When I tap, and include the cards you pay with."),
+        ("run", "Run without asking", "Turn Confirm Before Run off, and turn on Allow Running When Locked (info button → Privacy). On iOS 26, choose Run Immediately and turn off Ask Before Running."),
         ("action", "Add Log Wallet Purchase", "Add Action → Apps → Penny (or search the action name)."),
-        ("map", "Map the four fields", "Use the copy chips below — tap each into Shortcut Input.")
+        ("map", "Map the Amount field", "Amount ← Amount or Currency Amount. Merchant ← Merchant, or Name if Merchant is empty.")
     ]
 
     var body: some View {
@@ -201,7 +215,7 @@ struct ApplePayCaptureSetupView: View {
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
 
-            Text("You don’t need this for Penny to work. Apple won’t let any app install a Wallet automation for you — the fastest path is copying the AI prompt below, or following the short checklist.")
+            Text("You don’t need this for Penny to work. Apple won’t let any app install a Wallet automation for you — copy the prompt below into an AI assistant of your choice, or follow the checklist. Anything you paste into another app follows that app's terms.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -252,7 +266,7 @@ struct ApplePayCaptureSetupView: View {
                 .font(PennyTypography.bodyEmphasized)
                 .foregroundStyle(PennyColors.textPrimary)
 
-            Text("Paste into ChatGPT, Claude, or Apple Intelligence and ask it to walk you through Shortcuts. Shared shortcut links can’t install Wallet tap automations — Apple requires each person to approve that trigger once.")
+            Text("Paste into an AI assistant of your choice and ask it to walk you through Shortcuts. Anything you paste into another app follows that app's terms. Shared shortcut links can’t install Wallet tap automations — Apple requires each person to approve that trigger once.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -600,10 +614,7 @@ struct ApplePayCaptureSetupView: View {
     }
 
     private func openShortcutsAutomationBuilder() {
-        guard let url = URL(string: "shortcuts://create-automation")
-                ?? URL(string: "shortcuts://automations")
-                ?? URL(string: "shortcuts://")
-        else { return }
+        guard let url = URL(string: "shortcuts://") else { return }
         openURL(url)
         didOpenShortcuts = true
         Haptics.light()

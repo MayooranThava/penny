@@ -2,6 +2,10 @@ import Foundation
 
 /// Pure helpers for turning a Wallet tap (via Shortcuts) into a Penny expense.
 enum ApplePayCaptureLogic {
+    /// Two Wallet taps with the same amount and merchant inside this window are one purchase.
+    /// A later tap the same day is a new expense.
+    static let duplicateWindow: TimeInterval = 120
+
     struct Draft: Equatable {
         var amount: Decimal
         var merchant: String
@@ -26,29 +30,71 @@ enum ApplePayCaptureLogic {
         return Decimal(sign: sign, exponent: -2, significand: Decimal(Int(cents)))
     }
 
+    /// Merchant, then Name, then "Apple Pay".
+    static func merchantTitle(merchant: String?, name: String?) -> String {
+        let primary = cleaned(merchant)
+        if !primary.isEmpty { return primary }
+        let fallback = cleaned(name)
+        if !fallback.isEmpty { return fallback }
+        return "Apple Pay"
+    }
+
+    /// Parses a Shortcuts Amount such as "$12.34" or "CA$4.50" into cents.
+    static func money(fromShortcutAmount text: String) -> Decimal? {
+        var value = cleaned(text)
+        guard !value.isEmpty else { return nil }
+        let tokens = ["CA$", "US$", "A$", "NZ$", "C$", "CAD", "USD", "EUR", "GBP", "AUD", "$", "€", "£", "¥"]
+        for token in tokens {
+            value = value.replacingOccurrences(of: token, with: "", options: .caseInsensitive)
+        }
+        value = value.replacingOccurrences(of: ",", with: "")
+        value = value.replacingOccurrences(of: " ", with: "")
+        guard let number = Double(value) else { return nil }
+        let decimal = money(fromApplePayAmount: number)
+        guard decimal > 0 else { return nil }
+        return decimal
+    }
+
+    /// Same amount and merchant, and the timestamps fall inside `duplicateWindow`.
+    static func isDuplicate(
+        amount: Decimal,
+        merchant: String,
+        date: Date,
+        existingAmount: Decimal,
+        existingMerchant: String,
+        existingDate: Date
+    ) -> Bool {
+        guard amount == existingAmount else { return false }
+        let left = cleaned(merchant).lowercased()
+        let right = cleaned(existingMerchant).lowercased()
+        guard left == right else { return false }
+        return abs(date.timeIntervalSince(existingDate)) <= duplicateWindow
+    }
+
     /// Builds a draft ready to insert, or `nil` when amount is not positive.
     static func makeDraft(
         amount: Double,
         merchant: String?,
+        name: String? = nil,
         currencyCode: String?,
         cardName: String?,
-        date: Date = .now,
-        calendar: Calendar = .current
+        date: Date = .now
     ) -> Draft? {
         let decimalAmount = money(fromApplePayAmount: amount)
         guard decimalAmount > 0 else { return nil }
 
-        let cleanedMerchant = cleaned(merchant)
         let cleanedCard = cleaned(cardName)
         let cleanedCurrency = cleaned(currencyCode).uppercased()
-        let title = cleanedMerchant.isEmpty ? "Apple Pay" : cleanedMerchant
+        let title = merchantTitle(merchant: merchant, name: name)
+        let cleanedMerchant = title == "Apple Pay" && cleaned(merchant).isEmpty && cleaned(name).isEmpty
+            ? ""
+            : title
         let category = suggestCategory(for: title)
         let externalID = externalIdentifier(
             amount: decimalAmount,
             merchant: title,
             cardName: cleanedCard,
-            date: date,
-            calendar: calendar
+            date: date
         )
 
         var noteParts: [String] = ["Captured from Apple Pay"]
@@ -126,29 +172,18 @@ enum ApplePayCaptureLogic {
         amount: Decimal,
         merchant: String,
         cardName: String,
-        date: Date,
-        calendar: Calendar = .current
+        date: Date
     ) -> String {
-        let day = calendar.startOfDay(for: date)
-        let dayKey = ISO8601DateFormatter.string(from: day, options: [.withFullDate], timeZone: calendar.timeZone)
+        let bucket = Int(date.timeIntervalSince1970 / duplicateWindow)
         let amountKey = NSDecimalNumber(decimal: amount).stringValue
         let merchantKey = merchant.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let cardKey = cardName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return "applepay:\(amountKey)|\(merchantKey)|\(dayKey)|\(cardKey)"
+        return "applepay:\(amountKey)|\(merchantKey)|\(bucket)|\(cardKey)"
     }
 
     private static func cleaned(_ value: String?) -> String {
         (value ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "\u{00a0}", with: " ")
-    }
-}
-
-private extension ISO8601DateFormatter {
-    static func string(from date: Date, options: Options, timeZone: TimeZone) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = options
-        formatter.timeZone = timeZone
-        return formatter.string(from: date)
     }
 }

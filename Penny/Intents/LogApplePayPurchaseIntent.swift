@@ -1,6 +1,7 @@
 import AppIntents
 import Foundation
 import SwiftData
+import WidgetKit
 
 /// Shortcuts action used by a Wallet / Transaction personal automation.
 ///
@@ -26,10 +27,17 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     @Parameter(
         title: "Merchant",
-        description: "Map this to Name from Shortcut Input.",
+        description: "Map this to Merchant from Shortcut Input.",
         default: ""
     )
     var merchant: String
+
+    @Parameter(
+        title: "Name",
+        description: "Used when Merchant is empty. Map this to Name from Shortcut Input.",
+        default: ""
+    )
+    var transactionName: String
 
     @Parameter(
         title: "Currency Code",
@@ -47,6 +55,7 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     static var parameterSummary: some ParameterSummary {
         Summary("Log \(\.$amount) at \(\.$merchant)") {
+            \.$transactionName
             \.$currencyCode
             \.$cardName
         }
@@ -57,12 +66,14 @@ struct LogApplePayPurchaseIntent: AppIntent {
         let result = try ApplePayCaptureService.captureUsingSharedStore(
             amount: amount,
             merchant: merchant,
+            name: transactionName,
             currencyCode: currencyCode,
             cardName: cardName
         )
 
         switch result {
         case .inserted(let title, let amountValue, let categoryName):
+            reloadTransactionAndTotalWidgets()
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
                 dialog: IntentDialog("Logged \(money) at \(title) under \(categoryName).")
@@ -70,10 +81,26 @@ struct LogApplePayPurchaseIntent: AppIntent {
         case .duplicate(let title, let amountValue):
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
-                dialog: IntentDialog("Already logged \(money) at \(title) today.")
+                dialog: IntentDialog("Already logged \(money) at \(title).")
             )
         case .invalidAmount:
             throw $amount.needsValueError("Amount must be greater than zero.")
+        }
+    }
+
+    /// Safe to Spend, monthly budget, the savings goal, upcoming bills, and the
+    /// reminder each show a total or a list of transactions. Other timelines stay put.
+    @MainActor
+    private func reloadTransactionAndTotalWidgets() {
+        let kinds = [
+            PrivateWidgetKinds.safeToSpend,
+            PrivateWidgetKinds.monthlyBudget,
+            PrivateWidgetKinds.savingsGoal,
+            PrivateWidgetKinds.upcomingBills,
+            PrivateWidgetKinds.upcomingReminder
+        ]
+        for kind in kinds {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
         }
     }
 

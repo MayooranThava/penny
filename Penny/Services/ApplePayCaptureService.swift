@@ -7,12 +7,26 @@ enum ApplePayCaptureResult: Equatable {
     case invalidAmount
 }
 
+enum ApplePayCaptureSaveError: LocalizedError {
+    case failed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .failed(let detail) where detail.isEmpty:
+            return "Penny couldn’t save this Wallet purchase."
+        case .failed(let detail):
+            return "Penny couldn’t save this Wallet purchase. \(detail)"
+        }
+    }
+}
+
 /// Writes Wallet-captured expenses into the shared on-device Penny store.
 @MainActor
 enum ApplePayCaptureService {
     static func capture(
         amount: Double,
         merchant: String?,
+        name: String? = nil,
         currencyCode: String?,
         cardName: String?,
         date: Date = .now,
@@ -21,6 +35,7 @@ enum ApplePayCaptureService {
         guard let draft = ApplePayCaptureLogic.makeDraft(
             amount: amount,
             merchant: merchant,
+            name: name,
             currencyCode: currencyCode,
             cardName: cardName,
             date: date
@@ -28,7 +43,7 @@ enum ApplePayCaptureService {
             return .invalidAmount
         }
 
-        if try existingTransaction(externalIdentifier: draft.externalIdentifier, in: context) != nil {
+        if try duplicateTap(matching: draft, in: context) {
             return .duplicate(title: draft.title, amount: draft.amount)
         }
 
@@ -45,7 +60,7 @@ enum ApplePayCaptureService {
             cardName: draft.cardName
         )
         context.insert(transaction)
-        try context.save()
+        try saveOrThrow(context)
         return .inserted(title: draft.title, amount: draft.amount, categoryName: draft.categoryName)
     }
 
@@ -53,6 +68,7 @@ enum ApplePayCaptureService {
     static func captureUsingSharedStore(
         amount: Double,
         merchant: String?,
+        name: String? = nil,
         currencyCode: String?,
         cardName: String?,
         date: Date = .now
@@ -62,6 +78,7 @@ enum ApplePayCaptureService {
         return try capture(
             amount: amount,
             merchant: merchant,
+            name: name,
             currencyCode: currencyCode,
             cardName: cardName,
             date: date,
@@ -69,16 +86,36 @@ enum ApplePayCaptureService {
         )
     }
 
-    private static func existingTransaction(
-        externalIdentifier: String,
+    private static func duplicateTap(
+        matching draft: ApplePayCaptureLogic.Draft,
         in context: ModelContext
-    ) throws -> Transaction? {
-        guard !externalIdentifier.isEmpty else { return nil }
-        let identifier = externalIdentifier
-        var descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.externalIdentifier == identifier }
-        )
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
+    ) throws -> Bool {
+        let rows = try context.fetch(FetchDescriptor<Transaction>())
+        return rows.contains { row in
+            guard row.importSource == .applePayShortcut else { return false }
+            if row.externalIdentifier == draft.externalIdentifier, !draft.externalIdentifier.isEmpty {
+                return true
+            }
+            return ApplePayCaptureLogic.isDuplicate(
+                amount: draft.amount,
+                merchant: draft.title,
+                date: draft.date,
+                existingAmount: row.amount,
+                existingMerchant: row.title,
+                existingDate: row.date
+            )
+        }
+    }
+
+    private static func saveOrThrow(_ context: ModelContext) throws {
+        do {
+            if let forced = PennySaveTesting.forcedError {
+                throw forced
+            }
+            try context.save()
+        } catch {
+            let detail = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw ApplePayCaptureSaveError.failed(detail)
+        }
     }
 }

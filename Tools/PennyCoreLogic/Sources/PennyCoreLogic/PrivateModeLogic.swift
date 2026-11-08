@@ -539,10 +539,13 @@ enum PrivateWidgetKinds {
     static let upcomingBills = "PennyUpcomingBillsWidget"
     static let upcomingReminder = "PennyUpcomingReminderWidget"
 
-    /// Upcoming bills keep each bill's amount, so they are not reloaded.
-    /// The reminder widget includes a Safe to Spend total, so it is.
-    /// Lock Screen Safe to Spend uses `safeToSpend`.
+    /// Totals widgets only. Lock Screen Safe to Spend uses `safeToSpend`.
+    /// Upcoming Bills is added by `totalAndUpcomingBills` when Private mode or bill hiding changes.
     static let totalShowing = [safeToSpend, monthlyBudget, savingsGoal, upcomingReminder]
+
+    /// Totals widgets plus Upcoming Bills. Turning Private mode on, or a bill
+    /// choice, reloads both.
+    static let totalAndUpcomingBills = totalShowing + [upcomingBills]
 }
 
 /// Trailing debounce for widget timeline reloads. The flag is stored immediately.
@@ -585,7 +588,7 @@ struct PrivateWidgetReloadCoalescer {
         case .transactions:
             return []
         case .bills:
-            return [PrivateWidgetKinds.upcomingBills, PrivateWidgetKinds.upcomingReminder]
+            return PrivateWidgetKinds.totalAndUpcomingBills
         case .widgets:
             return [
                 PrivateWidgetKinds.safeToSpend,

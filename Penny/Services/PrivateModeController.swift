@@ -3,11 +3,15 @@ import Observation
 import WidgetKit
 
 enum PrivateModeStore {
-    static var isEnabled: Bool {
+    static var record: PrivateModeRecord {
         guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
-            return false
+            return .fresh
         }
-        return PrivateModeDefaults.isEnabled(in: defaults)
+        return PrivateModeStorage.load(from: defaults)
+    }
+
+    static var isEnabled: Bool {
+        record.isEnabled
     }
 }
 
@@ -63,7 +67,7 @@ final class PrivateModeController {
         var record = settings
         let changed = record.isEnabled != newValue
         record.isEnabled = newValue
-        commit(record, reload: PrivateWidgetKinds.totalShowing, changed: changed)
+        commit(record, reload: PrivateWidgetKinds.totalAndUpcomingBills, changed: changed)
     }
 
     func setHidden(_ kind: PrivateAmountKind, _ hidden: Bool) {
@@ -104,7 +108,6 @@ final class PrivateModeController {
         if let defaults = Self.currentDefaults() {
             PrivateModeStorage.save(record, to: defaults)
         }
-        WidgetSnapshotStore.stampVisibility(record)
         guard changed else { return }
         reloadCoalescer.noteChange(kinds: kinds, at: Date())
         let delay = reloadCoalescer.debounce

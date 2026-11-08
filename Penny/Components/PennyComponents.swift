@@ -70,6 +70,24 @@ struct MoneyText: View {
     var signed: Bool = false
     var kind: PrivateAmountKind? = nil
 
+    init(
+        amount: Decimal,
+        currencyCode: String = "CAD",
+        font: Font = PennyTypography.mediumAmount,
+        color: Color = PennyColors.textPrimary,
+        compact: Bool = false,
+        signed: Bool = false,
+        kind: PrivateAmountKind? = nil
+    ) {
+        self.amount = amount
+        self.currencyCode = currencyCode
+        self.font = font
+        self.color = color
+        self.compact = compact
+        self.signed = signed
+        self.kind = kind
+    }
+
     @Environment(PrivateModeController.self) private var privateMode
 
     var body: some View {

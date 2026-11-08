@@ -365,4 +365,5 @@ struct MainTabView: View {
 
 #Preview("Splash") {
     LaunchSplashView()
+        .environment(PrivateModeController.shared)
 }

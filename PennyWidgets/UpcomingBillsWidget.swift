@@ -31,7 +31,8 @@ struct UpcomingBillsWidgetView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let hidesBillAmounts = PrivateModeStore.record.masksWidgetBills()
+        return VStack(alignment: .leading, spacing: 8) {
             Label("Upcoming bills", systemImage: "calendar")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color(red: 0.20, green: 0.72, blue: 0.55))
@@ -54,7 +55,7 @@ struct UpcomingBillsWidgetView: View {
                                 .font(.subheadline.weight(.semibold))
                                 .lineLimit(1)
                             if !item.detail.isEmpty {
-                                Text(WidgetPrivateDisplay.upcomingBillDetail(item.detail, isPrivate: entry.snapshot.hideWidgetBills == true))
+                                Text(WidgetPrivateDisplay.upcomingBillDetail(item.detail, isPrivate: hidesBillAmounts))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)

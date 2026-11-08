@@ -927,4 +927,5 @@ struct PrivateModeSettingsView: View {
 #Preview("Paywall") {
     PaywallView()
         .environment(StoreManager())
+        .environment(PrivateModeController.shared)
 }

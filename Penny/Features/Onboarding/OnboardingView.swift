@@ -256,5 +256,6 @@ struct OnboardingView: View {
 
 #Preview {
     OnboardingView()
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }

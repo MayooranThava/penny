@@ -104,13 +104,6 @@ enum WidgetSnapshotStore {
     }
 
     /// Removes the shared snapshot. Tests use `defaultsSuiteOverride` in place of the App Group.
-    static func stampVisibility(_ record: PrivateModeRecord) {
-        guard var snapshot = load() else { return }
-        snapshot.hideWidgetTotals = record.masksWidgetTotals()
-        snapshot.hideWidgetBills = record.masksWidgetBills()
-        save(snapshot)
-    }
-
     static func clear() {
         guard let defaults = UserDefaults(suiteName: activeDefaultsSuite) else { return }
         defaults.removeObject(forKey: snapshotKey)

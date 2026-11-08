@@ -545,10 +545,10 @@ struct HomeView: View {
                                     }
                                     Spacer()
                                     MoneyText(
-                                        kind: item.kind == .bill ? .bills : .totals,
                                         amount: item.amount,
                                         currencyCode: currency,
-                                        font: PennyTypography.smallAmount
+                                        font: PennyTypography.smallAmount,
+                                        kind: item.kind == .bill ? .bills : .totals
                                     )
                                     Image(systemName: "chevron.right")
                                         .font(.caption)

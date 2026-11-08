@@ -44,7 +44,10 @@ enum UITestSeedLaunch {
             try context.save()
         }
         if let defaults = PrivateModeController.currentDefaults() {
-            PrivateModeDefaults.setEnabled(privateModeEnabled(), in: defaults)
+            var record = PrivateModeRecord.fresh
+            record.isEnabled = privateModeEnabled()
+            PrivateModeStorage.save(record, to: defaults)
+            PrivateModeController.shared.refreshFromDefaults()
         }
     }
 

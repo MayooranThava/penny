@@ -206,7 +206,7 @@ struct PrivateSafeToSpendLabel: ViewModifier {
             amount: amount,
             currencyCode: currencyCode,
             style: .standard,
-            isPrivate: privateMode.isEnabled,
+            isPrivate: privateMode.masks(.totals),
             locale: .current
         )
         content.accessibilityLabel(

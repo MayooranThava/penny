@@ -807,7 +807,7 @@ struct PrivateModeAmountTypeTests {
 
             let container = try PennyPersistence.makeContainer(at: url)
             let context = ModelContext(container)
-            let transactions = try context.fetch(FetchDescriptor<Transaction>())
+            let transactions = try context.fetch(FetchDescriptor<Penny.Transaction>())
             let bills = try context.fetch(FetchDescriptor<RecurringBill>())
             let debts = try context.fetch(FetchDescriptor<Debt>())
             let settings = try #require(context.fetch(FetchDescriptor<UserSettings>()).first)
@@ -820,9 +820,9 @@ struct PrivateModeAmountTypeTests {
             #expect(storedBills.map(\.amount) == expectedBills.map { Decimal(string: $0.amount)! })
             #expect(storedBills.map(\.isActive) == expectedBills.map { $0.active ?? true })
             #expect(bills.reduce(Decimal(0)) { $0 + $1.amount } == expectedBillTotal)
-            #expect(debts.first?.plannedMonthlyPayment == fixture.debtPayment)
-            #expect(settings.monthlyIncome == fixture.income)
-            #expect(settings.plannedMonthlySavings == fixture.plannedSavings)
+            #expect(debts.first?.plannedMonthlyPayment == fixture.debtPaymentAmount)
+            #expect(settings.monthlyIncome == fixture.incomeAmount)
+            #expect(settings.plannedMonthlySavings == fixture.plannedSavingsAmount)
 
             WidgetSnapshotPublisher.publish(
                 transactions: transactions,
@@ -835,7 +835,9 @@ struct PrivateModeAmountTypeTests {
             )
             let snapshot = try #require(WidgetSnapshotStore.load())
             #expect(snapshot.safeToSpend == expectedTotal)
-            let inactive = fixture.bills.filter { !$0.active }.reduce(Decimal(0)) { $0 + $1.amount }
+            let inactive = fixture.bills
+                .filter { $0.active == false }
+                .reduce(Decimal(0)) { $0 + (Decimal(string: $1.amount) ?? 0) }
             #expect(snapshot.safeToSpend != expectedTotal - inactive)
 
             let migrated = PrivateModeStorage.load(from: defaults)
@@ -1077,7 +1079,7 @@ private struct PrivateModeUpgradeFixture: Decodable {
         let context = ModelContext(container)
         let date = Self.sampleDate
         for row in transactions {
-            context.insert(Transaction(
+            context.insert(Penny.Transaction(
                 id: UUID(uuidString: row.id)!,
                 title: row.title ?? "Transaction",
                 amount: Decimal(string: row.amount)!,

@@ -21,9 +21,9 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     @Parameter(
         title: "Amount",
-        description: "Map this to Currency Amount from Shortcut Input."
+        description: "Map this to Amount or Currency Amount from Shortcut Input."
     )
-    var amount: Double
+    var amount: String
 
     @Parameter(
         title: "Merchant",
@@ -63,29 +63,53 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let parsed = ApplePayCaptureLogic.money(
+            fromShortcutAmount: amount,
+            currencyCode: currencyCode
+        ) else {
+            throw $amount.needsValueError("Amount must be greater than zero.")
+        }
         let result = try ApplePayCaptureService.captureUsingSharedStore(
-            amount: amount,
+            amount: NSDecimalNumber(decimal: parsed).doubleValue,
             merchant: merchant,
             name: transactionName,
             currencyCode: currencyCode,
             cardName: cardName
         )
 
+        let isPrivate = Self.privateModeIsOn
         switch result {
         case .inserted(let title, let amountValue, let categoryName):
             reloadTransactionAndTotalWidgets()
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
-                dialog: IntentDialog("Logged \(money) at \(title) under \(categoryName).")
+                dialog: IntentDialog(String.LocalizationValue(stringLiteral: WalletPurchaseDialog.logged(
+                    merchant: title,
+                    amountText: money,
+                    categoryName: categoryName,
+                    isPrivate: isPrivate
+                )))
             )
         case .duplicate(let title, let amountValue):
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
-                dialog: IntentDialog("Already logged \(money) at \(title).")
+                dialog: IntentDialog(String.LocalizationValue(stringLiteral: WalletPurchaseDialog.duplicate(
+                    merchant: title,
+                    amountText: money,
+                    isPrivate: isPrivate
+                )))
             )
         case .invalidAmount:
             throw $amount.needsValueError("Amount must be greater than zero.")
         }
+    }
+
+    @MainActor
+    private static var privateModeIsOn: Bool {
+        guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
+            return false
+        }
+        return PrivateModeDefaults.isEnabled(in: defaults)
     }
 
     /// Safe to Spend, monthly budget, the savings goal, upcoming bills, and the
@@ -117,6 +141,22 @@ struct LogApplePayPurchaseIntent: AppIntent {
         } catch {
             return "CAD"
         }
+    }
+}
+
+enum WalletPurchaseDialog {
+    static func logged(merchant: String, amountText: String, categoryName: String, isPrivate: Bool) -> String {
+        if isPrivate {
+            return "Logged a purchase at \(merchant)."
+        }
+        return "Logged \(amountText) at \(merchant) under \(categoryName)."
+    }
+
+    static func duplicate(merchant: String, amountText: String, isPrivate: Bool) -> String {
+        if isPrivate {
+            return "Already logged a purchase at \(merchant)."
+        }
+        return "Already logged \(amountText) at \(merchant)."
     }
 }
 

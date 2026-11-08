@@ -24,11 +24,13 @@ struct ApplePayShortcutsGuideTests {
 
     @Test("AI prompt mentions Penny action and Wallet trigger")
     func aiPromptContent() {
-        let prompt = ApplePayShortcutsGuide.aiSetupPrompt
+        let prompt = ApplePayShortcutsGuide.aiSetupPrompt(currencyCode: "USD")
         #expect(prompt.contains(ApplePayShortcutsGuide.actionName))
         #expect(prompt.contains("Wallet"))
-        #expect(prompt.contains("CAD"))
+        #expect(prompt.contains("type USD"))
+        #expect(!prompt.contains("type CAD"))
         #expect(prompt.contains("Apps → Penny"))
+        #expect(prompt.contains("Goal: Wallet taps can log expenses in Penny without asking first."))
         #expect(prompt.contains("iOS 27"))
         #expect(prompt.contains("Allow Running When Locked"))
         #expect(prompt.contains("Confirm Before Run"))
@@ -44,7 +46,7 @@ struct ApplePayShortcutsGuideTests {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let prompt = ApplePayShortcutsGuide.aiSetupPrompt
+        let prompt = ApplePayShortcutsGuide.aiSetupPrompt(currencyCode: "CAD")
         let sheet = ApplePayShortcutsGuide.cheatSheetText
         let html = try String(
             contentsOf: root.appendingPathComponent("docs/wallet-capture.html"),
@@ -54,7 +56,11 @@ struct ApplePayShortcutsGuideTests {
             contentsOf: root.appendingPathComponent("Penny/Features/Settings/ApplePayCaptureSetupView.swift"),
             encoding: .utf8
         )
-        #expect(html.contains(prompt))
+        #expect(html.contains("Goal: Wallet taps can log expenses in Penny without asking first."))
+        #expect(prompt.contains("Goal: Wallet taps can log expenses in Penny without asking first."))
+        #expect(html.contains("use the currency your Penny account uses (for example CAD or USD)"))
+        #expect(!html.contains("type CAD"))
+        #expect(prompt.contains("type CAD"))
         #expect(prompt.contains("an AI assistant of your choice"))
         #expect(prompt.contains("Anything you paste into another app follows that app's terms."))
         #expect(setup.contains("shortcuts://"))

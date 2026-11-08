@@ -38,8 +38,8 @@ enum ApplePayShortcutsGuide {
         .init(
             id: "currency",
             pennyParameter: "Currency Code",
-            shortcutInput: "Type CAD (or your currency)",
-            hint: "Wallet often has no currency variable — typing CAD is fine",
+            shortcutInput: "Your Penny currency",
+            hint: "Type the currency code from Penny Settings. Do not leave this as Ask Each Time.",
             isOptional: true
         ),
         .init(
@@ -52,8 +52,9 @@ enum ApplePayShortcutsGuide {
     ]
 
     /// Apple does not let Penny install Wallet automations. The prompt is a guide the user can follow or paste elsewhere.
-    static var aiSetupPrompt: String {
-        """
+    static func aiSetupPrompt(currencyCode: String) -> String {
+        let code = currencyCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return """
         Create an iPhone Shortcuts automation that logs Wallet taps into Penny.
 
         iOS 27 (do this first):
@@ -64,7 +65,7 @@ enum ApplePayShortcutsGuide {
            (Add Action → Apps → Penny — open Penny once first if it is missing)
         5. Map the Amount field: Shortcut Input → Amount (or Currency Amount).
         6. Map Merchant → Shortcut Input → Merchant. If Merchant is empty, use Name.
-        7. Currency Code → type CAD (do not leave as Ask Each Time).
+        7. Currency Code → type \(code) (do not leave as Ask Each Time).
         8. Card Name → Shortcut Input → Card or Pass (optional).
         9. Save.
 
@@ -77,8 +78,17 @@ enum ApplePayShortcutsGuide {
 
         You can paste this into an AI assistant of your choice and ask it to walk you through Shortcuts. Anything you paste into another app follows that app's terms.
 
-        Goal: every Wallet tap logs an expense in Penny without asking first.
+        Goal: Wallet taps can log expenses in Penny without asking first.
         """
+    }
+
+    static func pennyCurrencyCode(stored: String?, locale: Locale = .current) -> String {
+        let trimmed = (stored ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed.uppercased() }
+        if let code = locale.currency?.identifier, !code.isEmpty {
+            return code.uppercased()
+        }
+        return "CAD"
     }
 
     /// Plain text the user can paste into Notes or keep beside Shortcuts.
@@ -133,6 +143,9 @@ struct ApplePayCaptureSetupView: View {
 
     private var settings: UserSettings? { settingsList.first }
     private var alreadyConfigured: Bool { settings?.applePayCaptureConfigured == true }
+    private var pennyCurrencyCode: String {
+        ApplePayShortcutsGuide.pennyCurrencyCode(stored: settings?.currencyCode)
+    }
 
     private let checklist: [(id: String, title: String, detail: String)] = [
         ("open", "Open Penny once first", "iOS only lists Penny in Shortcuts after the app has launched."),
@@ -272,7 +285,10 @@ struct ApplePayCaptureSetupView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Button {
-                copy(ApplePayShortcutsGuide.aiSetupPrompt, token: "AI prompt copied")
+                copy(
+                    ApplePayShortcutsGuide.aiSetupPrompt(currencyCode: pennyCurrencyCode),
+                    token: "AI prompt copied"
+                )
             } label: {
                 Label("Copy AI prompt", systemImage: "sparkles")
                     .frame(maxWidth: .infinity)

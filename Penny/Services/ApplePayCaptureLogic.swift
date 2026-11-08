@@ -39,20 +39,64 @@ enum ApplePayCaptureLogic {
         return "Apple Pay"
     }
 
-    /// Parses a Shortcuts Amount such as "$12.34" or "CA$4.50" into cents.
-    static func money(fromShortcutAmount text: String) -> Decimal? {
+    /// Parses a Shortcuts Amount such as "$12.34", "US$8.00", "12,50", or "1.234,56".
+    /// A known currency or the locale picks the decimal separator. Otherwise a final
+    /// separator followed by exactly two digits is the decimal mark.
+    static func money(
+        fromShortcutAmount text: String,
+        currencyCode: String? = nil,
+        locale: Locale = .current
+    ) -> Decimal? {
         var value = cleaned(text)
         guard !value.isEmpty else { return nil }
-        let tokens = ["CA$", "US$", "A$", "NZ$", "C$", "CAD", "USD", "EUR", "GBP", "AUD", "$", "€", "£", "¥"]
+        let tokens = ["CA$", "US$", "NZ$", "A$", "C$", "CAD", "USD", "EUR", "GBP", "AUD", "$", "€", "£", "¥"]
         for token in tokens {
             value = value.replacingOccurrences(of: token, with: "", options: .caseInsensitive)
         }
-        value = value.replacingOccurrences(of: ",", with: "")
         value = value.replacingOccurrences(of: " ", with: "")
-        guard let number = Double(value) else { return nil }
-        let decimal = money(fromApplePayAmount: number)
+        value = value.replacingOccurrences(of: "\u{00a0}", with: "")
+        guard !value.isEmpty else { return nil }
+        let normalized = normalizedDecimalText(
+            value,
+            decimalSeparator: decimalSeparator(for: currencyCode, locale: locale)
+        )
+        guard let number = Decimal(string: normalized, locale: Locale(identifier: "en_US_POSIX")) else {
+            return nil
+        }
+        let decimal = money(fromApplePayAmount: NSDecimalNumber(decimal: number).doubleValue)
         guard decimal > 0 else { return nil }
         return decimal
+    }
+
+    private static func decimalSeparator(for currencyCode: String?, locale: Locale) -> String {
+        switch cleaned(currencyCode).uppercased() {
+        case "USD", "CAD", "AUD", "GBP", "NZD":
+            return "."
+        case "EUR":
+            return ","
+        default:
+            return locale.decimalSeparator ?? "."
+        }
+    }
+
+    private static func normalizedDecimalText(_ raw: String, decimalSeparator: String) -> String {
+        let lastDot = raw.lastIndex(of: ".")
+        let lastComma = raw.lastIndex(of: ",")
+        if let lastDot, let lastComma {
+            let decimalChar: Character = lastDot > lastComma ? "." : ","
+            let groupingChar: Character = decimalChar == "." ? "," : "."
+            return raw
+                .replacingOccurrences(of: String(groupingChar), with: "")
+                .replacingOccurrences(of: String(decimalChar), with: ".")
+        }
+        guard let separator = lastDot ?? lastComma else { return raw }
+        let mark: Character = lastDot == nil ? "," : "."
+        let fraction = raw[raw.index(after: separator)...].filter(\.isNumber)
+        let markIsDecimal = String(mark) == decimalSeparator || fraction.count == 2
+        if markIsDecimal, !fraction.isEmpty, fraction.count <= 2 {
+            return raw.replacingOccurrences(of: String(mark), with: ".")
+        }
+        return raw.replacingOccurrences(of: String(mark), with: "")
     }
 
     /// Same amount and merchant, and the timestamps fall inside `duplicateWindow`.

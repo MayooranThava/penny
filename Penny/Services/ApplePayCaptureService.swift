@@ -90,13 +90,19 @@ enum ApplePayCaptureService {
         matching draft: ApplePayCaptureLogic.Draft,
         in context: ModelContext
     ) throws -> Bool {
-        let rows = try context.fetch(FetchDescriptor<Transaction>())
+        let source = TransactionImportSource.applePayShortcut.rawValue
+        let earliest = draft.date.addingTimeInterval(-ApplePayCaptureLogic.duplicateWindow)
+        let latest = draft.date.addingTimeInterval(ApplePayCaptureLogic.duplicateWindow)
+        var descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { row in
+                row.importSourceRaw == source && row.date >= earliest && row.date <= latest
+            },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = 8
+        let rows = try context.fetch(descriptor)
         return rows.contains { row in
-            guard row.importSource == .applePayShortcut else { return false }
-            if row.externalIdentifier == draft.externalIdentifier, !draft.externalIdentifier.isEmpty {
-                return true
-            }
-            return ApplePayCaptureLogic.isDuplicate(
+            ApplePayCaptureLogic.isDuplicate(
                 amount: draft.amount,
                 merchant: draft.title,
                 date: draft.date,

@@ -318,22 +318,14 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section {
-            Toggle("Hide totals", isOn: hideTotalsBinding)
-        } header: {
-            Text("Privacy")
-        } footer: {
-            Text("Masks totals on Home, Budget, Plan, Activity, and widgets. Individual transactions, bills, and payments stay visible.")
-        }
-    }
-
-    private var hideTotalsBinding: Binding<Bool> {
-        Binding(
-            get: { privateMode.isEnabled },
-            set: { newValue in
-                privateMode.setEnabled(newValue)
-                Haptics.light()
+            NavigationLink("Private mode") {
+                PrivateModeSettingsView()
             }
-        )
+        } header: {
+            Text("Private mode")
+        } footer: {
+            Text(PrivateModeStorage.settingsFooter)
+        }
     }
 
     private func deleteAccount(_ account: FinancialAccount) {
@@ -879,6 +871,51 @@ struct PaywallView: View {
     }
 }
 
+struct PrivateModeSettingsView: View {
+    @Environment(PrivateModeController.self) private var privateMode
+
+    var body: some View {
+        List {
+            Toggle("Private mode", isOn: enabledBinding)
+                .accessibilityHint("Hides amounts on screen")
+            Section {
+                toggle("Totals", kind: .totals)
+                toggle("Transaction amounts", kind: .transactions)
+                toggle("Bill amounts", kind: .bills)
+                toggle("Widgets", kind: .widgets)
+            } header: {
+                Text("What to hide")
+            } footer: {
+                Text("\(footer)\n\(PrivateModeStorage.amountsStillShowFootnote)")
+            }
+        }
+        .navigationTitle("Private mode")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var footer: String {
+        if privateMode.isEnabled, !privateMode.settings.visibility.hidesAnything {
+            return PrivateModeStorage.nothingHiddenFooter
+        }
+        return PrivateModeStorage.settingsFooter
+    }
+
+    private var enabledBinding: Binding<Bool> {
+        Binding(
+            get: { privateMode.isEnabled },
+            set: { privateMode.setEnabled($0) }
+        )
+    }
+
+    private func toggle(_ title: String, kind: PrivateAmountKind) -> some View {
+        Toggle(title, isOn: Binding(
+            get: { privateMode.settings.visibility.hides(kind) },
+            set: { privateMode.setHidden(kind, $0) }
+        ))
+        .disabled(!privateMode.isEnabled)
+    }
+}
+
 #Preview {
     SettingsView()
         .environment(StoreManager())
@@ -890,4 +927,5 @@ struct PaywallView: View {
 #Preview("Paywall") {
     PaywallView()
         .environment(StoreManager())
+        .environment(PrivateModeController.shared)
 }

@@ -271,6 +271,19 @@ struct MainTabView: View {
         .onAppear {
             refreshSchedulesAndWidgets()
         }
+        .alert(
+            "Private mode",
+            isPresented: Binding(
+                get: { privateMode.settings.upgradeNotePending },
+                set: { if !$0 { privateMode.acknowledgeUpgradeNote() } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                privateMode.acknowledgeUpgradeNote()
+            }
+        } message: {
+            Text(PrivateModeStorage.upgradeNote)
+        }
         .onChange(of: scenePhase) { _, phase in
             privateMode.noteScenePhase(Self.privatePhase(phase))
             guard phase == .active else { return }
@@ -352,4 +365,5 @@ struct MainTabView: View {
 
 #Preview("Splash") {
     LaunchSplashView()
+        .environment(PrivateModeController.shared)
 }

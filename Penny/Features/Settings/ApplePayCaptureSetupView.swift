@@ -639,5 +639,6 @@ struct ApplePayCaptureSetupView: View {
 
 #Preview {
     ApplePayCaptureSetupView()
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }

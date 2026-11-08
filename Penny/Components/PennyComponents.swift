@@ -68,6 +68,27 @@ struct MoneyText: View {
     var color: Color = PennyColors.textPrimary
     var compact: Bool = false
     var signed: Bool = false
+    var kind: PrivateAmountKind? = nil
+
+    init(
+        amount: Decimal,
+        currencyCode: String = "CAD",
+        font: Font = PennyTypography.mediumAmount,
+        color: Color = PennyColors.textPrimary,
+        compact: Bool = false,
+        signed: Bool = false,
+        kind: PrivateAmountKind? = nil
+    ) {
+        self.amount = amount
+        self.currencyCode = currencyCode
+        self.font = font
+        self.color = color
+        self.compact = compact
+        self.signed = signed
+        self.kind = kind
+    }
+
+    @Environment(PrivateModeController.self) private var privateMode
 
     var body: some View {
         Text(display)
@@ -77,7 +98,13 @@ struct MoneyText: View {
             .accessibilityLabel(accessibility)
     }
 
+    private var hidden: Bool {
+        guard let kind else { return false }
+        return privateMode.masks(kind)
+    }
+
     private var display: String {
+        if hidden { return PrivateAmountLogic.dotStyle(for: .activityDailySum).text }
         if signed {
             return MoneyFormatters.signed(from: amount, currencyCode: currencyCode)
         }
@@ -88,7 +115,8 @@ struct MoneyText: View {
     }
 
     private var accessibility: String {
-        MoneyFormatters.string(from: amount, currencyCode: currencyCode)
+        if hidden { return PrivateAmountLogic.hiddenAccessibilityLabel }
+        return MoneyFormatters.string(from: amount, currencyCode: currencyCode)
     }
 }
 
@@ -311,7 +339,7 @@ struct BillRow: View {
                     .foregroundStyle(PennyColors.textSecondary)
             }
             Spacer()
-            MoneyText(amount: amount, currencyCode: currencyCode, font: PennyTypography.smallAmount)
+            MoneyText(amount: amount, currencyCode: currencyCode, font: PennyTypography.smallAmount, kind: .bills)
         }
         .accessibilityElement(children: .combine)
     }
@@ -333,6 +361,8 @@ struct TransactionRow: View {
     let currencyCode: String
     var icon: String? = nil
 
+    @Environment(PrivateModeController.self) private var privateMode
+
     var body: some View {
         HStack(spacing: PennySpacing.sm) {
             CategoryIcon(
@@ -349,13 +379,20 @@ struct TransactionRow: View {
                     .foregroundStyle(PennyColors.textSecondary)
             }
             Spacer()
-            Text(MoneyFormatters.signed(
-                from: type == .income ? amount : -amount,
-                currencyCode: currencyCode
-            ))
-            .font(PennyTypography.smallAmount)
-            .monospacedDigit()
-            .foregroundStyle(type == .income ? PennyColors.income : PennyColors.textPrimary)
+            if privateMode.masks(.transactions) {
+                Text(PrivateAmountLogic.dotStyle(for: .activityDailySum).text)
+                    .font(PennyTypography.smallAmount)
+                    .foregroundStyle(PennyColors.textPrimary)
+                    .accessibilityLabel(PrivateAmountLogic.hiddenAccessibilityLabel)
+            } else {
+                Text(MoneyFormatters.signed(
+                    from: type == .income ? amount : -amount,
+                    currencyCode: currencyCode
+                ))
+                .font(PennyTypography.smallAmount)
+                .monospacedDigit()
+                .foregroundStyle(type == .income ? PennyColors.income : PennyColors.textPrimary)
+            }
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)

@@ -578,5 +578,6 @@ struct AddTransactionView: View {
 
 #Preview("Add Transaction") {
     AddTransactionView()
+        .environment(PrivateModeController.shared)
         .modelContainer(PennyPersistence.previewContainer())
 }

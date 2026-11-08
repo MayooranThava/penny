@@ -3,11 +3,15 @@ import Observation
 import WidgetKit
 
 enum PrivateModeStore {
-    static var isEnabled: Bool {
+    static var record: PrivateModeRecord {
         guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
-            return false
+            return .fresh
         }
-        return PrivateModeDefaults.isEnabled(in: defaults)
+        return PrivateModeStorage.load(from: defaults)
+    }
+
+    static var isEnabled: Bool {
+        record.isEnabled
     }
 }
 
@@ -29,6 +33,7 @@ struct WidgetKitPrivateReloader: PrivateWidgetReloading {
 @Observable
 final class PrivateModeController {
     private(set) var isEnabled: Bool
+    private(set) var settings: PrivateModeRecord
     private(set) var animationsSuppressed: Bool
     private let reloader: any PrivateWidgetReloading
     var reloadCoalescer = PrivateWidgetReloadCoalescer()
@@ -37,7 +42,9 @@ final class PrivateModeController {
     init(reloader: any PrivateWidgetReloading = WidgetKitPrivateReloader()) {
         self.reloader = reloader
         let defaults = Self.currentDefaults()
-        isEnabled = defaults.map { PrivateModeDefaults.isEnabled(in: $0) } ?? false
+        let loaded = defaults.map { PrivateModeStorage.load(from: $0) } ?? .fresh
+        settings = loaded
+        isEnabled = loaded.isEnabled
         animationsSuppressed = false
     }
 
@@ -57,31 +64,70 @@ final class PrivateModeController {
     }
 
     func setEnabled(_ newValue: Bool) {
-        let changed = newValue != Self.isEnabledInDefaults
-        if let defaults = Self.currentDefaults() {
-            PrivateModeDefaults.setEnabled(newValue, in: defaults)
+        var record = settings
+        let changed = record.isEnabled != newValue
+        record.isEnabled = newValue
+        commit(record, reload: PrivateWidgetKinds.totalAndUpcomingBills, changed: changed)
+    }
+
+    func setHidden(_ kind: PrivateAmountKind, _ hidden: Bool) {
+        var record = settings
+        guard record.visibility.hides(kind) != hidden else { return }
+        switch kind {
+        case .totals: record.visibility.hideTotals = hidden
+        case .transactions: record.visibility.hideTransactions = hidden
+        case .bills: record.visibility.hideBills = hidden
+        case .widgets: record.visibility.hideWidgets = hidden
         }
-        isEnabled = newValue
+        commit(record, reload: PrivateWidgetReloadCoalescer.widgetKinds(affectedBy: kind), changed: true)
+    }
+
+    func acknowledgeUpgradeNote() {
+        guard let defaults = Self.currentDefaults() else {
+            settings.upgradeNotePending = false
+            return
+        }
+        settings = PrivateModeStorage.acknowledgeUpgradeNote(in: defaults)
+        isEnabled = settings.isEnabled
+    }
+
+    func masks(_ site: PrivateTotalSite) -> Bool {
+        if site.rawValue.hasPrefix("widget") {
+            return settings.masksWidgetTotals()
+        }
+        return settings.masks(.totals)
+    }
+
+    func masks(_ kind: PrivateAmountKind) -> Bool {
+        settings.masks(kind)
+    }
+
+    private func commit(_ record: PrivateModeRecord, reload kinds: [String], changed: Bool) {
+        settings = record
+        isEnabled = record.isEnabled
+        if let defaults = Self.currentDefaults() {
+            PrivateModeStorage.save(record, to: defaults)
+        }
         guard changed else { return }
-        // The flag is already stored, so a widget that renders now masks totals.
-        // Timeline reloads wait until taps stop, and the last flag wins.
-        reloadCoalescer.noteChange(at: Date())
+        reloadCoalescer.noteChange(kinds: kinds, at: Date())
         let delay = reloadCoalescer.debounce
         reloadTask?.cancel()
         reloadTask = Task { @MainActor [weak self] in
             let nanoseconds = UInt64(max(delay, 0) * 1_000_000_000)
             try? await Task.sleep(nanoseconds: nanoseconds)
             guard let self, !Task.isCancelled else { return }
-            // A slightly early wake still counts as the end of the quiet period.
-            let kinds = self.reloadCoalescer.takeDueReload(at: Date().addingTimeInterval(0.05))
-            if let kinds {
-                self.reloader.reload(kinds: kinds)
+            let due = self.reloadCoalescer.takeDueReload(at: Date().addingTimeInterval(0.05))
+            if let due {
+                self.reloader.reload(kinds: due)
             }
         }
     }
 
     func refreshFromDefaults() {
-        isEnabled = Self.isEnabledInDefaults
+        if let defaults = Self.currentDefaults() {
+            settings = PrivateModeStorage.load(from: defaults)
+        }
+        isEnabled = settings.isEnabled
     }
 
     func noteScenePhase(_ phase: PrivateScenePhase) {

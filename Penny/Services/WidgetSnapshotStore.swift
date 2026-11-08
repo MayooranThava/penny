@@ -43,6 +43,10 @@ enum WidgetSnapshotStore {
         /// Fraction from 0...1 for the goal ring. Not a currency amount.
         var topGoalProgress: Double?
         var topGoalDetail: String?
+        /// Whether Home and Lock Screen total widgets should hide amounts.
+        var hideWidgetTotals: Bool? = nil
+        /// Whether the upcoming-bills widget should hide amounts.
+        var hideWidgetBills: Bool? = nil
 
         /// Used by WidgetKit placeholder / snapshot fallbacks.
         static var placeholder: Snapshot {

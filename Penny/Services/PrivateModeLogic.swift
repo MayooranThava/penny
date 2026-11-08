@@ -416,6 +416,110 @@ enum PrivateAmountLogic {
     ].joined(separator: "|")
 }
 
+enum PrivateAmountKind: String, Codable, CaseIterable, Sendable {
+    case totals
+    case transactions
+    case bills
+    case widgets
+}
+
+struct PrivateVisibility: Codable, Equatable, Sendable {
+    var hideTotals: Bool
+    var hideTransactions: Bool
+    var hideBills: Bool
+    var hideWidgets: Bool
+
+    static let hidden = PrivateVisibility(
+        hideTotals: true,
+        hideTransactions: true,
+        hideBills: true,
+        hideWidgets: true
+    )
+
+    var hidesAnything: Bool {
+        hideTotals || hideTransactions || hideBills || hideWidgets
+    }
+
+    func hides(_ kind: PrivateAmountKind) -> Bool {
+        switch kind {
+        case .totals: return hideTotals
+        case .transactions: return hideTransactions
+        case .bills: return hideBills
+        case .widgets: return hideWidgets
+        }
+    }
+}
+
+struct PrivateModeRecord: Codable, Equatable, Sendable {
+    static let currentVersion = 1
+
+    var version: Int
+    var isEnabled: Bool
+    var visibility: PrivateVisibility
+    var upgradeNotePending: Bool
+
+    static let fresh = PrivateModeRecord(
+        version: currentVersion,
+        isEnabled: false,
+        visibility: .hidden,
+        upgradeNotePending: false
+    )
+
+    func masks(_ kind: PrivateAmountKind) -> Bool {
+        guard isEnabled else { return false }
+        return visibility.hides(kind)
+    }
+
+    func masksWidgetTotals() -> Bool {
+        isEnabled && (visibility.hideWidgets || visibility.hideTotals)
+    }
+
+    func masksWidgetBills() -> Bool {
+        isEnabled && (visibility.hideWidgets || visibility.hideBills)
+    }
+}
+
+enum PrivateModeStorage {
+    static let settingsKey = "penny.privateMode.settings"
+    static let upgradeNote = "Private mode now also hides transaction and bill amounts on screen. You can change this in Settings."
+    static let settingsFooter = "Private mode hides amounts on screen. Hidden amounts show as dots. Choose what to hide in Settings."
+    static let nothingHiddenFooter = "Nothing will be hidden."
+    static let amountsStillShowFootnote = "*Amounts still show when you add or edit an entry, and in exports."
+
+    static func load(from defaults: UserDefaults) -> PrivateModeRecord {
+        if let data = defaults.data(forKey: settingsKey),
+           let record = try? JSONDecoder().decode(PrivateModeRecord.self, from: data) {
+            return record
+        }
+        if defaults.object(forKey: PrivateModeDefaults.key) != nil {
+            let enabled = PrivateModeDefaults.isEnabled(in: defaults)
+            let record = PrivateModeRecord(
+                version: PrivateModeRecord.currentVersion,
+                isEnabled: enabled,
+                visibility: .hidden,
+                upgradeNotePending: enabled
+            )
+            save(record, to: defaults)
+            return record
+        }
+        return .fresh
+    }
+
+    static func save(_ record: PrivateModeRecord, to defaults: UserDefaults) {
+        if let data = try? JSONEncoder().encode(record) {
+            defaults.set(data, forKey: settingsKey)
+        }
+        PrivateModeDefaults.setEnabled(record.isEnabled, in: defaults)
+    }
+
+    static func acknowledgeUpgradeNote(in defaults: UserDefaults) -> PrivateModeRecord {
+        var record = load(from: defaults)
+        record.upgradeNotePending = false
+        save(record, to: defaults)
+        return record
+    }
+}
+
 enum PrivateModeDefaults {
     static let key = "penny.privateMode.enabled"
 
@@ -435,10 +539,13 @@ enum PrivateWidgetKinds {
     static let upcomingBills = "PennyUpcomingBillsWidget"
     static let upcomingReminder = "PennyUpcomingReminderWidget"
 
-    /// Upcoming bills keep each bill's amount, so they are not reloaded.
-    /// The reminder widget includes a Safe to Spend total, so it is.
-    /// Lock Screen Safe to Spend uses `safeToSpend`.
+    /// Totals widgets only. Lock Screen Safe to Spend uses `safeToSpend`.
+    /// Upcoming Bills is added by `totalAndUpcomingBills` when Private mode or bill hiding changes.
     static let totalShowing = [safeToSpend, monthlyBudget, savingsGoal, upcomingReminder]
+
+    /// Totals widgets plus Upcoming Bills. Turning Private mode on, or a bill
+    /// choice, reloads both.
+    static let totalAndUpcomingBills = totalShowing + [upcomingBills]
 }
 
 /// Trailing debounce for widget timeline reloads. The flag is stored immediately.
@@ -450,7 +557,17 @@ struct PrivateWidgetReloadCoalescer {
     private var dueAt: Date?
     private var pending = false
 
+    private var pendingKinds: [String] = []
+
     mutating func noteChange(at now: Date) {
+        noteChange(kinds: PrivateWidgetKinds.totalShowing, at: now)
+    }
+
+    mutating func noteChange(kinds: [String], at now: Date) {
+        guard !kinds.isEmpty else { return }
+        for kind in kinds where !pendingKinds.contains(kind) {
+            pendingKinds.append(kind)
+        }
         pending = true
         dueAt = now.addingTimeInterval(debounce)
     }
@@ -459,7 +576,28 @@ struct PrivateWidgetReloadCoalescer {
         guard pending, let dueAt, now >= dueAt else { return nil }
         pending = false
         self.dueAt = nil
-        return PrivateWidgetKinds.totalShowing
+        let kinds = pendingKinds
+        pendingKinds = []
+        return kinds
+    }
+
+    static func widgetKinds(affectedBy kind: PrivateAmountKind) -> [String] {
+        switch kind {
+        case .totals:
+            return PrivateWidgetKinds.totalShowing
+        case .transactions:
+            return []
+        case .bills:
+            return PrivateWidgetKinds.totalAndUpcomingBills
+        case .widgets:
+            return [
+                PrivateWidgetKinds.safeToSpend,
+                PrivateWidgetKinds.monthlyBudget,
+                PrivateWidgetKinds.savingsGoal,
+                PrivateWidgetKinds.upcomingBills,
+                PrivateWidgetKinds.upcomingReminder
+            ]
+        }
     }
 }
 

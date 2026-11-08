@@ -1,0 +1,16 @@
+{
+  "marketingVersion": "1.2",
+  "privateModeEnabled": false,
+  "income": "4500.50",
+  "plannedSavings": "200.25",
+  "currencyCode": "CAD",
+  "displayName": "Avery",
+  "debtPayment": "40.00",
+  "transactions": [
+    { "id": "B1000000-0000-0000-0000-000000000001", "title": "Coffee", "amount": "7.15", "category": "Food" }
+  ],
+  "bills": [
+    { "id": "B1000000-0000-0000-0000-000000000002", "name": "Phone", "amount": "64.20", "active": true },
+    { "id": "B1000000-0000-0000-0000-000000000003", "name": "Hydro", "amount": "48.75", "active": false }
+  ]
+}

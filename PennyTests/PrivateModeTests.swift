@@ -356,8 +356,8 @@ struct PrivateModeTests {
         #expect(shown.contains("999.35"))
     }
 
-    @Test("Individual transaction and bill rows are not masked")
-    func individualsStayVisible() throws {
+    @Test("Transaction and bill rows hide only their own type and still format the visible amount")
+    func individualsFollowTheirType() throws {
         let amount = Decimal(string: "19.99")!
         let shown = PrivateAmountLogic.display(
             amount: amount,
@@ -373,10 +373,11 @@ struct PrivateModeTests {
         let components = try source("Penny/Components/PennyComponents.swift")
         let transaction = try slice(components, from: "struct TransactionRow", until: "struct RingProgressView")
         let bill = try slice(components, from: "struct BillRow", until: "struct TransactionRow")
-        #expect(!transaction.contains("PrivateAmount"))
+        #expect(transaction.contains("privateMode.masks(.transactions)"))
         #expect(transaction.contains("MoneyFormatters.signed"))
-        #expect(!bill.contains("PrivateAmount"))
+        #expect(transaction.contains("hiddenAccessibilityLabel"))
         #expect(bill.contains("MoneyText"))
+        #expect(bill.contains("kind: .bills"))
     }
 
     @Test("Insight sentences keep the words and mask only the amount")
@@ -491,8 +492,10 @@ struct PrivateModeTests {
         #expect(controllerSource.contains("WidgetSnapshotStore.activeDefaultsSuite"))
         #expect(!controllerSource.contains("import SwiftData"))
         #expect(!controllerSource.contains("modelContext"))
+        #expect(!controllerSource.contains("modelContext.save"))
+        #expect(!controllerSource.contains("context.save"))
         #expect(!controllerSource.contains("WidgetSnapshotPublisher"))
-        #expect(!controllerSource.contains(".save("))
+        #expect(controllerSource.contains("PrivateModeStorage.save"))
 
         let eye = PrivateModeController(reloader: RecordingPrivateReloader())
         eye.toggle()
@@ -668,7 +671,7 @@ struct PrivateModeTests {
         ]
         for relative in totalWidgets {
             let source = try source(relative)
-            #expect(source.contains("isPrivate: PrivateModeStore.isEnabled"))
+            #expect(source.contains("PrivateModeStore.record.masksWidgetTotals()"))
             if let view = source.range(of: "WidgetView") {
                 let provider = String(source[..<view.lowerBound])
                 #expect(!provider.contains("MoneyFormatters"))
@@ -677,7 +680,7 @@ struct PrivateModeTests {
         }
         let bills = try source("PennyWidgets/UpcomingBillsWidget.swift")
         #expect(bills.contains("upcomingBillDetail"))
-        #expect(bills.contains("PrivateModeStore.isEnabled"))
+        #expect(bills.contains("PrivateModeStore.record.masksWidgetBills()"))
     }
 
     @Test("Fifty quick toggles reload once and do not save SwiftData")
@@ -737,7 +740,8 @@ struct PrivateModeTests {
         #expect(after == before)
         #expect(reloader.calls.count == 1)
         #expect(reloader.calls.count <= 3)
-        #expect(reloader.calls.allSatisfy { $0 == PrivateWidgetKinds.totalShowing })
+        #expect(reloader.calls.allSatisfy { $0 == PrivateWidgetKinds.totalAndUpcomingBills })
+        #expect(reloader.calls.allSatisfy { $0.contains(PrivateWidgetKinds.upcomingBills) })
         #expect(!PrivateWidgetKinds.totalShowing.contains(PrivateWidgetKinds.upcomingBills))
     }
 
@@ -778,6 +782,365 @@ struct PrivateModeTests {
         }
         return String(tail[..<endRange.lowerBound])
     }
+}
+
+@Suite("Private mode amount types", .serialized, .isolatedTestResources)
+struct PrivateModeAmountTypeTests {
+    @Test("v1.2 and v1.3 fixtures keep Private mode and every amount")
+    @MainActor
+    func upgradeFixturesKeepPrivateModeAndAmounts() throws {
+        let names = [
+            "Penny-v1.2-private-on",
+            "Penny-v1.2-private-off",
+            "Penny-v1.3-private-on",
+            "Penny-v1.3-private-off"
+        ]
+        for name in names {
+            let fixture = try PrivateModeUpgradeFixture.load(named: name)
+            #expect(name.contains(fixture.marketingVersion))
+            let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+            defaults.removeObject(forKey: PrivateModeStorage.settingsKey)
+            defaults.set(fixture.privateModeEnabled, forKey: PrivateModeDefaults.key)
+
+            let url = try upgradeStoreURL("\(name).store")
+            try fixture.writeStore(at: url)
+            let expectedTotal = fixture.homeSafeToSpend
+            let expectedTransactionTotal = fixture.transactionAmounts.reduce(Decimal(0), +)
+            let expectedBillTotal = fixture.billAmounts.reduce(Decimal(0), +)
+
+            let container = try PennyPersistence.makeContainer(at: url)
+            let context = ModelContext(container)
+            let transactions = try context.fetch(FetchDescriptor<Penny.Transaction>())
+            let bills = try context.fetch(FetchDescriptor<RecurringBill>())
+            let debts = try context.fetch(FetchDescriptor<Debt>())
+            let settings = try #require(context.fetch(FetchDescriptor<UserSettings>()).first)
+
+            let storedTransactions = transactions.sorted { $0.title < $1.title }
+            let storedBills = bills.sorted { $0.name < $1.name }
+            let expectedBills = fixture.bills.sorted { ($0.name ?? "") < ($1.name ?? "") }
+            #expect(storedTransactions.map(\.amount) == fixture.transactionAmounts.sorted())
+            #expect(storedTransactions.reduce(Decimal(0)) { $0 + $1.amount } == expectedTransactionTotal)
+            #expect(storedBills.map(\.amount) == expectedBills.map { Decimal(string: $0.amount)! })
+            #expect(storedBills.map(\.isActive) == expectedBills.map { $0.active ?? true })
+            #expect(bills.reduce(Decimal(0)) { $0 + $1.amount } == expectedBillTotal)
+            #expect(debts.first?.plannedMonthlyPayment == fixture.debtPaymentAmount)
+            #expect(settings.monthlyIncome == fixture.incomeAmount)
+            #expect(settings.plannedMonthlySavings == fixture.plannedSavingsAmount)
+
+            WidgetSnapshotPublisher.publish(
+                transactions: transactions,
+                categories: [],
+                bills: bills,
+                debts: debts,
+                goals: [],
+                settings: settings,
+                month: PrivateModeUpgradeFixture.sampleDate
+            )
+            let snapshot = try #require(WidgetSnapshotStore.load())
+            #expect(snapshot.safeToSpend == expectedTotal)
+            let inactive = fixture.bills
+                .filter { $0.active == false }
+                .reduce(Decimal(0)) { $0 + (Decimal(string: $1.amount) ?? 0) }
+            #expect(snapshot.safeToSpend != expectedTotal - inactive)
+
+            let migrated = PrivateModeStorage.load(from: defaults)
+            #expect(migrated.isEnabled == fixture.privateModeEnabled)
+            #expect(migrated.visibility == .hidden)
+            #expect(migrated.upgradeNotePending == fixture.privateModeEnabled)
+            let shown = PrivateModeStorage.acknowledgeUpgradeNote(in: defaults)
+            #expect(shown.upgradeNotePending == false)
+            #expect(PrivateModeStorage.load(from: defaults).isEnabled == fixture.privateModeEnabled)
+            #expect(snapshot.safeToSpend == expectedTotal)
+        }
+    }
+
+    @Test("A fresh install never shows the upgrade note")
+    func freshInstallHidesNote() {
+        let suite = "PennyTests.PrivateFresh.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let fresh = PrivateModeStorage.load(from: defaults)
+        #expect(fresh == .fresh)
+        #expect(fresh.isEnabled == false)
+        #expect(fresh.upgradeNotePending == false)
+        #expect(fresh.visibility == .hidden)
+        #expect(PrivateModeStorage.upgradeNote == "Private mode now also hides transaction and bill amounts on screen. You can change this in Settings.")
+    }
+
+    @Test("Each toggle hides only its amount type")
+    func togglesAreIndependent() {
+        var record = PrivateModeRecord.fresh
+        record.isEnabled = true
+        record.visibility = .hidden
+        #expect(record.masks(.totals))
+        #expect(record.masks(.transactions))
+        #expect(record.masks(.bills))
+        #expect(record.masks(.widgets))
+
+        record.visibility.hideTransactions = false
+        #expect(!record.masks(.transactions))
+        #expect(record.masks(.bills))
+        #expect(record.masks(.totals))
+
+        record.isEnabled = false
+        #expect(!record.masks(.transactions))
+        #expect(!record.masks(.bills))
+        #expect(!record.masks(.totals))
+        #expect(!record.masks(.widgets))
+    }
+
+    @Test("Exports show the same totals Home uses while Private mode is on")
+    func exportsMatchHomeTotals() {
+        var record = PrivateModeRecord.fresh
+        record.isEnabled = true
+        record.visibility = .hidden
+        #expect(record.masks(.transactions))
+        #expect(record.masks(.totals))
+        let income = Decimal(string: "4500.50")!
+        let coffee = Decimal(string: "7.15")!
+        let phone = Decimal(string: "64.20")!
+        let hydro = Decimal(string: "48.75")!
+        let debt = Decimal(string: "40.00")!
+        let savings = Decimal(string: "200.25")!
+        let committed = FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: [(phone, .monthly, true), (hydro, .monthly, false)],
+            debtPayments: [debt]
+        )
+        let home = FinanceCalculator.safeToSpend(
+            monthlyIncome: income,
+            recurringCommitted: committed,
+            discretionarySpent: coffee,
+            plannedSavings: savings
+        )
+        #expect(home == income - phone - debt - coffee - savings)
+        let locale = Locale(identifier: "en_CA")
+        let lines = MonthlySummaryPDFService.summaryLines(for: .init(
+            monthLabel: "October",
+            currencyCode: "CAD",
+            displayName: "Avery",
+            income: income,
+            spent: coffee,
+            billsMonthly: phone,
+            debtMonthly: debt,
+            safeToSpend: home,
+            categoryLines: [],
+            billLines: [("Phone", phone), ("Hydro", hydro)]
+        ), locale: locale)
+        let joined = lines.joined(separator: "\n")
+        #expect(joined.contains(MoneyFormatters.string(from: home, currencyCode: "CAD", locale: locale)))
+        #expect(joined.contains(MoneyFormatters.string(from: income, currencyCode: "CAD", locale: locale)))
+        #expect(joined.contains(MoneyFormatters.string(from: coffee, currencyCode: "CAD", locale: locale)))
+        let csv = CSVExportLogic.makeCSV(rows: [
+            .init(
+                date: PrivateModeUpgradeFixture.sampleDate,
+                title: "Coffee",
+                amount: coffee,
+                type: "expense",
+                category: "Food",
+                note: "",
+                merchant: "",
+                source: "manual"
+            )
+        ])
+        #expect(csv.contains(CSVExportLogic.formatAmount(coffee)))
+        #expect(!joined.contains(PrivateAmountLogic.mask))
+    }
+
+    @Test("Turning Private mode on reloads Upcoming Bills and the total widgets")
+    @MainActor
+    func enablingReloadsUpcomingBills() async throws {
+        let reloader = RecordingPrivateReloader()
+        let controller = PrivateModeController(reloader: reloader)
+        controller.reloadCoalescer.debounce = 0.05
+        controller.setEnabled(true)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        let kinds = try #require(reloader.calls.first)
+        #expect(kinds == PrivateWidgetKinds.totalAndUpcomingBills)
+        #expect(kinds.contains(PrivateWidgetKinds.upcomingBills))
+        for kind in PrivateWidgetKinds.totalShowing {
+            #expect(kinds.contains(kind))
+        }
+    }
+
+    @Test("A bill toggle reloads totals and Upcoming Bills, and nothing else does extra work")
+    @MainActor
+    func widgetReloadTargetsAffectedKinds() async throws {
+        let reloader = RecordingPrivateReloader()
+        let controller = PrivateModeController(reloader: reloader)
+        controller.reloadCoalescer.debounce = 0.05
+        controller.setEnabled(true)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        controller.setHidden(.bills, false)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        let last = try #require(reloader.calls.last)
+        #expect(last == PrivateWidgetReloadCoalescer.widgetKinds(affectedBy: .bills))
+        #expect(last.contains(PrivateWidgetKinds.upcomingBills))
+        #expect(last.contains(PrivateWidgetKinds.safeToSpend))
+        #expect(PrivateWidgetReloadCoalescer.widgetKinds(affectedBy: .transactions).isEmpty)
+    }
+
+    @Test("Private mode copy hides amounts on screen and avoids banned words")
+    func wordingHidesAmountsOnScreen() {
+        let approvedNote = "Private mode now also hides transaction and bill amounts on screen. You can change this in Settings."
+        #expect(PrivateModeStorage.upgradeNote == approvedNote)
+        let copy = [
+            PrivateModeStorage.upgradeNote,
+            PrivateModeStorage.settingsFooter,
+            PrivateModeStorage.nothingHiddenFooter,
+            PrivateModeStorage.amountsStillShowFootnote
+        ]
+        let phraseExceptions: Set<String> = [
+            PrivateModeStorage.nothingHiddenFooter,
+            PrivateModeStorage.amountsStillShowFootnote
+        ]
+        let banned = ["secure", "protected", "safe", "encrypted", "forever", "lifetime"]
+        for line in copy {
+            if !phraseExceptions.contains(line) {
+                #expect(line.localizedCaseInsensitiveContains("amounts on screen"))
+            }
+            let lowered = line.lowercased()
+            for word in banned {
+                #expect(!lowered.contains(word))
+            }
+        }
+    }
+
+    @Test("Legal's asterisk line shows under the Private mode switches")
+    func footnoteShowsUnderTheSwitches() throws {
+        #expect(PrivateModeStorage.amountsStillShowFootnote == "*Amounts still show when you add or edit an entry, and in exports.")
+        let source = try String(
+            contentsOf: repoFile("Penny/Features/Settings/SettingsView.swift"),
+            encoding: .utf8
+        )
+        guard let viewStart = source.range(of: "struct PrivateModeSettingsView") else {
+            Issue.record("Private mode settings view is missing")
+            return
+        }
+        let view = source[viewStart.lowerBound...]
+        let switches = try #require(view.range(of: "toggle(\"Widgets\""))
+        let footnote = try #require(view.range(of: "PrivateModeStorage.amountsStillShowFootnote"))
+        #expect(switches.upperBound < footnote.lowerBound)
+    }
+}
+
+private struct PrivateModeUpgradeFixture: Decodable {
+    struct Row: Decodable {
+        var id: String
+        var title: String?
+        var name: String?
+        var amount: String
+        var category: String?
+        var active: Bool?
+    }
+
+    var marketingVersion: String
+    var privateModeEnabled: Bool
+    var income: String
+    var plannedSavings: String
+    var currencyCode: String
+    var displayName: String
+    var debtPayment: String
+    var transactions: [Row]
+    var bills: [Row]
+
+    static let sampleDate = Date(timeIntervalSince1970: 1_759_276_800)
+
+    static func load(named name: String) throws -> PrivateModeUpgradeFixture {
+        let bundle = Bundle(for: MigrationFixtureAnchor.self)
+        let url = try #require(
+            bundle.url(forResource: name, withExtension: "json", subdirectory: "Fixtures"),
+            "Missing bundled fixture \(name).json"
+        )
+        return try JSONDecoder().decode(PrivateModeUpgradeFixture.self, from: Data(contentsOf: url))
+    }
+
+    var transactionAmounts: [Decimal] { transactions.map { Decimal(string: $0.amount)! } }
+    var billAmounts: [Decimal] { bills.map { Decimal(string: $0.amount)! } }
+    var incomeAmount: Decimal { Decimal(string: income)! }
+    var plannedSavingsAmount: Decimal { Decimal(string: plannedSavings)! }
+    var debtPaymentAmount: Decimal { Decimal(string: debtPayment)! }
+
+    var homeSafeToSpend: Decimal {
+        let activeBills = bills.filter { $0.active == true }.map { (Decimal(string: $0.amount)!, BillRecurrence.monthly, true) }
+        let committed = FinanceCalculator.totalMonthlyCommitted(
+            billAmountsAndRecurrence: activeBills,
+            debtPayments: [debtPaymentAmount]
+        )
+        let spent = transactions.reduce(Decimal(0)) { $0 + Decimal(string: $1.amount)! }
+        return FinanceCalculator.safeToSpend(
+            monthlyIncome: incomeAmount,
+            recurringCommitted: committed,
+            discretionarySpent: spent,
+            plannedSavings: plannedSavingsAmount
+        )
+    }
+
+    @MainActor
+    func writeStore(at url: URL) throws {
+        let schema = Schema(versionedSchema: PennySchemaV1.self)
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(url: url)])
+        let context = ModelContext(container)
+        let date = Self.sampleDate
+        for row in transactions {
+            context.insert(Penny.Transaction(
+                id: UUID(uuidString: row.id)!,
+                title: row.title ?? "Transaction",
+                amount: Decimal(string: row.amount)!,
+                date: date,
+                transactionType: .expense,
+                categoryName: row.category ?? "Food",
+                createdAt: date
+            ))
+        }
+        for row in bills {
+            context.insert(RecurringBill(
+                id: UUID(uuidString: row.id)!,
+                name: row.name ?? "Bill",
+                amount: Decimal(string: row.amount)!,
+                dueDay: 12,
+                categoryName: "Bills",
+                nextDueDate: date,
+                startDate: date,
+                isActive: row.active ?? true,
+                paidCycleKey: row.active == false ? "2026-10" : ""
+            ))
+        }
+        context.insert(Debt(
+            name: "Visa",
+            originalBalance: Decimal(string: "500.00")!,
+            currentBalance: Decimal(string: "120.40")!,
+            interestRate: Decimal(string: "18.50")!,
+            minimumPayment: Decimal(string: "20.00")!,
+            plannedMonthlyPayment: debtPaymentAmount
+        ))
+        context.insert(UserSettings(
+            currencyCode: currencyCode,
+            monthlyIncome: incomeAmount,
+            plannedMonthlySavings: plannedSavingsAmount,
+            hasCompletedOnboarding: true,
+            displayName: displayName,
+            hasCompletedWalkthrough: true
+        ))
+        try context.save()
+    }
+}
+
+private func upgradeStoreURL(_ name: String) throws -> URL {
+    let directoryName = try #require(
+        PennyPersistence.activeIsolatedStoreName,
+        "Upgrade tests need an isolated store directory"
+    )
+    let directory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        .appendingPathComponent(directoryName, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return directory.appendingPathComponent(name)
+}
+
+private func repoFile(_ relative: String) -> URL {
+    URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent(relative)
 }
 
 private final class RecordingPrivateReloader: PrivateWidgetReloading, @unchecked Sendable {

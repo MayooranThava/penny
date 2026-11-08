@@ -7,10 +7,27 @@ import Testing
 @MainActor
 struct LogApplePayPurchaseIntentTests {
 
+    @Test("A 1.3 automation that only sets amount still saves")
+    func legacyNumericAmountStillSaves() async throws {
+        let intent = LogApplePayPurchaseIntent()
+        intent.amount = 12.34
+        intent.merchant = "Legacy Cafe"
+        intent.currencyCode = "CAD"
+        intent.cardName = "Visa"
+
+        _ = try await intent.perform()
+
+        let rows = try fetchWalletExpenses()
+        #expect(rows.count == 1)
+        #expect(rows.first?.title == "Legacy Cafe")
+        #expect(rows.first?.amount == Decimal(string: "12.34"))
+        #expect(intent.amountText.isEmpty)
+    }
+
     @Test("perform() inserts a Wallet expense through the shared store")
     func performInsertsExpense() async throws {
         let intent = LogApplePayPurchaseIntent()
-        intent.amount = "12.34"
+        intent.amount = 12.34
         intent.merchant = "Intent Cafe"
         intent.currencyCode = "CAD"
         intent.cardName = "Test Card"
@@ -28,7 +45,7 @@ struct LogApplePayPurchaseIntentTests {
     @Test("perform() dedupes the same Wallet tap")
     func performDedupesSameTap() async throws {
         let intent = LogApplePayPurchaseIntent()
-        intent.amount = "7.50"
+        intent.amount = 7.50
         intent.merchant = "Duplicate Cafe"
         intent.currencyCode = "CAD"
         intent.cardName = "Visa"
@@ -45,14 +62,14 @@ struct LogApplePayPurchaseIntentTests {
     @Test("An empty Merchant falls back to Name, then Apple Pay")
     func merchantFallsBack() async throws {
         let named = LogApplePayPurchaseIntent()
-        named.amount = "4.25"
+        named.amount = 4.25
         named.merchant = " "
         named.transactionName = "Name Cafe"
         named.currencyCode = "CAD"
         _ = try await named.perform()
 
         let plain = LogApplePayPurchaseIntent()
-        plain.amount = "4.25"
+        plain.amount = 4.25
         plain.merchant = ""
         plain.transactionName = ""
         plain.currencyCode = "CAD"
@@ -84,9 +101,17 @@ struct LogApplePayPurchaseIntentTests {
         #expect(!duplicate.contains("$"))
 
         let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let previousPrivateMode = defaults.object(forKey: PrivateModeDefaults.key)
+        defer {
+            if let previousPrivateMode {
+                defaults.set(previousPrivateMode, forKey: PrivateModeDefaults.key)
+            } else {
+                defaults.removeObject(forKey: PrivateModeDefaults.key)
+            }
+        }
         PrivateModeDefaults.setEnabled(true, in: defaults)
         let intent = LogApplePayPurchaseIntent()
-        intent.amount = "15.75"
+        intent.amount = 15.75
         intent.merchant = "Private Cafe"
         intent.currencyCode = "CAD"
         _ = try await intent.perform()
@@ -128,7 +153,7 @@ struct LogApplePayPurchaseIntentTests {
     @Test("A failed save is reported to Shortcuts")
     func saveErrorReachesShortcuts() async {
         let intent = LogApplePayPurchaseIntent()
-        intent.amount = "2.00"
+        intent.amount = 2.00
         intent.merchant = "Save Fail"
         intent.currencyCode = "CAD"
         await PennySaveTesting.$forcedError.withValue(PennyForcedSaveFailure()) {
@@ -146,7 +171,7 @@ struct LogApplePayPurchaseIntentTests {
     @Test("perform() rejects a zero amount")
     func performRejectsZero() async {
         let intent = LogApplePayPurchaseIntent()
-        intent.amount = "0"
+        intent.amount = 0
         intent.merchant = "Cafe"
         intent.currencyCode = "CAD"
         do {

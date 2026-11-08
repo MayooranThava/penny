@@ -108,8 +108,12 @@ struct ApplePayCaptureLogicTests {
         #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "CA$4.50", currencyCode: "CAD", locale: enUS) == Decimal(string: "4.50"))
         #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "US$8.00", currencyCode: "USD", locale: enUS) == Decimal(string: "8.00"))
         #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "1,234.56", currencyCode: "USD", locale: enUS) == Decimal(string: "1234.56"))
+        let german = Locale(identifier: "de_DE")
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "12.5", locale: german) == Decimal(string: "12.50"))
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "12,5", locale: german) == Decimal(string: "12.50"))
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "1.234", locale: german) == Decimal(string: "1234"))
         #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "12,50", locale: Locale(identifier: "fr_FR")) == Decimal(string: "12.50"))
-        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "1.234,56", currencyCode: "EUR", locale: Locale(identifier: "de_DE")) == Decimal(string: "1234.56"))
+        #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "1.234,56", currencyCode: "EUR", locale: german) == Decimal(string: "1234.56"))
         #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "0", locale: enUS) == nil)
         #expect(ApplePayCaptureLogic.money(fromShortcutAmount: "not money", locale: enUS) == nil)
     }

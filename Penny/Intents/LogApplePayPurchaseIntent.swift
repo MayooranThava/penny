@@ -21,9 +21,16 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     @Parameter(
         title: "Amount",
-        description: "Map this to Amount or Currency Amount from Shortcut Input."
+        description: "Map this to Currency Amount from Shortcut Input."
     )
-    var amount: String
+    var amount: Double
+
+    @Parameter(
+        title: "Amount (text)",
+        description: "Optional. Used when Amount is written with a comma, such as 12,50.",
+        default: ""
+    )
+    var amountText: String
 
     @Parameter(
         title: "Merchant",
@@ -55,6 +62,7 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     static var parameterSummary: some ParameterSummary {
         Summary("Log \(\.$amount) at \(\.$merchant)") {
+            \.$amountText
             \.$transactionName
             \.$currencyCode
             \.$cardName
@@ -63,14 +71,8 @@ struct LogApplePayPurchaseIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard let parsed = ApplePayCaptureLogic.money(
-            fromShortcutAmount: amount,
-            currencyCode: currencyCode
-        ) else {
-            throw $amount.needsValueError("Amount must be greater than zero.")
-        }
         let result = try ApplePayCaptureService.captureUsingSharedStore(
-            amount: NSDecimalNumber(decimal: parsed).doubleValue,
+            amount: try resolvedAmount(),
             merchant: merchant,
             name: transactionName,
             currencyCode: currencyCode,
@@ -102,6 +104,20 @@ struct LogApplePayPurchaseIntent: AppIntent {
         case .invalidAmount:
             throw $amount.needsValueError("Amount must be greater than zero.")
         }
+    }
+
+    /// `amountText` wins when it parses. Otherwise the 1.3 numeric `amount` is used.
+    @MainActor
+    private func resolvedAmount() throws -> Double {
+        let text = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty,
+           let parsed = ApplePayCaptureLogic.money(fromShortcutAmount: text, currencyCode: currencyCode) {
+            return NSDecimalNumber(decimal: parsed).doubleValue
+        }
+        guard amount > 0 else {
+            throw $amount.needsValueError("Amount must be greater than zero.")
+        }
+        return amount
     }
 
     @MainActor

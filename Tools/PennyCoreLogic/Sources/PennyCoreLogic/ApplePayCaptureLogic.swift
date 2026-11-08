@@ -40,8 +40,9 @@ enum ApplePayCaptureLogic {
     }
 
     /// Parses a Shortcuts Amount such as "$12.34", "US$8.00", "12,50", or "1.234,56".
-    /// A known currency or the locale picks the decimal separator. Otherwise a final
-    /// separator followed by exactly two digits is the decimal mark.
+    /// When both separators appear, the last one is the decimal mark.
+    /// One or two digits after the only separator are the decimal part, so "12.5" is 12.50
+    /// even where the locale uses a comma. Three digits stay a thousands group.
     static func money(
         fromShortcutAmount text: String,
         currencyCode: String? = nil,
@@ -92,8 +93,13 @@ enum ApplePayCaptureLogic {
         guard let separator = lastDot ?? lastComma else { return raw }
         let mark: Character = lastDot == nil ? "," : "."
         let fraction = raw[raw.index(after: separator)...].filter(\.isNumber)
-        let markIsDecimal = String(mark) == decimalSeparator || fraction.count == 2
-        if markIsDecimal, !fraction.isEmpty, fraction.count <= 2 {
+        if fraction.count == 1 || fraction.count == 2 {
+            return raw.replacingOccurrences(of: String(mark), with: ".")
+        }
+        if fraction.count == 3 {
+            return raw.replacingOccurrences(of: String(mark), with: "")
+        }
+        if String(mark) == decimalSeparator, !fraction.isEmpty {
             return raw.replacingOccurrences(of: String(mark), with: ".")
         }
         return raw.replacingOccurrences(of: String(mark), with: "")

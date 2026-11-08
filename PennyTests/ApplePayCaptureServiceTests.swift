@@ -93,6 +93,7 @@ struct ApplePayCaptureServiceTests {
     func saveFailureSurfaces() throws {
         let container = try PennyPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
+        var threw = false
         try PennySaveTesting.$forcedError.withValue(PennyForcedSaveFailure()) {
             do {
                 _ = try ApplePayCaptureService.capture(
@@ -104,12 +105,48 @@ struct ApplePayCaptureServiceTests {
                 )
                 Issue.record("Expected the save to throw")
             } catch let error as ApplePayCaptureSaveError {
+                threw = true
                 #expect(error.localizedDescription.localizedCaseInsensitiveContains("save"))
             } catch {
                 Issue.record("Unexpected error: \(error)")
             }
         }
+        #expect(threw)
         let rows = try context.fetch(FetchDescriptor<Transaction>())
         #expect(rows.isEmpty)
+    }
+
+    @Test("A failed Wallet save leaves other unsaved edits in the context")
+    func saveFailureKeepsOtherPendingEdits() throws {
+        let container = try PennyPersistence.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        context.insert(Transaction(
+            title: "Manual note",
+            amount: 1,
+            transactionType: .expense,
+            categoryName: "Other"
+        ))
+        var threw = false
+        try PennySaveTesting.$forcedError.withValue(PennyForcedSaveFailure()) {
+            do {
+                _ = try ApplePayCaptureService.capture(
+                    amount: 3.25,
+                    merchant: "Cafe",
+                    currencyCode: "CAD",
+                    cardName: nil,
+                    in: context
+                )
+                Issue.record("Expected the save to throw")
+            } catch is ApplePayCaptureSaveError {
+                threw = true
+            } catch {
+                Issue.record("Unexpected error: \(error)")
+            }
+        }
+        #expect(threw)
+        let rows = try context.fetch(FetchDescriptor<Transaction>())
+        #expect(rows.count == 1)
+        #expect(rows.first?.title == "Manual note")
+        #expect(rows.first?.importSource != .applePayShortcut)
     }
 }

@@ -85,7 +85,7 @@ struct LogApplePayPurchaseIntent: AppIntent {
             reloadTransactionAndTotalWidgets()
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
-                dialog: IntentDialog(String.LocalizationValue(stringLiteral: WalletPurchaseDialog.logged(
+                dialog: IntentDialog(LocalizedStringResource(stringLiteral: WalletPurchaseDialog.logged(
                     merchant: title,
                     amountText: money,
                     categoryName: categoryName,
@@ -95,7 +95,7 @@ struct LogApplePayPurchaseIntent: AppIntent {
         case .duplicate(let title, let amountValue):
             let money = MoneyFormatters.compact(from: amountValue, currencyCode: preferredCurrencyCode())
             return .result(
-                dialog: IntentDialog(String.LocalizationValue(stringLiteral: WalletPurchaseDialog.duplicate(
+                dialog: IntentDialog(LocalizedStringResource(stringLiteral: WalletPurchaseDialog.duplicate(
                     merchant: title,
                     amountText: money,
                     isPrivate: isPrivate

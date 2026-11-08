@@ -79,7 +79,7 @@ struct LogApplePayPurchaseIntent: AppIntent {
             cardName: cardName
         )
 
-        let isPrivate = Self.privateModeIsOn
+        let isPrivate = Self.hidesTransactionAmounts
         switch result {
         case .inserted(let title, let amountValue, let categoryName):
             reloadTransactionAndTotalWidgets()
@@ -121,11 +121,11 @@ struct LogApplePayPurchaseIntent: AppIntent {
     }
 
     @MainActor
-    private static var privateModeIsOn: Bool {
+    private static var hidesTransactionAmounts: Bool {
         guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
             return false
         }
-        return PrivateModeDefaults.isEnabled(in: defaults)
+        return PrivateModeStorage.load(from: defaults).masks(.transactions)
     }
 
     /// Safe to Spend, monthly budget, the savings goal, upcoming bills, and the

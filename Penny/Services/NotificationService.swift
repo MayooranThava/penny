@@ -77,7 +77,9 @@ final class NotificationService {
             individualAmount: nil,
             billsTotal: nil,
             currencyCode: currencyCode,
-            isPrivate: PrivateModeStore.isEnabled,
+            isPrivate: PrivateModeStorage.load(
+                from: UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) ?? .standard
+            ).masks(.bills),
             locale: .current
         )
         let content = UNMutableNotificationContent()

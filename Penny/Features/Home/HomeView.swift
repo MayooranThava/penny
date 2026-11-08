@@ -545,6 +545,7 @@ struct HomeView: View {
                                     }
                                     Spacer()
                                     MoneyText(
+                                        kind: item.kind == .bill ? .bills : .totals,
                                         amount: item.amount,
                                         currencyCode: currency,
                                         font: PennyTypography.smallAmount

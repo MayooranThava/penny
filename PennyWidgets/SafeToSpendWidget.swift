@@ -32,7 +32,7 @@ struct SafeToSpendWidgetView: View {
         WidgetPrivateDisplay.safeToSpend(
             amount: entry.snapshot.safeToSpend,
             currencyCode: entry.snapshot.currencyCode,
-            isPrivate: PrivateModeStore.isEnabled,
+            isPrivate: entry.snapshot.hideWidgetTotals == true,
             site: amountSite
         )
     }
@@ -51,7 +51,7 @@ struct SafeToSpendWidgetView: View {
             amount: entry.snapshot.safeToSpend,
             currencyCode: entry.snapshot.currencyCode,
             style: .standard,
-            isPrivate: PrivateModeStore.isEnabled,
+            isPrivate: entry.snapshot.hideWidgetTotals == true,
             locale: .current
         )
     }
@@ -101,7 +101,7 @@ struct SafeToSpendWidgetView: View {
                 .foregroundStyle(.white)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
-                .opacity(PrivateModeStore.isEnabled ? PrivateAmountLogic.maskOpacity : 1)
+                .opacity(entry.snapshot.hideWidgetTotals == true ? PrivateAmountLogic.maskOpacity : 1)
                 .accessibilityLabel(spokenAmount)
             Text("Rest of \(entry.snapshot.monthLabel)")
                 .font(.caption)

@@ -24,6 +24,8 @@ enum WidgetSnapshotPublisher {
     ) {
         PennyDataAccessProbe.counter?.fetches += 1
         let currency = settings?.currencyCode ?? "CAD"
+        let privacy = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite)
+            .map { PrivateModeStorage.load(from: $0) } ?? .fresh
         let monthTransactions = transactions.filter { DateHelpers.isSameMonth($0.date, month) }
 
         let billMonthly = FinanceCalculator.totalMonthlyCommitted(
@@ -114,7 +116,9 @@ enum WidgetSnapshotPublisher {
             budgetHealth: health,
             topGoalName: topGoal?.name,
             topGoalProgress: topProgress,
-            topGoalDetail: topDetail
+            topGoalDetail: topDetail,
+            hideWidgetTotals: privacy.masksWidgetTotals(),
+            hideWidgetBills: privacy.masksWidgetBills()
         )
         WidgetSnapshotStore.save(snapshot)
         WidgetCenter.shared.reloadAllTimelines()

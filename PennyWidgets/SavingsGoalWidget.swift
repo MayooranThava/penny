@@ -49,16 +49,16 @@ struct SavingsGoalWidgetView: View {
                 if let detail = entry.snapshot.topGoalDetail {
                     let shown = WidgetPrivateDisplay.goalDetail(
                         detail,
-                        isPrivate: PrivateModeStore.isEnabled,
+                        isPrivate: entry.snapshot.hideWidgetTotals == true,
                         site: .widgetSavingsGoal
                     )
                     Text(shown)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
-                        .opacity(PrivateModeStore.isEnabled ? PrivateAmountLogic.maskOpacity : 1)
+                        .opacity(entry.snapshot.hideWidgetTotals == true ? PrivateAmountLogic.maskOpacity : 1)
                         .accessibilityLabel(
-                            PrivateModeStore.isEnabled
+                            entry.snapshot.hideWidgetTotals == true
                                 ? PrivateAmountLogic.maskCurrencyAmounts(
                                     in: detail,
                                     replacement: PrivateAmountLogic.hiddenAccessibilityLabel

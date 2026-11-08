@@ -44,7 +44,7 @@ struct MonthlyBudgetWidgetView: View {
         WidgetPrivateDisplay.budget(
             amount: spent,
             currencyCode: entry.snapshot.currencyCode,
-            isPrivate: PrivateModeStore.isEnabled,
+            isPrivate: entry.snapshot.hideWidgetTotals == true,
             site: .widgetMonthlyBudgetSpent
         )
     }
@@ -53,7 +53,7 @@ struct MonthlyBudgetWidgetView: View {
         WidgetPrivateDisplay.budget(
             amount: planned,
             currencyCode: entry.snapshot.currencyCode,
-            isPrivate: PrivateModeStore.isEnabled,
+            isPrivate: entry.snapshot.hideWidgetTotals == true,
             site: .widgetMonthlyBudgetPlanned
         )
     }
@@ -76,12 +76,12 @@ struct MonthlyBudgetWidgetView: View {
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
-                .opacity(PrivateModeStore.isEnabled ? PrivateAmountLogic.maskOpacity : 1)
+                .opacity(entry.snapshot.hideWidgetTotals == true ? PrivateAmountLogic.maskOpacity : 1)
                 .accessibilityLabel(PrivateAmountLogic.accessibilityText(
                     amount: spent,
                     currencyCode: entry.snapshot.currencyCode,
                     style: .compact,
-                    isPrivate: PrivateModeStore.isEnabled,
+                    isPrivate: entry.snapshot.hideWidgetTotals == true,
                     locale: .current
                 ))
 
@@ -89,7 +89,7 @@ struct MonthlyBudgetWidgetView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .accessibilityLabel(
-                    "of \(PrivateAmountLogic.accessibilityText(amount: planned, currencyCode: entry.snapshot.currencyCode, style: .compact, isPrivate: PrivateModeStore.isEnabled, locale: .current)) planned"
+                    "of \(PrivateAmountLogic.accessibilityText(amount: planned, currencyCode: entry.snapshot.currencyCode, style: .compact, isPrivate: entry.snapshot.hideWidgetTotals == true, locale: .current)) planned"
                 )
 
             ProgressView(value: min(progress, 1))

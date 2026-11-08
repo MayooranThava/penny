@@ -60,7 +60,7 @@ struct UpcomingReminderWidgetView: View {
                     WidgetPrivateDisplay.reminderLine(
                         amount: entry.snapshot.safeToSpend,
                         currencyCode: entry.snapshot.currencyCode,
-                        isPrivate: PrivateModeStore.isEnabled
+                        isPrivate: entry.snapshot.hideWidgetTotals == true
                     ).replacingOccurrences(
                         of: PrivateAmountLogic.mask,
                         with: PrivateAmountLogic.hiddenAccessibilityLabel
@@ -77,7 +77,7 @@ struct UpcomingReminderWidgetView: View {
         WidgetPrivateDisplay.reminderLine(
             amount: entry.snapshot.safeToSpend,
             currencyCode: entry.snapshot.currencyCode,
-            isPrivate: PrivateModeStore.isEnabled
+            isPrivate: entry.snapshot.hideWidgetTotals == true
         )
     }
 }

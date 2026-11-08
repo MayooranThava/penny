@@ -668,7 +668,7 @@ struct PrivateModeTests {
         ]
         for relative in totalWidgets {
             let source = try source(relative)
-            #expect(source.contains("isPrivate: PrivateModeStore.isEnabled"))
+            #expect(source.contains("entry.snapshot.hideWidgetTotals == true"))
             if let view = source.range(of: "WidgetView") {
                 let provider = String(source[..<view.lowerBound])
                 #expect(!provider.contains("MoneyFormatters"))
@@ -677,7 +677,7 @@ struct PrivateModeTests {
         }
         let bills = try source("PennyWidgets/UpcomingBillsWidget.swift")
         #expect(bills.contains("upcomingBillDetail"))
-        #expect(bills.contains("PrivateModeStore.isEnabled"))
+        #expect(bills.contains("entry.snapshot.hideWidgetBills == true"))
     }
 
     @Test("Fifty quick toggles reload once and do not save SwiftData")
@@ -734,7 +734,7 @@ struct PrivateModeTests {
         #expect(probe.fetches == 0)
         #expect(containerSaves.saves == 0)
         let after = try #require(defaults.data(forKey: WidgetSnapshotStore.snapshotKey))
-        #expect(after == before)
+        #expect(String(decoding: after, as: UTF8.self).contains("3350"))
         #expect(reloader.calls.count == 1)
         #expect(reloader.calls.count <= 3)
         #expect(reloader.calls.allSatisfy { $0 == PrivateWidgetKinds.totalShowing })
@@ -777,6 +777,130 @@ struct PrivateModeTests {
             throw PrivateModeTestError.missingMarker(end)
         }
         return String(tail[..<endRange.lowerBound])
+    }
+}
+
+@Suite("Private mode amount types", .serialized, .isolatedTestResources)
+struct PrivateModeAmountTypeTests {
+    @Test("v1.2 and v1.3 keep Private mode and show the note only when it was on")
+    func upgradeKeepsSettingAndShowsNoteOnce() {
+        for (version, enabled) in [("1.2", true), ("1.2", false), ("1.3", true), ("1.3", false)] {
+            let suite = "PennyTests.PrivateUpgrade.\(version).\(enabled).\(UUID().uuidString)"
+            let defaults = UserDefaults(suiteName: suite)!
+            defer { defaults.removePersistentDomain(forName: suite) }
+            defaults.set(enabled, forKey: PrivateModeDefaults.key)
+
+            let migrated = PrivateModeStorage.load(from: defaults)
+            #expect(migrated.isEnabled == enabled)
+            #expect(migrated.visibility == .hidden)
+            #expect(migrated.upgradeNotePending == enabled)
+            #expect(migrated.masks(.transactions) == enabled)
+            #expect(migrated.masks(.bills) == enabled)
+
+            let shown = PrivateModeStorage.acknowledgeUpgradeNote(in: defaults)
+            #expect(shown.upgradeNotePending == false)
+            #expect(PrivateModeStorage.load(from: defaults).upgradeNotePending == false)
+            #expect(PrivateModeStorage.load(from: defaults).isEnabled == enabled)
+        }
+    }
+
+    @Test("A fresh install never shows the upgrade note")
+    func freshInstallHidesNote() {
+        let suite = "PennyTests.PrivateFresh.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let fresh = PrivateModeStorage.load(from: defaults)
+        #expect(fresh == .fresh)
+        #expect(fresh.isEnabled == false)
+        #expect(fresh.upgradeNotePending == false)
+        #expect(fresh.visibility == .hidden)
+        #expect(PrivateModeStorage.upgradeNote == "Private mode now also hides transaction and bill amounts on screen. You can change this in Settings.")
+    }
+
+    @Test("Each toggle hides only its amount type")
+    func togglesAreIndependent() {
+        var record = PrivateModeRecord.fresh
+        record.isEnabled = true
+        record.visibility = .hidden
+        #expect(record.masks(.totals))
+        #expect(record.masks(.transactions))
+        #expect(record.masks(.bills))
+        #expect(record.masks(.widgets))
+
+        record.visibility.hideTransactions = false
+        #expect(!record.masks(.transactions))
+        #expect(record.masks(.bills))
+        #expect(record.masks(.totals))
+
+        record.isEnabled = false
+        #expect(!record.masks(.transactions))
+        #expect(!record.masks(.bills))
+        #expect(!record.masks(.totals))
+        #expect(!record.masks(.widgets))
+    }
+
+    @Test("Exports show real amounts while Private mode is on")
+    func exportsIgnorePrivateMode() {
+        var record = PrivateModeRecord.fresh
+        record.isEnabled = true
+        #expect(record.masks(.transactions))
+        let amount = Decimal(string: "42.15")!
+        let csv = CSVExportLogic.makeCSV(rows: [
+            .init(
+                date: Date(timeIntervalSince1970: 1_700_000_000),
+                title: "Cafe",
+                amount: amount,
+                type: "expense",
+                category: "Food",
+                note: "",
+                merchant: "Cafe",
+                source: "manual"
+            )
+        ])
+        #expect(csv.contains("42.15"))
+        let lines = MonthlySummaryPDFService.summaryLines(for: .init(
+            monthLabel: "November",
+            currencyCode: "CAD",
+            displayName: "Avery",
+            income: amount,
+            spent: amount,
+            billsMonthly: amount,
+            safeToSpend: amount,
+            categoryLines: [],
+            billLines: [("Phone", amount)]
+        ), locale: Locale(identifier: "en_CA"))
+        #expect(lines.joined(separator: "\n").contains("42.15"))
+    }
+
+    @Test("A visibility toggle reloads only the affected widget kinds")
+    func widgetReloadTargetsAffectedKinds() async throws {
+        let reloader = RecordingPrivateReloader()
+        let controller = PrivateModeController(reloader: reloader)
+        controller.reloadCoalescer.debounce = 0.05
+        controller.setEnabled(true)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        controller.setHidden(.bills, false)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        let last = try #require(reloader.calls.last)
+        #expect(last == PrivateWidgetReloadCoalescer.widgetKinds(affectedBy: .bills))
+        #expect(!last.contains(PrivateWidgetKinds.safeToSpend))
+        #expect(PrivateWidgetReloadCoalescer.widgetKinds(affectedBy: .transactions).isEmpty)
+    }
+
+    @Test("Private mode copy hides amounts on screen and avoids banned words")
+    func wordingHidesAmountsOnScreen() {
+        let copy = [
+            PrivateModeStorage.upgradeNote,
+            PrivateModeStorage.settingsFooter,
+            PrivateModeStorage.nothingHiddenFooter
+        ]
+        let banned = ["secure", "encrypted", "protected", "keeps your data safe"]
+        for line in copy {
+            #expect(line.localizedCaseInsensitiveContains("hides amounts on screen") || line == PrivateModeStorage.nothingHiddenFooter)
+            for word in banned {
+                #expect(!line.localizedCaseInsensitiveContains(word))
+            }
+        }
     }
 }
 

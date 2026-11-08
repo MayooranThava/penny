@@ -27,7 +27,7 @@ struct PrivateAmount: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        let privateOn = privateMode.isEnabled
+        let privateOn = privateMode.masks(site)
         let appearance = maskAppearance
         let dots = PrivateAmountLogic.dotStyle(for: site)
         let text = PrivateAmountLogic.displayWithTrailing(

@@ -1,33 +1,33 @@
 import Foundation
 
 /// Display rules for Private mode. Masking never changes stored amounts.
-public enum PrivateAmountLogic {
-    public static let dot = "●"
-    public static let maskCount = 5
-    public static let rowDotCount = 3
+enum PrivateAmountLogic {
+    static let dot = "●"
+    static let maskCount = 5
+    static let rowDotCount = 3
     /// Five-dot mask kept for widgets, insights, and any total outside the calmer treatment.
-    public static let mask = "●●●●●"
+    static let mask = "●●●●●"
     /// Widget and legacy in-app opacity. Home Screen and Lock Screen widgets read this directly.
-    public static let maskOpacity = 0.60
+    static let maskOpacity = 0.60
     /// Safe to Spend hero dots. Raised only when 40% misses the graphic contrast floor.
-    public static let heroDotOpacity = 0.40
+    static let heroDotOpacity = 0.40
     /// Row, category, and Includes-line dots. Raised only when 30% misses the floor.
-    public static let rowDotOpacity = 0.30
+    static let rowDotOpacity = 0.30
     /// A filled bullet at the amount's font is about an em tall. This scale brings
     /// the dot down to the cap height of the digits it replaces.
-    public static let dotCapHeightScale = 0.72
+    static let dotCapHeightScale = 0.72
     /// Dots are non-text graphics. 3:1 against the surface replaces the old 4.5:1
     /// text-contrast clamp. Prefer the role's opacity, then raise just enough to pass.
-    public static let minimumContrast = 3.0
-    public static let monthlySuffix = "/mo"
-    public static let crossfadeSeconds = 0.2
-    public static let hiddenAccessibilityLabel = "Hidden amount"
-    public static let hideTotalsLabel = "Hide totals"
-    public static let showTotalsLabel = "Show totals"
+    static let minimumContrast = 3.0
+    static let monthlySuffix = "/mo"
+    static let crossfadeSeconds = 0.2
+    static let hiddenAccessibilityLabel = "Hidden amount"
+    static let hideTotalsLabel = "Hide totals"
+    static let showTotalsLabel = "Show totals"
     /// Spoken Shortcuts title. The phrase uses the app name so it reads “Toggle Penny private mode”.
-    public static let shortcutTitle = "Toggle Penny private mode"
+    static let shortcutTitle = "Toggle Penny private mode"
 
-    public enum Style: Equatable {
+    enum Style: Equatable {
         case standard
         case compact
         case signed(showPlus: Bool)
@@ -35,14 +35,14 @@ public enum PrivateAmountLogic {
 
     /// One place for dot count, opacity, and size. Views read this instead of
     /// picking their own numbers.
-    public struct DotStyle: Equatable {
-        public var count: Int
-        public var text: String
-        public var preferredOpacity: Double
-        public var glyphScale: Double
+    struct DotStyle: Equatable {
+        var count: Int
+        var text: String
+        var preferredOpacity: Double
+        var glyphScale: Double
     }
 
-    public static func dotStyle(for site: PrivateTotalSite) -> DotStyle {
+    static func dotStyle(for site: PrivateTotalSite) -> DotStyle {
         switch site {
         case .homeSafeToSpendHero:
             return DotStyle(
@@ -103,12 +103,12 @@ public enum PrivateAmountLogic {
         }
     }
 
-    public struct SRGB: Equatable {
-        public var r: Double
-        public var g: Double
-        public var b: Double
+    struct SRGB: Equatable {
+        var r: Double
+        var g: Double
+        var b: Double
 
-        public var relativeLuminance: Double {
+        var relativeLuminance: Double {
             func linear(_ channel: Double) -> Double {
                 let c = min(max(channel, 0), 1)
                 if c <= 0.04045 { return c / 12.92 }
@@ -118,7 +118,7 @@ public enum PrivateAmountLogic {
         }
     }
 
-    public static func formatted(
+    static func formatted(
         amount: Decimal,
         currencyCode: String,
         style: Style,
@@ -142,7 +142,7 @@ public enum PrivateAmountLogic {
     /// Totals become dots. The hero keeps five; listed rows use three.
     /// Callers that omit `site` keep the five-dot widget mask.
     /// Individual amounts pass `isTotal: false` and stay exact.
-    public static func display(
+    static func display(
         amount: Decimal,
         currencyCode: String,
         style: Style,
@@ -160,7 +160,7 @@ public enum PrivateAmountLogic {
 
     /// Visible amounts may keep a suffix such as "/mo". A mask never does, so the
     /// suffix cannot hint at the size of a hidden Includes amount.
-    public static func displayWithTrailing(
+    static func displayWithTrailing(
         amount: Decimal,
         currencyCode: String,
         style: Style,
@@ -185,16 +185,16 @@ public enum PrivateAmountLogic {
 
     /// Category rows show spent and budget side by side. Private mode collapses
     /// that pair to one mask so the row does not read as two hidden totals.
-    public static func showsPairedCategoryAmounts(isPrivate: Bool) -> Bool {
+    static func showsPairedCategoryAmounts(isPrivate: Bool) -> Bool {
         !isPrivate
     }
 
-    public static func categoryAmountLine(spent: String, budgeted: String, isPrivate: Bool) -> String {
+    static func categoryAmountLine(spent: String, budgeted: String, isPrivate: Bool) -> String {
         if isPrivate { return dotStyle(for: .budgetCategorySpent).text }
         return "\(spent) / \(budgeted)"
     }
 
-    public static func accessibilityText(
+    static func accessibilityText(
         amount: Decimal,
         currencyCode: String,
         style: Style,
@@ -206,38 +206,38 @@ public enum PrivateAmountLogic {
         return formatted(amount: amount, currencyCode: currencyCode, style: style, locale: locale)
     }
 
-    public static func eyeSymbol(isPrivate: Bool) -> String {
+    static func eyeSymbol(isPrivate: Bool) -> String {
         isPrivate ? "eye.slash" : "eye"
     }
 
-    public static func eyeAccessibilityLabel(isPrivate: Bool) -> String {
+    static func eyeAccessibilityLabel(isPrivate: Bool) -> String {
         isPrivate ? showTotalsLabel : hideTotalsLabel
     }
 
-    public static func crossfadeSeconds(reduceMotion: Bool, animationsSuppressed: Bool) -> Double {
+    static func crossfadeSeconds(reduceMotion: Bool, animationsSuppressed: Bool) -> Double {
         (reduceMotion || animationsSuppressed) ? 0 : crossfadeSeconds
     }
 
     /// Dynamic Type steps, xSmall = 0 through accessibility5 = 11. Large is 1.
-    public static func dynamicTypeScale(step: Int) -> Double {
+    static func dynamicTypeScale(step: Int) -> Double {
         let scales = [0.82, 0.88, 0.94, 1.0, 1.12, 1.23, 1.35, 1.64, 1.94, 2.35, 2.76, 3.12]
         let index = min(max(step, 0), scales.count - 1)
         return scales[index]
     }
 
-    public static func containsDigit(_ text: String) -> Bool {
+    static func containsDigit(_ text: String) -> Bool {
         text.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) }
     }
 
     /// True when `text` contains a currency amount. Same pattern `maskCurrencyAmounts` uses.
     /// Percents, dates, and the "Hidden amount" label do not match.
-    public static func containsCurrencyAmount(_ text: String) -> Bool {
+    static func containsCurrencyAmount(_ text: String) -> Bool {
         guard let regex = try? NSRegularExpression(pattern: currencyPattern) else { return false }
         let range = NSRange(text.startIndex..., in: text)
         return regex.firstMatch(in: text, range: range) != nil
     }
 
-    public static func maskCurrencyAmounts(in text: String, replacement: String = mask) -> String {
+    static func maskCurrencyAmounts(in text: String, replacement: String = mask) -> String {
         let pattern = currencyPattern
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
         let range = NSRange(text.startIndex..., in: text)
@@ -251,7 +251,7 @@ public enum PrivateAmountLogic {
         return result
     }
 
-    public static func contrast(_ lhs: SRGB, _ rhs: SRGB) -> Double {
+    static func contrast(_ lhs: SRGB, _ rhs: SRGB) -> Double {
         let left = lhs.relativeLuminance
         let right = rhs.relativeLuminance
         let lighter = max(left, right)
@@ -259,7 +259,7 @@ public enum PrivateAmountLogic {
         return (lighter + 0.05) / (darker + 0.05)
     }
 
-    public static func blend(_ foreground: SRGB, over background: SRGB, opacity: Double) -> SRGB {
+    static func blend(_ foreground: SRGB, over background: SRGB, opacity: Double) -> SRGB {
         let t = min(max(opacity, 0), 1)
         return SRGB(
             r: foreground.r * t + background.r * (1 - t),
@@ -268,15 +268,15 @@ public enum PrivateAmountLogic {
         )
     }
 
-    public struct MaskStyle: Equatable {
-        public var foreground: SRGB
-        public var opacity: Double
+    struct MaskStyle: Equatable {
+        var foreground: SRGB
+        var opacity: Double
     }
 
     /// Prefers the role's opacity (40% hero, 30% rows, 60% legacy). Raises opacity
     /// only until the dots clear 3:1 on every surface. When no opacity can clear
     /// that floor, this returns the strongest pair.
-    public static func maskStyle(
+    static func maskStyle(
         matching amount: SRGB,
         over backgrounds: [SRGB],
         preferredOpacity: Double = maskOpacity,
@@ -309,7 +309,7 @@ public enum PrivateAmountLogic {
     /// Ink colour which, drawn at `opacity` over every background, meets the
     /// graphic contrast floor when that is possible. Otherwise the higher-contrast
     /// mix of black or white.
-    public static func foreground(
+    static func foreground(
         matching amount: SRGB,
         over backgrounds: [SRGB],
         opacity: Double = maskOpacity,
@@ -346,13 +346,13 @@ public enum PrivateAmountLogic {
         return whiteScore > blackScore ? white : black
     }
 
-    public static func netWorth(balances: [(balance: Decimal, included: Bool)]) -> Decimal {
+    static func netWorth(balances: [(balance: Decimal, included: Bool)]) -> Decimal {
         balances.reduce(0) { partial, row in
             row.included ? partial + row.balance : partial
         }
     }
 
-    public static func goalPaceSentence(
+    static func goalPaceSentence(
         monthlyRequired: String,
         target: String,
         dateLabel: String,
@@ -362,7 +362,7 @@ public enum PrivateAmountLogic {
         return "About \(monthlyRequired)/month to reach \(shownTarget) by \(dateLabel)"
     }
 
-    public static func minimumContrast(of foreground: SRGB, over backgrounds: [SRGB], opacity: Double) -> Double {
+    static func minimumContrast(of foreground: SRGB, over backgrounds: [SRGB], opacity: Double) -> Double {
         backgrounds.reduce(Double.greatestFiniteMagnitude) { partial, background in
             min(partial, contrast(blend(foreground, over: background, opacity: opacity), background))
         }
@@ -416,78 +416,212 @@ public enum PrivateAmountLogic {
     ].joined(separator: "|")
 }
 
-public enum PrivateModeDefaults {
-    public static let key = "penny.privateMode.enabled"
+enum PrivateAmountKind: String, Codable, CaseIterable, Sendable {
+    case totals
+    case transactions
+    case bills
+    case widgets
+}
 
-    public static func isEnabled(in defaults: UserDefaults) -> Bool {
+struct PrivateVisibility: Codable, Equatable, Sendable {
+    var hideTotals: Bool
+    var hideTransactions: Bool
+    var hideBills: Bool
+    var hideWidgets: Bool
+
+    static let hidden = PrivateVisibility(
+        hideTotals: true,
+        hideTransactions: true,
+        hideBills: true,
+        hideWidgets: true
+    )
+
+    var hidesAnything: Bool {
+        hideTotals || hideTransactions || hideBills || hideWidgets
+    }
+
+    func hides(_ kind: PrivateAmountKind) -> Bool {
+        switch kind {
+        case .totals: return hideTotals
+        case .transactions: return hideTransactions
+        case .bills: return hideBills
+        case .widgets: return hideWidgets
+        }
+    }
+}
+
+struct PrivateModeRecord: Codable, Equatable, Sendable {
+    static let currentVersion = 1
+
+    var version: Int
+    var isEnabled: Bool
+    var visibility: PrivateVisibility
+    var upgradeNotePending: Bool
+
+    static let fresh = PrivateModeRecord(
+        version: currentVersion,
+        isEnabled: false,
+        visibility: .hidden,
+        upgradeNotePending: false
+    )
+
+    func masks(_ kind: PrivateAmountKind) -> Bool {
+        guard isEnabled else { return false }
+        return visibility.hides(kind)
+    }
+
+    func masksWidgetTotals() -> Bool {
+        isEnabled && (visibility.hideWidgets || visibility.hideTotals)
+    }
+
+    func masksWidgetBills() -> Bool {
+        isEnabled && (visibility.hideWidgets || visibility.hideBills)
+    }
+}
+
+enum PrivateModeStorage {
+    static let settingsKey = "penny.privateMode.settings"
+    static let upgradeNote = "Private mode now also hides transaction and bill amounts on screen. You can change this in Settings."
+    static let settingsFooter = "Private mode hides amounts on screen. Hidden amounts show as dots. Choose what to hide in Settings."
+    static let nothingHiddenFooter = "Nothing will be hidden."
+
+    static func load(from defaults: UserDefaults) -> PrivateModeRecord {
+        if let data = defaults.data(forKey: settingsKey),
+           let record = try? JSONDecoder().decode(PrivateModeRecord.self, from: data) {
+            return record
+        }
+        if defaults.object(forKey: PrivateModeDefaults.key) != nil {
+            let enabled = PrivateModeDefaults.isEnabled(in: defaults)
+            let record = PrivateModeRecord(
+                version: PrivateModeRecord.currentVersion,
+                isEnabled: enabled,
+                visibility: .hidden,
+                upgradeNotePending: enabled
+            )
+            save(record, to: defaults)
+            return record
+        }
+        return .fresh
+    }
+
+    static func save(_ record: PrivateModeRecord, to defaults: UserDefaults) {
+        if let data = try? JSONEncoder().encode(record) {
+            defaults.set(data, forKey: settingsKey)
+        }
+        PrivateModeDefaults.setEnabled(record.isEnabled, in: defaults)
+    }
+
+    static func acknowledgeUpgradeNote(in defaults: UserDefaults) -> PrivateModeRecord {
+        var record = load(from: defaults)
+        record.upgradeNotePending = false
+        save(record, to: defaults)
+        return record
+    }
+}
+
+enum PrivateModeDefaults {
+    static let key = "penny.privateMode.enabled"
+
+    static func isEnabled(in defaults: UserDefaults) -> Bool {
         defaults.object(forKey: key) as? Bool ?? false
     }
 
-    public static func setEnabled(_ enabled: Bool, in defaults: UserDefaults) {
+    static func setEnabled(_ enabled: Bool, in defaults: UserDefaults) {
         defaults.set(enabled, forKey: key)
     }
 }
 
-public enum PrivateWidgetKinds {
-    public static let safeToSpend = "PennySafeToSpendWidget"
-    public static let monthlyBudget = "PennyMonthlyBudgetWidget"
-    public static let savingsGoal = "PennySavingsGoalWidget"
-    public static let upcomingBills = "PennyUpcomingBillsWidget"
-    public static let upcomingReminder = "PennyUpcomingReminderWidget"
+enum PrivateWidgetKinds {
+    static let safeToSpend = "PennySafeToSpendWidget"
+    static let monthlyBudget = "PennyMonthlyBudgetWidget"
+    static let savingsGoal = "PennySavingsGoalWidget"
+    static let upcomingBills = "PennyUpcomingBillsWidget"
+    static let upcomingReminder = "PennyUpcomingReminderWidget"
 
     /// Upcoming bills keep each bill's amount, so they are not reloaded.
     /// The reminder widget includes a Safe to Spend total, so it is.
     /// Lock Screen Safe to Spend uses `safeToSpend`.
-    public static let totalShowing = [safeToSpend, monthlyBudget, savingsGoal, upcomingReminder]
+    static let totalShowing = [safeToSpend, monthlyBudget, savingsGoal, upcomingReminder]
 }
 
 /// Trailing debounce for widget timeline reloads. The flag is stored immediately.
 /// Rapid taps collapse into one reload after a quiet second, and that reload
 /// uses whatever the flag is then. Widget views read the flag when they render.
-public struct PrivateWidgetReloadCoalescer {
-    public static let defaultDebounce: TimeInterval = 1
-    public var debounce: TimeInterval = defaultDebounce
+struct PrivateWidgetReloadCoalescer {
+    static let defaultDebounce: TimeInterval = 1
+    var debounce: TimeInterval = defaultDebounce
     private var dueAt: Date?
     private var pending = false
 
-    public mutating func noteChange(at now: Date) {
+    private var pendingKinds: [String] = []
+
+    mutating func noteChange(at now: Date) {
+        noteChange(kinds: PrivateWidgetKinds.totalShowing, at: now)
+    }
+
+    mutating func noteChange(kinds: [String], at now: Date) {
+        guard !kinds.isEmpty else { return }
+        for kind in kinds where !pendingKinds.contains(kind) {
+            pendingKinds.append(kind)
+        }
         pending = true
         dueAt = now.addingTimeInterval(debounce)
     }
 
-    public mutating func takeDueReload(at now: Date) -> [String]? {
+    mutating func takeDueReload(at now: Date) -> [String]? {
         guard pending, let dueAt, now >= dueAt else { return nil }
         pending = false
         self.dueAt = nil
-        return PrivateWidgetKinds.totalShowing
+        let kinds = pendingKinds
+        pendingKinds = []
+        return kinds
+    }
+
+    static func widgetKinds(affectedBy kind: PrivateAmountKind) -> [String] {
+        switch kind {
+        case .totals:
+            return PrivateWidgetKinds.totalShowing
+        case .transactions:
+            return []
+        case .bills:
+            return [PrivateWidgetKinds.upcomingBills, PrivateWidgetKinds.upcomingReminder]
+        case .widgets:
+            return [
+                PrivateWidgetKinds.safeToSpend,
+                PrivateWidgetKinds.monthlyBudget,
+                PrivateWidgetKinds.savingsGoal,
+                PrivateWidgetKinds.upcomingBills,
+                PrivateWidgetKinds.upcomingReminder
+            ]
+        }
     }
 }
 
-public enum PrivateScenePhase: Equatable {
+enum PrivateScenePhase: Equatable {
     case active
     case inactive
     case background
     case other
 }
 
-public enum AppSwitcherPrivacy {
-    public static func suppressAnimation(phase: PrivateScenePhase) -> Bool {
+enum AppSwitcherPrivacy {
+    static func suppressAnimation(phase: PrivateScenePhase) -> Bool {
         phase == .inactive || phase == .background
     }
 }
 
 /// One flag, one reload list, no database. The app controller wraps this.
-public struct PrivateModeSession {
-    public private(set) var isEnabled: Bool
-    public private(set) var animationsSuppressed = false
+struct PrivateModeSession {
+    private(set) var isEnabled: Bool
+    private(set) var animationsSuppressed = false
     private let defaults: UserDefaults
 
-    public init(defaults: UserDefaults) {
+    init(defaults: UserDefaults) {
         self.defaults = defaults
         isEnabled = PrivateModeDefaults.isEnabled(in: defaults)
     }
 
-    public mutating func setEnabled(_ newValue: Bool) -> [String]? {
+    mutating func setEnabled(_ newValue: Bool) -> [String]? {
         let changed = newValue != isEnabled
         PrivateModeDefaults.setEnabled(newValue, in: defaults)
         isEnabled = newValue
@@ -495,11 +629,11 @@ public struct PrivateModeSession {
         return PrivateWidgetKinds.totalShowing
     }
 
-    public mutating func toggle() -> [String]? {
+    mutating func toggle() -> [String]? {
         setEnabled(!isEnabled)
     }
 
-    public mutating func noteScenePhase(_ phase: PrivateScenePhase) {
+    mutating func noteScenePhase(_ phase: PrivateScenePhase) {
         if AppSwitcherPrivacy.suppressAnimation(phase: phase) {
             animationsSuppressed = true
         } else if phase == .active {
@@ -509,8 +643,8 @@ public struct PrivateModeSession {
     }
 }
 
-public enum WidgetPrivateDisplay {
-    public static func safeToSpend(
+enum WidgetPrivateDisplay {
+    static func safeToSpend(
         amount: Decimal,
         currencyCode: String,
         isPrivate: Bool,
@@ -527,7 +661,7 @@ public enum WidgetPrivateDisplay {
         )
     }
 
-    public static func budget(
+    static func budget(
         amount: Decimal,
         currencyCode: String,
         isPrivate: Bool,
@@ -544,19 +678,19 @@ public enum WidgetPrivateDisplay {
         )
     }
 
-    public static func goalDetail(_ detail: String, isPrivate: Bool, site: PrivateTotalSite) -> String {
+    static func goalDetail(_ detail: String, isPrivate: Bool, site: PrivateTotalSite) -> String {
         _ = site
         guard isPrivate else { return detail }
         return PrivateAmountLogic.maskCurrencyAmounts(in: detail)
     }
 
     /// Each bill amount stays visible. The private flag does not change the line.
-    public static func upcomingBillDetail(_ detail: String, isPrivate: Bool) -> String {
+    static func upcomingBillDetail(_ detail: String, isPrivate: Bool) -> String {
         _ = isPrivate
         return detail
     }
 
-    public static func reminderLine(
+    static func reminderLine(
         amount: Decimal,
         currencyCode: String,
         isPrivate: Bool,
@@ -573,15 +707,15 @@ public enum WidgetPrivateDisplay {
     }
 }
 
-public enum PrivateInsightText {
-    public struct Presented: Equatable {
-        public var title: String
-        public var detail: String
-        public var accessibilityTitle: String
-        public var accessibilityDetail: String
+enum PrivateInsightText {
+    struct Presented: Equatable {
+        var title: String
+        var detail: String
+        var accessibilityTitle: String
+        var accessibilityDetail: String
     }
 
-    public static func present(
+    static func present(
         title: String,
         detail: String,
         includesTotal: Bool,
@@ -612,13 +746,13 @@ public enum PrivateInsightText {
     }
 }
 
-public struct PennyNotificationCopy: Equatable {
-    public var title: String
-    public var body: String
+struct PennyNotificationCopy: Equatable {
+    var title: String
+    var body: String
 }
 
-public enum PennyNotificationContent {
-    public static func billReminder(
+enum PennyNotificationContent {
+    static func billReminder(
         name: String,
         individualAmount: Decimal?,
         billsTotal: Decimal?,
@@ -640,7 +774,7 @@ public enum PennyNotificationContent {
 }
 
 /// Every total the spec hides. A test fails if one of these never reaches PrivateAmount.
-public enum PrivateTotalSite: String, CaseIterable, Equatable {
+enum PrivateTotalSite: String, CaseIterable, Equatable {
     case homeSafeToSpendHero
     case homeBreakdownIncome
     case homeBreakdownBills

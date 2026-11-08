@@ -54,7 +54,7 @@ struct UpcomingBillsWidgetView: View {
                                 .font(.subheadline.weight(.semibold))
                                 .lineLimit(1)
                             if !item.detail.isEmpty {
-                                Text(WidgetPrivateDisplay.upcomingBillDetail(item.detail, isPrivate: PrivateModeStore.isEnabled))
+                                Text(WidgetPrivateDisplay.upcomingBillDetail(item.detail, isPrivate: entry.snapshot.hideWidgetBills == true))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)

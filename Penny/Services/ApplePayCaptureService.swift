@@ -122,8 +122,15 @@ enum ApplePayCaptureService {
 /// Other unsaved edits in the context stay in place.
 @MainActor
 enum TransactionInsert {
-    static func saveNew(_ transaction: Transaction, in context: ModelContext) throws {
+    static func saveNew(
+        _ transaction: Transaction,
+        also category: BudgetCategory? = nil,
+        in context: ModelContext
+    ) throws {
         let hadOtherPendingChanges = context.hasChanges
+        if let category {
+            context.insert(category)
+        }
         context.insert(transaction)
         do {
             if let forced = PennySaveTesting.forcedError {
@@ -133,6 +140,9 @@ enum TransactionInsert {
         } catch {
             if hadOtherPendingChanges {
                 context.delete(transaction)
+                if let category {
+                    context.delete(category)
+                }
             } else {
                 context.rollback()
             }

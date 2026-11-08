@@ -41,9 +41,23 @@ enum QuickAddExpenseLogic {
         return trimmed.isEmpty ? "Expense" : trimmed
     }
 
-    static func categoryName(_ category: String?) -> String {
-        let trimmed = category?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmed.isEmpty ? "Other" : trimmed
+    struct CategoryChoice: Equatable {
+        var name: String
+        var createNew: Bool
+    }
+
+    /// Match a category the user already has, ignoring case. Create one only when
+    /// nothing stored matches. An empty name means Other.
+    static func categoryChoice(spoken: String?, existingNames: [String]) -> CategoryChoice {
+        let trimmed = spoken?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let requested = trimmed.isEmpty ? "Other" : trimmed
+        if let match = existingNames.first(where: { $0.caseInsensitiveCompare(requested) == .orderedSame }) {
+            return CategoryChoice(name: match, createNew: false)
+        }
+        if let catalog = CategoryCatalog.defaults.first(where: { $0.name.caseInsensitiveCompare(requested) == .orderedSame }) {
+            return CategoryChoice(name: catalog.name, createNew: true)
+        }
+        return CategoryChoice(name: requested, createNew: true)
     }
 }
 
@@ -119,22 +133,36 @@ enum QuickAddExpenseService {
         let settings = try context.fetch(FetchDescriptor<UserSettings>()).first
         let currency = QuickAddExpenseLogic.currencyCode(settingsCode: settings?.currencyCode, locale: locale)
         let title = QuickAddExpenseLogic.title(merchant: merchant)
-        let categoryName = QuickAddExpenseLogic.categoryName(category)
+        let existing = try context.fetch(FetchDescriptor<BudgetCategory>())
+        let choice = QuickAddExpenseLogic.categoryChoice(spoken: category, existingNames: existing.map(\.name))
+        let newCategory = choice.createNew ? makeCategory(named: choice.name, existing: existing) : nil
         let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let transaction = Transaction(
             title: title,
             amount: decimal,
             transactionType: .expense,
-            categoryName: categoryName,
+            categoryName: choice.name,
             note: trimmedNote
         )
-        try TransactionInsert.saveNew(transaction, in: context)
+        try TransactionInsert.saveNew(transaction, also: newCategory, in: context)
         return QuickAddExpenseOutcome(
             title: title,
             amount: decimal,
             currencyCode: currency,
-            categoryName: categoryName,
+            categoryName: choice.name,
             note: trimmedNote
+        )
+    }
+
+    private static func makeCategory(named name: String, existing: [BudgetCategory]) -> BudgetCategory {
+        let catalog = CategoryCatalog.defaults.first { $0.name == name }
+        let sortOrder = (existing.map(\.sortOrder).max() ?? -1) + 1
+        return BudgetCategory(
+            name: name,
+            icon: catalog?.icon ?? CategoryCatalog.icon(for: name),
+            budgetedAmount: 0,
+            colourIdentifier: catalog?.colourIdentifier ?? "other",
+            sortOrder: sortOrder
         )
     }
 }

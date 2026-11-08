@@ -8,7 +8,7 @@ struct AddExpenseIntent: AppIntent {
     static var description = IntentDescription(
         "Adds an expense from the amount you say, with an optional merchant, note, and category."
     )
-    static var openAppWhenRun = false
+    static let openAppWhenRun = false
     static var isDiscoverable = true
 
     @Parameter(title: "Amount")
@@ -44,10 +44,13 @@ struct AddExpenseIntent: AppIntent {
         return .result(dialog: IntentDialog(LocalizedStringResource(stringLiteral: reply)))
     }
 
-    /// One read of the in-memory Private mode choice. It does not open UserDefaults.
+    /// One read of the saved Private mode choice for this run.
     @MainActor
     static var hidesTransactionAmounts: Bool {
-        PrivateModeController.shared.masks(.transactions)
+        guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
+            return false
+        }
+        return PrivateModeStorage.load(from: defaults).masks(.transactions)
     }
 
     @MainActor

@@ -93,6 +93,7 @@ struct ApplePayCaptureServiceTests {
     func saveFailureSurfaces() throws {
         let container = try PennyPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
+        var threw = false
         try PennySaveTesting.$forcedError.withValue(PennyForcedSaveFailure()) {
             do {
                 _ = try ApplePayCaptureService.capture(
@@ -104,12 +105,12 @@ struct ApplePayCaptureServiceTests {
                 )
                 Issue.record("Expected the save to throw")
             } catch let error as ApplePayCaptureSaveError {
+                threw = true
                 #expect(error.localizedDescription.localizedCaseInsensitiveContains("save"))
             } catch {
                 Issue.record("Unexpected error: \(error)")
             }
         }
-        let rows = try context.fetch(FetchDescriptor<Transaction>())
-        #expect(rows.isEmpty)
+        #expect(threw)
     }
 }

@@ -2,7 +2,7 @@
 
 Same pattern as Void Runner (`ApolloX_IOS`). Host these HTML files over HTTPS and paste the URLs into App Store Connect.
 
-Coverage focus (keep these current when product changes): financial-advice disclaimers, lifetime Pro definition, Apple refund path, age/children language, governing law (Ontario/Canada), onboarding acceptance checkbox in-app, and App Store privacy label = Data Not Collected.
+Coverage focus (keep these current when product changes): financial-advice disclaimers, one-time Pro purchase definition, Apple refund path, age/children language, governing law (Ontario/Canada), onboarding acceptance checkbox in-app, and App Store privacy label = Data Not Collected.
 
 ## Enable GitHub Pages (required once)
 

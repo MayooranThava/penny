@@ -153,7 +153,7 @@ PRIVATE BY DESIGN
 - No bank logins, no analytics, no ads, no accounts
 
 PENNY PRO (optional)
-Unlock unlimited savings goals, extra accounts with goal funding (TFSA / FHSA / more), 6- and 12-month forecasts, CSV + PDF export, and custom accent themes with a one-time lifetime purchase. Penny is fully usable for free. (Cloud sync and bank connections are not included. No subscription required.)
+Unlock unlimited savings goals, extra accounts with goal funding (TFSA / FHSA / more), 6- and 12-month forecasts, CSV + PDF export, and custom accent themes with a one-time purchase. Penny is fully usable for free. (Cloud sync and bank connections are not included. No subscription required.)
 
 IMPORTANT
 Penny is a planning tool, not financial, tax, or investment advice. Figures are estimates from numbers you enter and are not guarantees. Intended for adults managing personal finances; not directed to children under 13.
@@ -161,14 +161,14 @@ Penny is a planning tool, not financial, tax, or investment advice. Figures are 
 Penny supports CAD, USD, GBP, EUR, and AUD.
 
 ---
-Penny Pro Lifetime is a one-time In-App Purchase. Payment is charged to your Apple Account at purchase confirmation. Restore purchases anytime from Settings if you reinstall. Refunds are handled by Apple (reportaproblem.apple.com).
+Penny Pro is a one-time In-App Purchase. Payment is charged to your Apple Account at purchase confirmation. Restore purchases anytime from Settings if you reinstall. Refunds are handled by Apple (reportaproblem.apple.com).
 Privacy Policy: https://mayooranthava.github.io/penny/privacy-policy.html
 Terms of Use: https://mayooranthava.github.io/penny/terms-of-use.html
 ```
 
 **What's New (1.0.4):** `Penny Pro: add extra accounts (TFSA, FHSA, RRSP, non-registered) and earmark balances toward savings goals. Free tier still includes three accounts.`
 
-**What's New (1.0.3):** `Lifetime Penny Pro unlock, stronger Terms (refunds, lifetime scope, governing law), onboarding consent, CSV export and accent themes, longer-range Pro forecasts, and clearer Safe-to-Spend estimates.`
+**What's New (1.0.3):** `One-time Penny Pro unlock, stronger Terms (refunds, purchase scope, governing law), onboarding consent, CSV export and accent themes, longer-range Pro forecasts, and clearer Safe-to-Spend estimates.`
 
 **Support URL (required):** `https://mayooranthava.github.io/penny/support.html`
 
@@ -195,17 +195,17 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 
 > Product IDs must match the app exactly (`PennyProductCatalog` in `Penny/Services/AppSession.swift`). Your bundle ID is `com.mayooran.penny`. **Product IDs are permanent once created.**
 >
-> **Current monetization: lifetime only.** Do **not** sell `com.penny.app.pro.month` — that ID was created as a **Consumable** by mistake and the app ignores it. Cancel the Create Subscription flow if you started one.
+> **Current monetization: one-time purchase only.** Do **not** sell `com.penny.app.pro.month` — that ID was created as a **Consumable** by mistake and the app ignores it. Cancel the Create Subscription flow if you started one.
 
-**Non-consumable — Penny Pro (Lifetime)** *(required)*
+**Non-consumable — Penny Pro** *(required)*
 | Field | Value |
 |---|---|
 | Type | **Non-Consumable** (not Consumable, not Subscription) |
-| Reference Name | `Penny Pro Lifetime` |
+| Reference Name | `Penny Pro` |
 | Product ID | `com.penny.app.pro.lifetime` |
 | Price | your choice (suggest CAD $24.99–$39.99 one-time) |
-| Display Name | `Penny Pro (Lifetime)` |
-| Description | `Unlimited goals, extra accounts + goal funding, longer forecasts, CSV export, and accent themes — forever.` |
+| Display Name | `Penny Pro` |
+| Description | `Unlimited goals, extra accounts + goal funding, longer forecasts, CSV export, and accent themes.` |
 | Review screenshot | screenshot of the in-app paywall (required) |
 
 **Do not use**
@@ -218,7 +218,7 @@ Answer: **"Data is not collected."** This is accurate today — the app has no a
 >
 > **“Purchases are unavailable right now” in the app** means StoreKit returned no products. Checklist:
 > 1. Paid Applications agreement is **Active**.
-> 2. Lifetime is a **Non-Consumable** with Product ID exactly `com.penny.app.pro.lifetime`.
+> 2. Penny Pro is a **Non-Consumable** with Product ID exactly `com.penny.app.pro.lifetime`.
 > 3. Price + localization complete (not Missing Metadata).
 > 4. Attach the IAP to the app version you submit / test.
 > 5. Test via **TestFlight** with a Sandbox Apple Account (Settings → Developer).
@@ -242,7 +242,7 @@ Already handled: `ITSAppUsesNonExemptEncryption = NO`. If prompted, choose **"No
 ```
 No account or login is required. On first launch, choose "Explore with sample data" to see a fully populated example (generic sample data — not a real person).
 
-To review Penny Pro: Settings → Penny Pro → Unlock Penny Pro opens the paywall (one-time lifetime Non-Consumable `com.penny.app.pro.lifetime`). Purchases can be validated in the sandbox. The gentle gate also triggers when adding a 4th savings goal or a 4th account on the free tier.
+To review Penny Pro: Settings → Penny Pro → Unlock Penny Pro opens the paywall (one-time Non-Consumable `com.penny.app.pro.lifetime`). Purchases can be validated in the sandbox. The gentle gate also triggers when adding a 4th savings goal or a 4th account on the free tier.
 
 Penny is 100% on-device: no bank connections, no analytics, no ads, no accounts.
 ```
@@ -268,7 +268,7 @@ Capture ~5: **Home (Safe to Spend)**, **Budget**, **Activity**, **Plan (Goals/Fo
    - **Settings → Pages → Build and deployment → Source: GitHub Actions**  
    - **Actions → GitHub Pages → Run workflow** on `main`  
    - Paste the Privacy / Support URLs from section 3 into ASC.
-4. **Create/finish Penny Pro Lifetime** (section 5) as a **Non-Consumable** with ID `com.penny.app.pro.lifetime`. Do not use the mistaken Consumable monthly ID.
+4. **Create/finish Penny Pro** (section 5) as a **Non-Consumable** with ID `com.penny.app.pro.lifetime`. Do not use the mistaken Consumable monthly ID.
 5. **Paste** App Information, keywords, promo text, description, What's New (sections 1–2).
 6. **Upload screenshots** (section 10).
 7. **Answer App Privacy** = Data not collected (section 4) and **Age rating** = 4+ (section 7).

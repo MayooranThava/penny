@@ -30,6 +30,7 @@ struct ApplePayShortcutsGuideTests {
         #expect(prompt.contains("type USD"))
         #expect(!prompt.contains("type CAD"))
         #expect(prompt.contains("Apps → Penny"))
+        #expect(prompt.contains("Always map Amount → Currency Amount. If Penny saves the wrong amount, also map Amount (text)."))
         #expect(prompt.contains("Goal: Wallet taps can log expenses in Penny without asking first."))
         #expect(prompt.contains("iOS 27"))
         #expect(prompt.contains("Allow Running When Locked"))
@@ -56,6 +57,9 @@ struct ApplePayShortcutsGuideTests {
             contentsOf: root.appendingPathComponent("Penny/Features/Settings/ApplePayCaptureSetupView.swift"),
             encoding: .utf8
         )
+        let amountStep = "Always map Amount → Currency Amount. If Penny saves the wrong amount, also map Amount (text)."
+        #expect(html.contains(amountStep))
+        #expect(prompt.contains(amountStep))
         #expect(html.contains("Goal: Wallet taps can log expenses in Penny without asking first."))
         #expect(prompt.contains("Goal: Wallet taps can log expenses in Penny without asking first."))
         #expect(html.contains("use the currency your Penny account uses (for example CAD or USD)"))

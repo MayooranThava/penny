@@ -63,7 +63,7 @@ enum ApplePayShortcutsGuide {
         3. Tap the info button, then Privacy, and turn on Allow Running When Locked.
         4. Add the action from the Penny app: “\(actionName)”
            (Add Action → Apps → Penny — open Penny once first if it is missing)
-        5. Map Amount → Shortcut Input → Currency Amount. If the amount is text such as 12,50, map Amount (text) instead.
+        5. Always map Amount → Currency Amount. If Penny saves the wrong amount, also map Amount (text).
         6. Map Merchant → Shortcut Input → Merchant. If Merchant is empty, use Name.
         7. Currency Code → type \(code) (do not leave as Ask Each Time).
         8. Card Name → Shortcut Input → Card or Pass (optional).

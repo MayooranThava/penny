@@ -59,8 +59,18 @@ enum ApplePayCaptureService {
             merchantName: draft.merchant,
             cardName: draft.cardName
         )
+        let hadOtherPendingChanges = context.hasChanges
         context.insert(transaction)
-        try saveOrThrow(context)
+        do {
+            try saveOrThrow(context)
+        } catch {
+            if hadOtherPendingChanges {
+                context.delete(transaction)
+            } else {
+                context.rollback()
+            }
+            throw error
+        }
         return .inserted(title: draft.title, amount: draft.amount, categoryName: draft.categoryName)
     }
 

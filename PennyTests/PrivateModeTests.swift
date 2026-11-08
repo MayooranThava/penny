@@ -942,6 +942,7 @@ struct PrivateModeAmountTypeTests {
     }
 
     @Test("Turning Private mode on reloads Upcoming Bills and the total widgets")
+    @MainActor
     func enablingReloadsUpcomingBills() async throws {
         let reloader = RecordingPrivateReloader()
         let controller = PrivateModeController(reloader: reloader)
@@ -957,6 +958,7 @@ struct PrivateModeAmountTypeTests {
     }
 
     @Test("A bill toggle reloads totals and Upcoming Bills, and nothing else does extra work")
+    @MainActor
     func widgetReloadTargetsAffectedKinds() async throws {
         let reloader = RecordingPrivateReloader()
         let controller = PrivateModeController(reloader: reloader)

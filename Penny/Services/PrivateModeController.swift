@@ -38,8 +38,9 @@ final class PrivateModeController {
     init(reloader: any PrivateWidgetReloading = WidgetKitPrivateReloader()) {
         self.reloader = reloader
         let defaults = Self.currentDefaults()
-        settings = defaults.map { PrivateModeStorage.load(from: $0) } ?? .fresh
-        isEnabled = settings.isEnabled
+        let loaded = defaults.map { PrivateModeStorage.load(from: $0) } ?? .fresh
+        settings = loaded
+        isEnabled = loaded.isEnabled
         animationsSuppressed = false
     }
 

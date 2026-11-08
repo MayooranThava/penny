@@ -356,8 +356,8 @@ struct PrivateModeTests {
         #expect(shown.contains("999.35"))
     }
 
-    @Test("Individual transaction and bill rows are not masked")
-    func individualsStayVisible() throws {
+    @Test("Transaction and bill rows hide only their own type and still format the visible amount")
+    func individualsFollowTheirType() throws {
         let amount = Decimal(string: "19.99")!
         let shown = PrivateAmountLogic.display(
             amount: amount,
@@ -373,10 +373,11 @@ struct PrivateModeTests {
         let components = try source("Penny/Components/PennyComponents.swift")
         let transaction = try slice(components, from: "struct TransactionRow", until: "struct RingProgressView")
         let bill = try slice(components, from: "struct BillRow", until: "struct TransactionRow")
-        #expect(!transaction.contains("PrivateAmount"))
+        #expect(transaction.contains("privateMode.masks(.transactions)"))
         #expect(transaction.contains("MoneyFormatters.signed"))
-        #expect(!bill.contains("PrivateAmount"))
+        #expect(transaction.contains("hiddenAccessibilityLabel"))
         #expect(bill.contains("MoneyText"))
+        #expect(bill.contains("kind: .bills"))
     }
 
     @Test("Insight sentences keep the words and mask only the amount")
@@ -491,8 +492,10 @@ struct PrivateModeTests {
         #expect(controllerSource.contains("WidgetSnapshotStore.activeDefaultsSuite"))
         #expect(!controllerSource.contains("import SwiftData"))
         #expect(!controllerSource.contains("modelContext"))
+        #expect(!controllerSource.contains("modelContext.save"))
+        #expect(!controllerSource.contains("context.save"))
         #expect(!controllerSource.contains("WidgetSnapshotPublisher"))
-        #expect(!controllerSource.contains(".save("))
+        #expect(controllerSource.contains("PrivateModeStorage.save"))
 
         let eye = PrivateModeController(reloader: RecordingPrivateReloader())
         eye.toggle()

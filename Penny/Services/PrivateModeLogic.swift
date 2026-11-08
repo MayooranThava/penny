@@ -484,6 +484,7 @@ enum PrivateModeStorage {
     static let upgradeNote = "Private mode now also hides transaction and bill amounts on screen. You can change this in Settings."
     static let settingsFooter = "Private mode hides amounts on screen. Hidden amounts show as dots. Choose what to hide in Settings."
     static let nothingHiddenFooter = "Nothing will be hidden."
+    static let amountsStillShowFootnote = "*Amounts still show when you add or edit an entry, and in exports."
 
     static func load(from defaults: UserDefaults) -> PrivateModeRecord {
         if let data = defaults.data(forKey: settingsKey),

@@ -892,11 +892,17 @@ struct PrivateModeAmountTypeTests {
         let copy = [
             PrivateModeStorage.upgradeNote,
             PrivateModeStorage.settingsFooter,
-            PrivateModeStorage.nothingHiddenFooter
+            PrivateModeStorage.nothingHiddenFooter,
+            PrivateModeStorage.amountsStillShowFootnote
         ]
-        let banned = ["secure", "encrypted", "protected", "keeps your data safe"]
+        #expect(PrivateModeStorage.amountsStillShowFootnote == "*Amounts still show when you add or edit an entry, and in exports.")
+        let banned = ["secure", "encrypted", "protected", "safe", "keeps your data safe"]
         for line in copy {
-            #expect(line.localizedCaseInsensitiveContains("hides amounts on screen") || line == PrivateModeStorage.nothingHiddenFooter)
+            #expect(
+                line.localizedCaseInsensitiveContains("hides amounts on screen")
+                    || line == PrivateModeStorage.nothingHiddenFooter
+                    || line == PrivateModeStorage.amountsStillShowFootnote
+            )
             for word in banned {
                 #expect(!line.localizedCaseInsensitiveContains(word))
             }

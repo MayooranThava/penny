@@ -886,7 +886,7 @@ struct PrivateModeSettingsView: View {
             } header: {
                 Text("What to hide")
             } footer: {
-                Text(footer)
+                Text("\(footer)\n\(PrivateModeStorage.amountsStillShowFootnote)")
             }
         }
         .navigationTitle("Private mode")

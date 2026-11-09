@@ -451,7 +451,7 @@ struct ReleaseSanityTests {
         }) {
             let modeStore = try PennyTestDefaults()
             defer { modeStore.remove() }
-            try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+            return try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
                 try await PennyPersistence.reset(in: context)
             }
         }

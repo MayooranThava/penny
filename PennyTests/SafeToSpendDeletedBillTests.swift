@@ -9,7 +9,7 @@ import Testing
 struct SafeToSpendDeletedBillTests {
     @Test("A deleted bill does not count toward Safe to Spend")
     @MainActor
-    func deletedBillDoesNotCount() throws {
+    func deletedBillDoesNotCount() async throws {
         let income = money("5000.00")
         let rent = makeBill(name: "Rent", amount: money("2000.00"), isActive: false)
         let phone = makeBill(name: "Phone", amount: money("80.00"), isActive: true, paidCycleKey: "")
@@ -17,13 +17,13 @@ struct SafeToSpendDeletedBillTests {
         #expect(safe == money("4920.00"))
         #expect(safe != money("2920.00"))
 
-        let snapshot = try publishSnapshot(income: income, bills: [rent, phone])
+        let snapshot = try await publishSnapshot(income: income, bills: [rent, phone])
         #expect(snapshot.safeToSpend == safe)
     }
 
     @Test("An active unpaid bill still counts toward Safe to Spend")
     @MainActor
-    func activeUnpaidBillStillCounts() throws {
+    func activeUnpaidBillStillCounts() async throws {
         let income = money("1000.00")
         let phone = makeBill(name: "Phone", amount: money("80.10"), isActive: true, paidCycleKey: "")
         #expect(phone.paidCycleKey.isEmpty)
@@ -42,13 +42,13 @@ struct SafeToSpendDeletedBillTests {
         let withBoth = appSafeToSpend(income: income, bills: [phone, checkedOff])
         #expect(withBoth == income - money("80.10") - money("70.00"))
 
-        let snapshot = try publishSnapshot(income: income, bills: [phone, checkedOff])
+        let snapshot = try await publishSnapshot(income: income, bills: [phone, checkedOff])
         #expect(snapshot.safeToSpend == withBoth)
     }
 
     @Test("The widget snapshot matches the app Safe to Spend to the cent")
     @MainActor
-    func widgetSnapshotMatchesApp() throws {
+    func widgetSnapshotMatchesApp() async throws {
         let income = money("2500.10")
         let phone = makeBill(name: "Phone", amount: money("100.20"), isActive: true, paidCycleKey: "")
         let cable = makeBill(name: "Cable", amount: money("19.99"), isActive: false)
@@ -72,7 +72,7 @@ struct SafeToSpendDeletedBillTests {
         #expect(safe == money("2399.60"))
         #expect(safe != money("2379.61"))
 
-        let snapshot = try publishSnapshot(
+        let snapshot = try await publishSnapshot(
             income: income,
             bills: [phone, cable],
             transactions: [coffee, tea]
@@ -82,7 +82,7 @@ struct SafeToSpendDeletedBillTests {
 
     @Test("Deleting a bill removes its amount from Safe to Spend straight away")
     @MainActor
-    func deletingABillUpdatesSafeToSpendAndWidget() throws {
+    func deletingABillUpdatesSafeToSpendAndWidget() async throws {
         let container = try PennyPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
         let income = money("5000.00")
@@ -100,7 +100,7 @@ struct SafeToSpendDeletedBillTests {
 
         let beforeBills = try context.fetch(FetchDescriptor<RecurringBill>())
         let beforeApp = appSafeToSpend(income: income, bills: beforeBills)
-        let before = try publishSnapshot(income: income, bills: beforeBills)
+        let before = try await publishSnapshot(income: income, bills: beforeBills)
         #expect(beforeApp == money("2920.00"))
         #expect(before.safeToSpend == beforeApp)
 
@@ -111,7 +111,7 @@ struct SafeToSpendDeletedBillTests {
         #expect(afterBills.count == 2)
         #expect(afterBills.contains { $0.name == "Rent" && !$0.isActive })
         let afterApp = appSafeToSpend(income: income, bills: afterBills)
-        let after = try publishSnapshot(income: income, bills: afterBills)
+        let after = try await publishSnapshot(income: income, bills: afterBills)
         #expect(afterApp == money("4920.00"))
         #expect(after.safeToSpend == afterApp)
         #expect(after.safeToSpend == before.safeToSpend + money("2000.00"))
@@ -119,18 +119,18 @@ struct SafeToSpendDeletedBillTests {
 
     @Test("A paused bill and a deleted bill produce the same Safe to Spend")
     @MainActor
-    func pausedAndDeletedBillsMatch() throws {
+    func pausedAndDeletedBillsMatch() async throws {
         let income = money("1000.00")
         let phone = makeBill(name: "Phone", amount: money("40.00"), isActive: true, paidCycleKey: "")
         let pausedGym = makeBill(name: "Gym", amount: money("45.00"), isActive: false)
         let paused = appSafeToSpend(income: income, bills: [phone, pausedGym])
-        let pausedSnapshot = try publishSnapshot(income: income, bills: [phone, pausedGym])
+        let pausedSnapshot = try await publishSnapshot(income: income, bills: [phone, pausedGym])
 
         let deletedGym = makeBill(name: "Gym", amount: money("45.00"), isActive: true)
         deletedGym.isActive = false
         let phoneAgain = makeBill(name: "Phone", amount: money("40.00"), isActive: true, paidCycleKey: "")
         let deleted = appSafeToSpend(income: income, bills: [phoneAgain, deletedGym])
-        let deletedSnapshot = try publishSnapshot(income: income, bills: [phoneAgain, deletedGym])
+        let deletedSnapshot = try await publishSnapshot(income: income, bills: [phoneAgain, deletedGym])
 
         let phoneOnly = appSafeToSpend(income: income, bills: [phone])
         #expect(paused == money("960.00"))
@@ -164,12 +164,12 @@ struct SafeToSpendDeletedBillTests {
             ))
             try context.save()
 
-            let before = try publishSnapshot(income: income, bills: [rent])
+            let before = try await publishSnapshot(income: income, bills: [rent])
             #expect(before.safeToSpend == income - rentAmount)
 
             let modeStore = try PennyTestDefaults()
             defer { modeStore.remove() }
-            _ = try publishSnapshot(income: income, bills: [rent], store: modeStore)
+            _ = try await publishSnapshot(income: income, bills: [rent], store: modeStore)
             try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
                 _ = try await PennyPersistence.reset(in: context)
             }
@@ -178,7 +178,7 @@ struct SafeToSpendDeletedBillTests {
             #expect(remaining.isEmpty)
             #expect(remaining.reduce(Decimal(0)) { $0 + $1.amount } == 0)
 
-            let after = try publishSnapshot(income: income, bills: remaining)
+            let after = try await publishSnapshot(income: income, bills: remaining)
             #expect(after.safeToSpend == income)
             #expect(after.safeToSpend != income - rentAmount)
         }
@@ -253,11 +253,11 @@ struct SafeToSpendDeletedBillTests {
         savings: Decimal = 0,
         month: Date = DateHelpers.startOfMonth(),
         store: PennyTestDefaults? = nil
-    ) throws -> WidgetSnapshotStore.Snapshot {
+    ) async throws -> WidgetSnapshotStore.Snapshot {
         let box = try store ?? PennyTestDefaults()
         let ownsStore = store == nil
         defer { if ownsStore { box.remove() } }
-        try WidgetSnapshotStore.$defaultsSuiteOverride.withValue(box.name) {
+        try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(box.name) { @MainActor in
             publish(income: income, bills: bills, debts: debts, transactions: transactions, savings: savings, month: month)
         }
         return try #require(WidgetSnapshotStore.load(from: box.defaults))

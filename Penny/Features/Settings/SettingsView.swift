@@ -529,7 +529,7 @@ struct SettingsView: View {
         Section("About Penny") {
             LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
             LabeledContent("Build", value: PennyAppInfo.buildNumber)
-            Text("Personal finance planning that stays on your device. Free to use; Penny Pro Lifetime is an optional one-time unlock.")
+            Text("Personal finance planning that stays on your device. Free to use; Penny Pro is an optional one-time unlock.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textSecondary)
             Button("Replay quick tour") {
@@ -766,7 +766,7 @@ struct PaywallView: View {
             Text("Unlock Penny Pro")
                 .font(PennyTypography.largeTitle)
                 .foregroundStyle(PennyColors.textPrimary)
-            Text("One-time lifetime unlock for unlimited goals, extra accounts with goal funding, longer forecasts, CSV + PDF export, and extra accent themes. Cloud sync and bank connections are not included.")
+            Text("One-time unlock for unlimited goals, extra accounts with goal funding, longer forecasts, CSV + PDF export, and extra accent themes. Cloud sync and bank connections are not included.")
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -814,7 +814,7 @@ struct PaywallView: View {
             productButton(lifetime)
         } else {
             VStack(spacing: PennySpacing.sm) {
-                Text("Penny Pro Lifetime isn’t available on the App Store yet.")
+                Text("Penny Pro isn’t available on the App Store yet.")
                     .font(PennyTypography.callout)
                     .foregroundStyle(PennyColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -832,7 +832,7 @@ struct PaywallView: View {
             }
         } label: {
             VStack(spacing: 2) {
-                Text(product.displayName.isEmpty ? "Penny Pro — Lifetime" : product.displayName)
+                Text(product.displayName.isEmpty ? PaywallCopy.productNameFallback : product.displayName)
                     .font(PennyTypography.bodyEmphasized)
                 Text(PaywallCopy.priceSubtitle(displayPrice: product.displayPrice))
                     .font(PennyTypography.caption)
@@ -847,7 +847,7 @@ struct PaywallView: View {
             Button("Restore purchases") { Task { await store.restore() } }
                 .font(PennyTypography.callout)
                 .foregroundStyle(PennyColors.brand)
-            Text("One-time purchase. Payment is charged to your Apple Account at confirmation. Restore purchases anytime if you reinstall. Refunds are handled by Apple (reportaproblem.apple.com). Lifetime unlocks the Pro features listed here; see Terms for details.")
+            Text("One-time purchase. Payment is charged to your Apple Account at confirmation. Restore purchases anytime if you reinstall. Refunds are handled by Apple (reportaproblem.apple.com). This purchase unlocks the Pro features listed here; see Terms for details.")
                 .font(PennyTypography.caption)
                 .foregroundStyle(PennyColors.textTertiary)
                 .multilineTextAlignment(.center)

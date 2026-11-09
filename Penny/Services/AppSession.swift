@@ -34,9 +34,11 @@ enum PennyProductCatalog {
     }
 }
 
-/// Paywall and product lines the app shows. StoreKit still supplies the price.
+/// Paywall and product lines the app shows. StoreKit still supplies the price
+/// and the product name. `productNameFallback` is used only when that name is empty.
 enum PaywallCopy {
     static let purchasesUnavailable = "Purchases are unavailable right now. Please try again later."
+    static let productNameFallback = "Penny Pro"
 
     static func priceSubtitle(displayPrice: String) -> String {
         "\(displayPrice) · one-time purchase"
@@ -132,7 +134,8 @@ final class StoreManager {
             products = loaded.products.sorted { $0.id < $1.id }
             offeredProducts = loaded.offered.sorted { $0.id < $1.id }
             if offeredProducts.isEmpty {
-                lastErrorMessage = "No products returned from the App Store. Confirm Penny Pro Lifetime (\(PennyProductCatalog.lifetimeProductID)) is a Non-Consumable with a price, Paid Applications is Active, and you’re testing via TestFlight sandbox."
+                let productID = PennyProductCatalog.lifetimeProductID
+                lastErrorMessage = "No products returned from the App Store. Confirm Penny Pro (\(productID)) is a Non-Consumable with a price, Paid Applications is Active, and you’re testing via TestFlight sandbox."
             } else {
                 lastErrorMessage = nil
             }

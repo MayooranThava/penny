@@ -15,7 +15,7 @@ struct AddExpenseIntentTests {
         var visible = PrivateModeRecord.fresh
         visible.isEnabled = false
         PrivateModeStorage.save(visible, to: defaults)
-        let intent = AddExpenseIntent()
+        var intent = AddExpenseIntent()
         intent.privateModeDefaults = defaults
         intent.amount = 12.34
         intent.merchant = "Corner Cafe"
@@ -113,7 +113,7 @@ struct AddExpenseIntentTests {
         threw = false
         let settings = try PennyTestDefaults()
         defer { settings.remove() }
-        let intent = AddExpenseIntent()
+        var intent = AddExpenseIntent()
         intent.privateModeDefaults = settings.defaults
         intent.amount = 8.5
         intent.merchant = "Failed Cafe"
@@ -136,7 +136,7 @@ struct AddExpenseIntentTests {
         let settings = try PennyTestDefaults()
         defer { settings.remove() }
         for value in [0, -3, Double.nan, Double.infinity] {
-            let intent = AddExpenseIntent()
+            var intent = AddExpenseIntent()
             intent.privateModeDefaults = settings.defaults
             intent.amount = value
             intent.merchant = "Nope"
@@ -159,7 +159,7 @@ struct AddExpenseIntentTests {
         QuickAddWidgetRefresh.reload = { calls.append($0) }
         let settings = try PennyTestDefaults()
         defer { settings.remove() }
-        let intent = AddExpenseIntent()
+        var intent = AddExpenseIntent()
         intent.privateModeDefaults = settings.defaults
         intent.amount = 3
         intent.merchant = "Bus"

@@ -103,7 +103,7 @@ struct LogApplePayPurchaseIntentTests {
         let modeStore = try PennyTestDefaults()
         defer { modeStore.remove() }
         PrivateModeDefaults.setEnabled(true, in: modeStore.defaults)
-        let intent = LogApplePayPurchaseIntent()
+        var intent = LogApplePayPurchaseIntent()
         intent.privateModeDefaults = modeStore.defaults
         intent.amount = 15.75
         intent.merchant = "Private Cafe"

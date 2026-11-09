@@ -7,8 +7,9 @@ import Testing
 final class MigrationFixtureAnchor {}
 
 /// Upgrade gate. Stores are written from the frozen v1.0.3 schema (`PennySchemaV103`,
-/// copied from commit `dca913c`) and from the unversioned v1.0.4 model list (commit `92c6746`,
-/// which is still the shipping model). This environment cannot boot those App Store binaries.
+/// copied from commit `dca913c`), from the unversioned v1.0.4 model list (commit `92c6746`),
+/// and from `PennySchemaV1` (version 1.0.4), the schema marketing 1.2 shipped.
+/// This environment cannot boot those App Store binaries.
 /// Each test then opens the file with `PennyPersistence.makeContainer(at:)`, the same path
 /// an update uses: backup, then `PennyMigrationPlan`.
 @Suite("Migration", .serialized, .isolatedTestResources)
@@ -37,6 +38,16 @@ struct MigrationTests {
     private static let v11DebtID = UUID(uuidString: "A1000000-0000-0000-0000-000000000008")!
     private static let v11CategoryID = UUID(uuidString: "A1000000-0000-0000-0000-000000000009")!
     private static let v11BudgetID = UUID(uuidString: "A1000000-0000-0000-0000-00000000000A")!
+    private static let v12CoffeeID = UUID(uuidString: "B1000000-0000-0000-0000-000000000001")!
+    private static let v12PhoneID = UUID(uuidString: "B1000000-0000-0000-0000-000000000002")!
+    private static let v12HydroID = UUID(uuidString: "B1000000-0000-0000-0000-000000000003")!
+    private static let v12GoalID = UUID(uuidString: "B1000000-0000-0000-0000-000000000004")!
+    private static let v12AccountID = UUID(uuidString: "B1000000-0000-0000-0000-000000000005")!
+    private static let v12AllocationID = UUID(uuidString: "B1000000-0000-0000-0000-000000000006")!
+    private static let v12SettingsID = UUID(uuidString: "B1000000-0000-0000-0000-000000000007")!
+    private static let v12DebtID = UUID(uuidString: "B1000000-0000-0000-0000-000000000008")!
+    private static let v12CategoryID = UUID(uuidString: "B1000000-0000-0000-0000-000000000009")!
+    private static let v12BudgetID = UUID(uuidString: "B1000000-0000-0000-0000-00000000000A")!
 
     private static let longNote = String(repeating: "Rent is paid from the joint account. ", count: 12)
 
@@ -72,10 +83,10 @@ struct MigrationTests {
         try assertSafeToSpendAndWidget(in: container)
     }
 
-    @Test("v11 store with deleted bills opens on v1.2 with the correct total")
+    @Test("v1.1 store with deleted bills opens on the current app with the correct total")
     @MainActor
     func v11StoreWithDeletedBillsOpensOnV12() throws {
-        #expect(PennyAppInfo.marketingVersion == "1.2")
+        #expect(PennyAppInfo.marketingVersion == "1.4")
         #expect(PennySchemaV1.versionIdentifier == Schema.Version(1, 0, 4))
 
         let url = try storeURL("Penny-v1.1.store")
@@ -158,6 +169,118 @@ struct MigrationTests {
         #expect(snapshot.safeToSpend != expected - money("60.00"))
         #expect(snapshot.currencyCode == "CAD")
         #expect(snapshot.displayName == "Avery")
+    }
+
+    @Test("v1.2 store with a deleted bill and Private mode opens on the current app with every amount")
+    @MainActor
+    func v12StoreWithDeletedBillAndPrivateModeOpensOnV13() throws {
+        #expect(PennyAppInfo.marketingVersion == "1.4")
+        #expect(PennySchemaV1.versionIdentifier == Schema.Version(1, 0, 4))
+
+        let url = try storeURL("Penny-v1.2.store")
+        try writeV12StoreWithDeletedBill(at: url)
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        PrivateModeDefaults.setEnabled(true, in: defaults)
+        #expect(PrivateModeDefaults.isEnabled(in: defaults))
+
+        let container = try PennyPersistence.makeContainer(at: url)
+        #expect(PrivateModeDefaults.isEnabled(in: defaults))
+
+        let context = ModelContext(container)
+        let transactions = try context.fetch(FetchDescriptor<Transaction>())
+        let categories = try context.fetch(FetchDescriptor<BudgetCategory>())
+        let budgets = try context.fetch(FetchDescriptor<Budget>())
+        let bills = try context.fetch(FetchDescriptor<RecurringBill>())
+        let goals = try context.fetch(FetchDescriptor<SavingsGoal>())
+        let debts = try context.fetch(FetchDescriptor<Debt>())
+        let accounts = try context.fetch(FetchDescriptor<FinancialAccount>())
+        let allocations = try context.fetch(FetchDescriptor<GoalFundingAllocation>())
+        let settings = try context.fetch(FetchDescriptor<UserSettings>())
+
+        #expect(transactions.count == 1)
+        #expect(categories.count == 1)
+        #expect(budgets.count == 1)
+        #expect(bills.count == 2)
+        #expect(goals.count == 1)
+        #expect(debts.count == 1)
+        #expect(accounts.count == 1)
+        #expect(allocations.count == 1)
+        #expect(settings.count == 1)
+
+        let coffee = try #require(transactions.first)
+        #expect(coffee.id == Self.v12CoffeeID)
+        #expect(coffee.title == "Coffee")
+        #expect(coffee.amount == money("7.15"))
+        #expect(coffee.note == Self.longNote)
+        #expect(transactions.reduce(Decimal(0)) { $0 + $1.amount } == money("7.15"))
+
+        let phone = try #require(bills.first { $0.id == Self.v12PhoneID })
+        let hydro = try #require(bills.first { $0.id == Self.v12HydroID })
+        #expect(phone.name == "Phone")
+        #expect(phone.isActive)
+        #expect(phone.paidCycleKey.isEmpty)
+        #expect(phone.amount == money("64.20"))
+        #expect(hydro.name == "Hydro")
+        #expect(!hydro.isActive)
+        #expect(hydro.amount == money("48.75"))
+        #expect(hydro.paidCycleKey == "2026-10")
+
+        let goal = try #require(goals.first)
+        #expect(goal.currentAmount == money("15.05"))
+        #expect(goal.targetAmount == money("500.00"))
+        let debt = try #require(debts.first)
+        #expect(debt.originalBalance == money("500.00"))
+        #expect(debt.currentBalance == money("120.40"))
+        #expect(debt.interestRate == money("18.50"))
+        #expect(debt.minimumPayment == money("20.00"))
+        #expect(debt.plannedMonthlyPayment == money("40.00"))
+        let account = try #require(accounts.first)
+        #expect(account.balance == money("310.08"))
+        #expect(account.name == "Everyday Chequing")
+        let allocation = try #require(allocations.first)
+        #expect(allocation.amount == money("22.22"))
+        #expect(allocation.accountID == Self.v12AccountID)
+        #expect(allocation.goalID == Self.v12GoalID)
+        let saved = try #require(settings.first)
+        #expect(saved.displayName == "Avery")
+        #expect(saved.monthlyIncome == money("4500.50"))
+        #expect(saved.plannedMonthlySavings == money("200.25"))
+        #expect(saved.currencyCode == "CAD")
+        #expect(categories.first?.budgetedAmount == money("275.40"))
+        #expect(budgets.first?.plannedSpending == money("275.40"))
+
+        // 4500.50 income − 64.20 phone − 40 debt − 7.15 coffee − 200.25 savings.
+        // The deleted $48.75 hydro bill is still in the store and is not in the total.
+        // Private mode masks the displayed total and does not change these amounts.
+        let expected = money("4188.90")
+        #expect(expected == money("4500.50") - money("64.20") - money("40.00") - money("7.15") - money("200.25"))
+        WidgetSnapshotPublisher.publish(
+            transactions: transactions,
+            categories: categories,
+            bills: bills,
+            debts: debts,
+            goals: goals,
+            allocations: allocations,
+            settings: saved,
+            month: sampleDate()
+        )
+        let snapshot = try #require(WidgetSnapshotStore.load())
+        #expect(snapshot.safeToSpend == expected)
+        #expect(snapshot.safeToSpend != expected - money("48.75"))
+        #expect(snapshot.spentThisMonth == money("7.15"))
+        #expect(snapshot.plannedSpending == money("275.40"))
+        #expect(snapshot.currencyCode == "CAD")
+        #expect(snapshot.displayName == "Avery")
+        #expect(PrivateModeDefaults.isEnabled(in: defaults))
+        let masked = WidgetPrivateDisplay.safeToSpend(
+            amount: snapshot.safeToSpend,
+            currencyCode: snapshot.currencyCode,
+            isPrivate: PrivateModeDefaults.isEnabled(in: defaults),
+            site: .homeSafeToSpendHero,
+            locale: Locale(identifier: "en_CA")
+        )
+        #expect(masked == PrivateAmountLogic.mask)
+        #expect(!masked.contains("4188"))
     }
 
     @Test("fiveThousandTransactionUpgradeFinishesWithinAFewSeconds")
@@ -544,6 +667,68 @@ struct MigrationTests {
         context.insert(UserSettings(
             id: Self.v11SettingsID, currencyCode: "CAD", monthlyIncome: money("3000.00"),
             plannedMonthlySavings: money("100.00"), hasCompletedOnboarding: true,
+            billRemindersEnabled: true, appearance: .system, usingDemoData: false,
+            displayName: "Avery", applePayCaptureConfigured: false, accentTheme: .mint,
+            hasCompletedWalkthrough: true
+        ))
+        try context.save()
+    }
+
+    /// Marketing 1.2 shipped `PennySchemaV1` (version 1.0.4). The file is written
+    /// with that schema, including a bill Plan → Delete had turned off. Private mode
+    /// stays in the App Group defaults and is turned on by the test, not in this store.
+    @MainActor
+    private func writeV12StoreWithDeletedBill(at url: URL) throws {
+        let schema = Schema(versionedSchema: PennySchemaV1.self)
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(url: url)])
+        let context = ModelContext(container)
+        let date = sampleDate()
+        context.insert(Transaction(
+            id: Self.v12CoffeeID, title: "Coffee", amount: money("7.15"), date: date,
+            transactionType: .expense, categoryName: "Food", note: Self.longNote, createdAt: date
+        ))
+        context.insert(BudgetCategory(
+            id: Self.v12CategoryID, name: "Food", icon: "fork.knife",
+            budgetedAmount: money("275.40"), colourIdentifier: "food", sortOrder: 1
+        ))
+        context.insert(Budget(
+            id: Self.v12BudgetID, monthStart: DateHelpers.startOfMonth(for: date),
+            plannedSpending: money("275.40"), notes: "October"
+        ))
+        context.insert(RecurringBill(
+            id: Self.v12PhoneID, name: "Phone", amount: money("64.20"), dueDay: 12,
+            categoryName: "Subscriptions", recurrence: .monthly, nextDueDate: date, startDate: date,
+            reminderEnabled: true, reminderDaysBefore: 2, isActive: true, icon: "phone.fill",
+            paidCycleKey: ""
+        ))
+        context.insert(RecurringBill(
+            id: Self.v12HydroID, name: "Hydro", amount: money("48.75"), dueDay: 3,
+            categoryName: "Utilities", recurrence: .monthly, nextDueDate: date, startDate: date,
+            reminderEnabled: false, reminderDaysBefore: 1, isActive: false, icon: "bolt.fill",
+            paidCycleKey: "2026-10"
+        ))
+        context.insert(SavingsGoal(
+            id: Self.v12GoalID, name: "Vacation", targetAmount: money("500.00"),
+            currentAmount: money("15.05"), targetDate: nil, icon: "airplane",
+            createdAt: date, colourIdentifier: "savings"
+        ))
+        context.insert(Debt(
+            id: Self.v12DebtID, name: "Visa", originalBalance: money("500.00"),
+            currentBalance: money("120.40"), interestRate: money("18.50"),
+            minimumPayment: money("20.00"), plannedMonthlyPayment: money("40.00"),
+            dueDay: 15, icon: "creditcard.fill"
+        ))
+        context.insert(FinancialAccount(
+            id: Self.v12AccountID, name: "Everyday Chequing", accountType: .chequing,
+            balance: money("310.08"), isIncludedInNetWorth: true, sortOrder: 0
+        ))
+        context.insert(GoalFundingAllocation(
+            id: Self.v12AllocationID, accountID: Self.v12AccountID, goalID: Self.v12GoalID,
+            amount: money("22.22"), createdAt: date
+        ))
+        context.insert(UserSettings(
+            id: Self.v12SettingsID, currencyCode: "CAD", monthlyIncome: money("4500.50"),
+            plannedMonthlySavings: money("200.25"), hasCompletedOnboarding: true,
             billRemindersEnabled: true, appearance: .system, usingDemoData: false,
             displayName: "Avery", applePayCaptureConfigured: false, accentTheme: .mint,
             hasCompletedWalkthrough: true

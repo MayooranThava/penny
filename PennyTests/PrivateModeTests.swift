@@ -497,11 +497,11 @@ struct PrivateModeTests {
         #expect(!controllerSource.contains("WidgetSnapshotPublisher"))
         #expect(controllerSource.contains("PrivateModeStorage.save"))
 
-        let eye = PrivateModeController(reloader: RecordingPrivateReloader())
+        let eye = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         eye.toggle()
         let relaunch = UserDefaults(suiteName: suite)
         #expect(relaunch?.bool(forKey: PrivateModeDefaults.key) == true)
-        let next = PrivateModeController(reloader: RecordingPrivateReloader())
+        let next = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         #expect(next.isEnabled)
     }
 
@@ -510,17 +510,17 @@ struct PrivateModeTests {
     func controlsShareOneFlag() async throws {
         let suite = WidgetSnapshotStore.activeDefaultsSuite
         let defaults = try #require(UserDefaults(suiteName: suite))
-        let eye = PrivateModeController(reloader: RecordingPrivateReloader())
+        let eye = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         eye.toggle()
         #expect(PrivateModeDefaults.isEnabled(in: defaults))
 
-        let settings = PrivateModeController(reloader: RecordingPrivateReloader())
+        let settings = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         settings.setEnabled(false)
         #expect(PrivateModeDefaults.isEnabled(in: defaults) == false)
 
         _ = try await TogglePrivateModeIntent().perform()
         #expect(PrivateModeDefaults.isEnabled(in: defaults))
-        let afterShortcut = PrivateModeController(reloader: RecordingPrivateReloader())
+        let afterShortcut = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         #expect(afterShortcut.isEnabled)
         #expect(PrivateAmountLogic.shortcutTitle == "Toggle Penny private mode")
         #expect(PrivateAmountLogic.eyeAccessibilityLabel(isPrivate: false) == "Hide totals")
@@ -566,8 +566,9 @@ struct PrivateModeTests {
 
     @Test("Leaving the foreground suppresses the crossfade and re-reads the flag")
     @MainActor
-    func appSwitcherMasksBeforeSnapshot() {
-        let controller = PrivateModeController(reloader: RecordingPrivateReloader())
+    func appSwitcherMasksBeforeSnapshot() throws {
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let controller = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         controller.setEnabled(true)
         controller.noteScenePhase(.inactive)
         #expect(controller.isEnabled)
@@ -706,7 +707,7 @@ struct PrivateModeTests {
         ))
         let probe = PennyDataAccessCounter()
         let reloader = RecordingPrivateReloader()
-        let controller = PrivateModeController(reloader: reloader)
+        let controller = PrivateModeController(defaults: defaults, reloader: reloader)
         controller.reloadCoalescer.debounce = 0.05
 
         PennyDataAccessProbe.$counter.withValue(probe) {
@@ -731,7 +732,7 @@ struct PrivateModeTests {
         // An even number of toggles from the default off ends off.
         #expect(controller.isEnabled == false)
         #expect(PrivateModeDefaults.isEnabled(in: defaults) == false)
-        try await Task.sleep(nanoseconds: 400_000_000)
+        await waitUntil(timeout: 3) { reloader.calls.count >= 1 }
 
         #expect(probe.saves == 0)
         #expect(probe.fetches == 0)
@@ -949,11 +950,12 @@ struct PrivateModeAmountTypeTests {
     @Test("Turning Private mode on reloads Upcoming Bills and the total widgets")
     @MainActor
     func enablingReloadsUpcomingBills() async throws {
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
         let reloader = RecordingPrivateReloader()
-        let controller = PrivateModeController(reloader: reloader)
+        let controller = PrivateModeController(defaults: defaults, reloader: reloader)
         controller.reloadCoalescer.debounce = 0.05
         controller.setEnabled(true)
-        try await Task.sleep(nanoseconds: 400_000_000)
+        await waitUntil(timeout: 3) { !reloader.calls.isEmpty }
         let kinds = try #require(reloader.calls.first)
         #expect(kinds == PrivateWidgetKinds.totalAndUpcomingBills)
         #expect(kinds.contains(PrivateWidgetKinds.upcomingBills))
@@ -965,13 +967,14 @@ struct PrivateModeAmountTypeTests {
     @Test("A bill toggle reloads totals and Upcoming Bills, and nothing else does extra work")
     @MainActor
     func widgetReloadTargetsAffectedKinds() async throws {
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
         let reloader = RecordingPrivateReloader()
-        let controller = PrivateModeController(reloader: reloader)
+        let controller = PrivateModeController(defaults: defaults, reloader: reloader)
         controller.reloadCoalescer.debounce = 0.05
         controller.setEnabled(true)
-        try await Task.sleep(nanoseconds: 400_000_000)
+        await waitUntil(timeout: 3) { reloader.calls.count >= 1 }
         controller.setHidden(.bills, false)
-        try await Task.sleep(nanoseconds: 400_000_000)
+        await waitUntil(timeout: 3) { reloader.calls.count >= 2 }
         let last = try #require(reloader.calls.last)
         #expect(last == PrivateWidgetReloadCoalescer.widgetKinds(affectedBy: .bills))
         #expect(last.contains(PrivateWidgetKinds.upcomingBills))
@@ -1166,6 +1169,13 @@ private func repoFile(_ relative: String) -> URL {
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .appendingPathComponent(relative)
+}
+
+private func waitUntil(timeout: TimeInterval, _ ready: () -> Bool) async {
+    let deadline = Date().addingTimeInterval(timeout)
+    while !ready(), Date() < deadline {
+        try? await Task.sleep(nanoseconds: 20_000_000)
+    }
 }
 
 private final class RecordingPrivateReloader: PrivateWidgetReloading, @unchecked Sendable {

@@ -9,9 +9,12 @@ struct AddExpenseIntentTests {
     @Test("The intent saves the amount, merchant, and settings currency")
     func savesAmountCurrencyAndMerchant() async throws {
         try saveSettings(currencyCode: "USD")
-        let wasEnabled = PrivateModeController.shared.isEnabled
-        defer { PrivateModeController.shared.setEnabled(wasEnabled) }
-        PrivateModeController.shared.setEnabled(false)
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let previous = PrivateModeStorage.load(from: defaults)
+        defer { PrivateModeStorage.save(previous, to: defaults) }
+        var visible = previous
+        visible.isEnabled = false
+        PrivateModeStorage.save(visible, to: defaults)
         let intent = AddExpenseIntent()
         intent.amount = 12.34
         intent.merchant = "Corner Cafe"
@@ -48,8 +51,11 @@ struct AddExpenseIntentTests {
     }
 
     @Test("Private mode on omits the amount and off includes it")
-    func privateModeControlsTheReply() {
-        let controller = PrivateModeController.shared
+    func privateModeControlsTheReply() throws {
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let previous = PrivateModeStorage.load(from: defaults)
+        defer { PrivateModeStorage.save(previous, to: defaults) }
+        let controller = PrivateModeController(defaults: defaults)
         let wasEnabled = controller.isEnabled
         let hidTransactions = controller.settings.visibility.hideTransactions
         defer {
@@ -189,18 +195,13 @@ struct AddExpenseIntentTests {
 
     @Test("A saved Private mode setting hides the amount without refreshing the controller")
     func savedPrivateModeHidesAmount() throws {
-        let controller = PrivateModeController.shared
-        let wasEnabled = controller.isEnabled
-        let hidTransactions = controller.settings.visibility.hideTransactions
-        defer {
-            controller.refreshFromDefaults()
-            controller.setHidden(.transactions, hidTransactions)
-            controller.setEnabled(wasEnabled)
-        }
+        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let previous = PrivateModeStorage.load(from: defaults)
+        defer { PrivateModeStorage.save(previous, to: defaults) }
+        let controller = PrivateModeController(defaults: defaults)
         controller.setEnabled(false)
         #expect(controller.masks(.transactions) == false)
 
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
         var record = PrivateModeRecord.fresh
         record.isEnabled = true
         record.visibility.hideTransactions = true

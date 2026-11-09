@@ -36,13 +36,19 @@ final class PrivateModeController {
     private(set) var settings: PrivateModeRecord
     private(set) var animationsSuppressed: Bool
     private let reloader: any PrivateWidgetReloading
+    /// When set, this controller reads and writes only this store. The shared
+    /// app controller leaves it nil and follows the active suite on each call.
+    private let pinnedDefaults: UserDefaults?
     var reloadCoalescer = PrivateWidgetReloadCoalescer()
     private var reloadTask: Task<Void, Never>?
 
-    init(reloader: any PrivateWidgetReloading = WidgetKitPrivateReloader()) {
+    init(
+        defaults: UserDefaults? = nil,
+        reloader: any PrivateWidgetReloading = WidgetKitPrivateReloader()
+    ) {
         self.reloader = reloader
-        let defaults = Self.currentDefaults()
-        let loaded = defaults.map { PrivateModeStorage.load(from: $0) } ?? .fresh
+        self.pinnedDefaults = defaults
+        let loaded = (defaults ?? Self.currentDefaults()).map { PrivateModeStorage.load(from: $0) } ?? .fresh
         settings = loaded
         isEnabled = loaded.isEnabled
         animationsSuppressed = false
@@ -60,7 +66,12 @@ final class PrivateModeController {
     }
 
     func toggle() {
-        setEnabled(!Self.isEnabledInDefaults)
+        let enabled = resolvedDefaults().map { PrivateModeStorage.load(from: $0).isEnabled } ?? false
+        setEnabled(!enabled)
+    }
+
+    private func resolvedDefaults() -> UserDefaults? {
+        pinnedDefaults ?? Self.currentDefaults()
     }
 
     func setEnabled(_ newValue: Bool) {
@@ -83,7 +94,7 @@ final class PrivateModeController {
     }
 
     func acknowledgeUpgradeNote() {
-        guard let defaults = Self.currentDefaults() else {
+        guard let defaults = resolvedDefaults() else {
             settings.upgradeNotePending = false
             return
         }
@@ -105,7 +116,7 @@ final class PrivateModeController {
     private func commit(_ record: PrivateModeRecord, reload kinds: [String], changed: Bool) {
         settings = record
         isEnabled = record.isEnabled
-        if let defaults = Self.currentDefaults() {
+        if let defaults = resolvedDefaults() {
             PrivateModeStorage.save(record, to: defaults)
         }
         guard changed else { return }
@@ -124,7 +135,7 @@ final class PrivateModeController {
     }
 
     func refreshFromDefaults() {
-        if let defaults = Self.currentDefaults() {
+        if let defaults = resolvedDefaults() {
             settings = PrivateModeStorage.load(from: defaults)
         }
         isEnabled = settings.isEnabled

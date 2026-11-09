@@ -152,6 +152,4 @@ python3 scripts/generate_xcode_project.py
 3. iCloud sync via SwiftData CloudKit (add to Pro only after it ships)
 4. Optional alternate app icons
 
-## Brand
 
-Warm modern finance: fresh mint/emerald primary, cream surfaces, charcoal text, soft blue for savings, amber for caution — **not** a purple-heavy competitor lookalike.

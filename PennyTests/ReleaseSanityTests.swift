@@ -320,6 +320,7 @@ struct ReleaseSanityTests {
             "Penny keeps your financial info on your iPhone and never sends it to us. Purchases are handled by Apple, and Apple may share crash reports with us only if you've turned that on in your iPhone settings.",
             "Penny is a budgeting tool, not financial, tax or investment advice. Amounts are estimates based on what you enter and may not match your bank.",
             "Penny doesn't connect to your bank. Wallet tap capture and widgets keep their data on this iPhone.",
+            "If you use Siri with Penny, your request is processed by Apple under Apple's privacy policy. Penny only receives the details it needs to save the entry.",
             "Deleting Penny or using Reset permanently erases your data from this iPhone.",
             "Intended for adults; not directed to children under 13. Full details are in the Terms of Use."
         ])

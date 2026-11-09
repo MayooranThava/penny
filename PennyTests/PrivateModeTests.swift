@@ -983,16 +983,41 @@ struct PrivateModeAmountTypeTests {
     func wordingHidesAmountsOnScreen() {
         let approvedNote = "Private mode now also hides transaction and bill amounts on screen. You can change this in Settings."
         #expect(PrivateModeStorage.upgradeNote == approvedNote)
+        let addedAtMerchant = QuickAddExpenseDialog.added(
+            merchant: "Cafe",
+            amountText: "$4.00",
+            hidesAmount: true
+        )
+        let addedPlain = QuickAddExpenseDialog.added(
+            merchant: "",
+            amountText: "$4.00",
+            hidesAmount: true
+        )
         let copy = [
             PrivateModeStorage.upgradeNote,
             PrivateModeStorage.settingsFooter,
             PrivateModeStorage.nothingHiddenFooter,
-            PrivateModeStorage.amountsStillShowFootnote
+            PrivateModeStorage.amountsStillShowFootnote,
+            PennyAppInfo.siriSummary,
+            addedAtMerchant,
+            addedPlain,
+            "Add Expense",
+            "Enter an amount greater than zero.",
+            "Penny couldn’t save this entry."
         ]
         let phraseExceptions: Set<String> = [
             PrivateModeStorage.nothingHiddenFooter,
-            PrivateModeStorage.amountsStillShowFootnote
+            PrivateModeStorage.amountsStillShowFootnote,
+            PennyAppInfo.siriSummary,
+            addedAtMerchant,
+            addedPlain,
+            "Add Expense",
+            "Enter an amount greater than zero.",
+            "Penny couldn’t save this entry."
         ]
+        #expect(PennyAppInfo.siriSummary == "If you use Siri with Penny, your request is processed by Apple under Apple's privacy policy. Penny only receives the details it needs to save the entry.")
+        #expect(addedAtMerchant == "Added an expense at Cafe.")
+        #expect(addedPlain == "Added an expense.")
         let banned = ["secure", "protected", "safe", "encrypted", "forever", "lifetime"]
         for line in copy {
             if !phraseExceptions.contains(line) {

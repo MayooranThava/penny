@@ -203,6 +203,14 @@ struct PennyShortcuts: AppShortcutsProvider {
             systemImageName: "wallet.pass.fill"
         )
         AppShortcut(
+            intent: AddExpenseIntent(),
+            phrases: [
+                "Add an expense in \(.applicationName)"
+            ],
+            shortTitle: "Add Expense",
+            systemImageName: "plus.circle.fill"
+        )
+        AppShortcut(
             intent: TogglePrivateModeIntent(),
             phrases: [
                 "Toggle \(.applicationName) private mode"

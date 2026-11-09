@@ -257,12 +257,15 @@ struct SafeToSpendDeletedBillTests {
         let box = try store ?? PennyTestDefaults()
         let ownsStore = store == nil
         defer { if ownsStore { box.remove() } }
-        try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(box.name) { @MainActor in
-            publish(income: income, bills: bills, debts: debts, transactions: transactions, savings: savings, month: month)
+        try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(box.name) {
+            await MainActor.run {
+                publish(income: income, bills: bills, debts: debts, transactions: transactions, savings: savings, month: month)
+            }
         }
         return try #require(WidgetSnapshotStore.load(from: box.defaults))
     }
 
+    @MainActor
     private func publish(
         income: Decimal,
         bills: [RecurringBill],

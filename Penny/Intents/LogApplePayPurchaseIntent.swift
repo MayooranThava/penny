@@ -60,6 +60,9 @@ struct LogApplePayPurchaseIntent: AppIntent {
     )
     var cardName: String
 
+    /// Tests pass a throwaway suite. Nil uses the active suite, which is the App Group in the app.
+    var privateModeDefaults: UserDefaults?
+
     static var parameterSummary: some ParameterSummary {
         Summary("Log \(\.$amount) at \(\.$merchant)") {
             \.$amountText
@@ -79,7 +82,7 @@ struct LogApplePayPurchaseIntent: AppIntent {
             cardName: cardName
         )
 
-        let isPrivate = Self.hidesTransactionAmounts
+        let isPrivate = hidesTransactionAmounts()
         switch result {
         case .inserted(let title, let amountValue, let categoryName):
             reloadTransactionAndTotalWidgets()
@@ -121,11 +124,10 @@ struct LogApplePayPurchaseIntent: AppIntent {
     }
 
     @MainActor
-    private static var hidesTransactionAmounts: Bool {
-        guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
-            return false
-        }
-        return PrivateModeStorage.load(from: defaults).masks(.transactions)
+    private func hidesTransactionAmounts() -> Bool {
+        let store = privateModeDefaults ?? UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite)
+        guard let store else { return false }
+        return PrivateModeStorage.load(from: store).masks(.transactions)
     }
 
     /// Safe to Spend, monthly budget, the savings goal, upcoming bills, and the
@@ -184,9 +186,16 @@ struct TogglePrivateModeIntent: AppIntent {
     static var description = IntentDescription("Hides or shows totals. Does not reload your transactions.")
     static var openAppWhenRun = false
 
+    /// Tests pass a throwaway suite. Nil toggles the shared controller, which follows the active suite.
+    var settingsDefaults: UserDefaults?
+
     @MainActor
     func perform() async throws -> some IntentResult {
-        PrivateModeController.shared.toggle()
+        if let settingsDefaults {
+            PrivateModeController(defaults: settingsDefaults).toggle()
+        } else {
+            PrivateModeController.shared.toggle()
+        }
         return .result()
     }
 }

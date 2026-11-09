@@ -6,16 +6,19 @@ import Testing
 struct WidgetSnapshotTests {
     private let enUS = Locale(identifier: "en_US")
     private let germany = Locale(identifier: "de_DE")
+    private let store = SnapshotDefaultsHolder()
 
-    @Test("Snapshots use the test UserDefaults suite, not the App Group")
-    func usesIsolatedDefaultsSuite() {
-        let suite = WidgetSnapshotStore.activeDefaultsSuite
-        #expect(suite != WidgetSnapshotStore.appGroupID)
-        #expect(suite.hasPrefix("PennyTests."))
+    @Test("Snapshots use a throwaway UserDefaults suite, not the App Group")
+    func usesIsolatedDefaultsSuite() throws {
+        let box = try PennyTestDefaults()
+        defer { box.remove() }
+        #expect(box.name != WidgetSnapshotStore.appGroupID)
+        #expect(box.name.hasPrefix("penny.test."))
     }
 
     @Test("0.10 + 0.20 is stored as 0.30, not a binary fraction")
     func dimePlusTwentyCents() throws {
+        try beginStore()
         let sum = Decimal(string: "0.10")! + Decimal(string: "0.20")!
         #expect(sum == Decimal(string: "0.30"))
         #expect(sum != Decimal(0.10 + 0.20))
@@ -34,6 +37,7 @@ struct WidgetSnapshotTests {
 
     @Test("Half-cent amounts round like the app, not like Double")
     func halfCentRounding() throws {
+        try beginStore()
         let oneAndAHalfCent = Decimal(string: "1.005")!
         #expect(oneAndAHalfCent != Decimal(1.005))
 
@@ -66,6 +70,7 @@ struct WidgetSnapshotTests {
 
     @Test("Negative amounts keep their cents and their sign")
     func negatives() throws {
+        try beginStore()
         let sum = Decimal(string: "-0.10")! + Decimal(string: "-0.20")!
         #expect(sum == Decimal(string: "-0.30"))
 
@@ -93,6 +98,7 @@ struct WidgetSnapshotTests {
 
     @Test("Large amounts keep cents that Double cannot represent")
     func largeValues() throws {
+        try beginStore()
         let large = Decimal(string: "9999999999999.99")!
         #expect(large != Decimal(9999999999999.99))
 
@@ -117,6 +123,7 @@ struct WidgetSnapshotTests {
 
     @Test("Non-USD locales use the same currency formatting as the app")
     func nonUSDLocale() throws {
+        try beginStore()
         let amount = Decimal(string: "-1234.50")!
         let loaded = try roundTrip(snapshot(safeToSpend: amount, currencyCode: "EUR", spent: amount))
         #expect(loaded.safeToSpend == amount)
@@ -133,6 +140,7 @@ struct WidgetSnapshotTests {
 
     @Test("Safe to Spend on the widget matches the app calculation to the cent")
     func safeToSpendMatchesApp() throws {
+        try beginStore()
         let safe = FinanceCalculator.safeToSpend(
             monthlyIncome: Decimal(string: "2500.10")!,
             recurringCommitted: Decimal(string: "100.20")!,
@@ -151,6 +159,7 @@ struct WidgetSnapshotTests {
 
     @Test("Snapshots written before cents were exact still load")
     func legacyDoubleSnapshotsRemainReadable() throws {
+        try beginStore()
         let original = """
         {"safeToSpend":12.5,"currencyCode":"CAD","monthLabel":"Oct","displayName":"Alex","updatedAt":700000000}
         """
@@ -217,19 +226,41 @@ struct WidgetSnapshotTests {
     }
 
     private func roundTrip(_ snapshot: WidgetSnapshotStore.Snapshot) throws -> WidgetSnapshotStore.Snapshot {
-        WidgetSnapshotStore.save(snapshot)
-        return try #require(WidgetSnapshotStore.load())
+        let defaults = try ensureStore()
+        WidgetSnapshotStore.save(snapshot, to: defaults)
+        return try #require(WidgetSnapshotStore.load(from: defaults))
     }
 
     private func loadJSON(_ json: String) throws -> WidgetSnapshotStore.Snapshot {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let defaults = try ensureStore()
         defaults.set(Data(json.utf8), forKey: WidgetSnapshotStore.snapshotKey)
-        return try #require(WidgetSnapshotStore.load())
+        return try #require(WidgetSnapshotStore.load(from: defaults))
     }
 
     private func storedJSON() throws -> String {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let defaults = try ensureStore()
         let data = try #require(defaults.data(forKey: WidgetSnapshotStore.snapshotKey))
         return String(decoding: data, as: UTF8.self)
+    }
+
+    private func beginStore() throws {
+        store.box?.remove()
+        store.box = try PennyTestDefaults()
+    }
+
+    private func ensureStore() throws -> UserDefaults {
+        if let existing = store.box {
+            return existing.defaults
+        }
+        try beginStore()
+        return try #require(store.box).defaults
+    }
+}
+
+private final class SnapshotDefaultsHolder {
+    var box: PennyTestDefaults?
+
+    deinit {
+        box?.remove()
     }
 }

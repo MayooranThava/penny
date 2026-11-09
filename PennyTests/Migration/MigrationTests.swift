@@ -154,17 +154,21 @@ struct MigrationTests {
         // 3000 income − 80.10 phone − 25 debt − 10.25 coffee − 100 savings.
         // The deleted $60 cable bill is still in the store and is not in the total.
         let expected = money("2784.65")
-        WidgetSnapshotPublisher.publish(
-            transactions: transactions,
-            categories: categories,
-            bills: bills,
-            debts: debts,
-            goals: goals,
-            allocations: allocations,
-            settings: saved,
-            month: sampleDate()
-        )
-        let snapshot = try #require(WidgetSnapshotStore.load())
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
+        try WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+            WidgetSnapshotPublisher.publish(
+                transactions: transactions,
+                categories: categories,
+                bills: bills,
+                debts: debts,
+                goals: goals,
+                allocations: allocations,
+                settings: saved,
+                month: sampleDate()
+            )
+        }
+        let snapshot = try #require(WidgetSnapshotStore.load(from: modeStore.defaults))
         #expect(snapshot.safeToSpend == expected)
         #expect(snapshot.safeToSpend != expected - money("60.00"))
         #expect(snapshot.currencyCode == "CAD")
@@ -179,7 +183,9 @@ struct MigrationTests {
 
         let url = try storeURL("Penny-v1.2.store")
         try writeV12StoreWithDeletedBill(at: url)
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
+        let defaults = modeStore.defaults
         PrivateModeDefaults.setEnabled(true, in: defaults)
         #expect(PrivateModeDefaults.isEnabled(in: defaults))
 
@@ -254,17 +260,19 @@ struct MigrationTests {
         // Private mode masks the displayed total and does not change these amounts.
         let expected = money("4188.90")
         #expect(expected == money("4500.50") - money("64.20") - money("40.00") - money("7.15") - money("200.25"))
-        WidgetSnapshotPublisher.publish(
-            transactions: transactions,
-            categories: categories,
-            bills: bills,
-            debts: debts,
-            goals: goals,
-            allocations: allocations,
-            settings: saved,
-            month: sampleDate()
-        )
-        let snapshot = try #require(WidgetSnapshotStore.load())
+        try WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+            WidgetSnapshotPublisher.publish(
+                transactions: transactions,
+                categories: categories,
+                bills: bills,
+                debts: debts,
+                goals: goals,
+                allocations: allocations,
+                settings: saved,
+                month: sampleDate()
+            )
+        }
+        let snapshot = try #require(WidgetSnapshotStore.load(from: defaults))
         #expect(snapshot.safeToSpend == expected)
         #expect(snapshot.safeToSpend != expected - money("48.75"))
         #expect(snapshot.spentThisMonth == money("7.15"))
@@ -924,17 +932,21 @@ struct MigrationTests {
         #expect(committed == money("1604.27"))
         #expect(expected == money("3191.52"))
 
-        WidgetSnapshotPublisher.publish(
-            transactions: transactions,
-            categories: categories,
-            bills: bills,
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
+        try WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+            WidgetSnapshotPublisher.publish(
+                transactions: transactions,
+                categories: categories,
+                bills: bills,
             debts: debts,
             goals: goals,
             allocations: allocations,
             settings: settings,
             month: month
-        )
-        let snapshot = try #require(WidgetSnapshotStore.load())
+            )
+        }
+        let snapshot = try #require(WidgetSnapshotStore.load(from: modeStore.defaults))
         #expect(snapshot.currencyCode == "CAD")
         #expect(snapshot.displayName == "Avery")
         #expect(snapshot.safeToSpend == expected)

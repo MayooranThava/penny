@@ -8,14 +8,15 @@ import Testing
 struct AddExpenseIntentTests {
     @Test("The intent saves the amount, merchant, and settings currency")
     func savesAmountCurrencyAndMerchant() async throws {
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         try saveSettings(currencyCode: "USD")
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
-        let previous = PrivateModeStorage.load(from: defaults)
-        defer { PrivateModeStorage.save(previous, to: defaults) }
-        var visible = previous
+        var visible = PrivateModeRecord.fresh
         visible.isEnabled = false
         PrivateModeStorage.save(visible, to: defaults)
-        let intent = AddExpenseIntent()
+        var intent = AddExpenseIntent()
+        intent.privateModeDefaults = defaults
         intent.amount = 12.34
         intent.merchant = "Corner Cafe"
         intent.note = "Latte"
@@ -52,9 +53,9 @@ struct AddExpenseIntentTests {
 
     @Test("Private mode on omits the amount and off includes it")
     func privateModeControlsTheReply() throws {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
-        let previous = PrivateModeStorage.load(from: defaults)
-        defer { PrivateModeStorage.save(previous, to: defaults) }
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         let controller = PrivateModeController(defaults: defaults)
         let wasEnabled = controller.isEnabled
         let hidTransactions = controller.settings.visibility.hideTransactions
@@ -64,20 +65,20 @@ struct AddExpenseIntentTests {
         }
         controller.setEnabled(true)
         controller.setHidden(.transactions, true)
-        #expect(AddExpenseIntent.hidesTransactionAmounts)
+        #expect(AddExpenseIntent.hidesTransactionAmounts(in: defaults))
         let hidden = AddExpenseIntent.reply(
             for: sampleOutcome,
-            hidesAmount: AddExpenseIntent.hidesTransactionAmounts
+            hidesAmount: AddExpenseIntent.hidesTransactionAmounts(in: defaults)
         )
         #expect(hidden == "Added an expense at Corner Cafe.")
         #expect(!hidden.contains("12"))
         #expect(!hidden.contains("$"))
 
         controller.setEnabled(false)
-        #expect(AddExpenseIntent.hidesTransactionAmounts == false)
+        #expect(AddExpenseIntent.hidesTransactionAmounts(in: defaults) == false)
         let shown = AddExpenseIntent.reply(
             for: sampleOutcome,
-            hidesAmount: AddExpenseIntent.hidesTransactionAmounts,
+            hidesAmount: AddExpenseIntent.hidesTransactionAmounts(in: defaults),
             locale: Locale(identifier: "en_US")
         )
         #expect(shown.contains("12.34"))
@@ -110,7 +111,10 @@ struct AddExpenseIntentTests {
         #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
 
         threw = false
-        let intent = AddExpenseIntent()
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        var intent = AddExpenseIntent()
+        intent.privateModeDefaults = settings.defaults
         intent.amount = 8.5
         intent.merchant = "Failed Cafe"
         await PennySaveTesting.$forcedError.withValue(PennyForcedSaveFailure()) {
@@ -129,8 +133,11 @@ struct AddExpenseIntentTests {
 
     @Test("Invalid and zero amounts are rejected without saving")
     func rejectsInvalidAmounts() async throws {
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
         for value in [0, -3, Double.nan, Double.infinity] {
-            let intent = AddExpenseIntent()
+            var intent = AddExpenseIntent()
+            intent.privateModeDefaults = settings.defaults
             intent.amount = value
             intent.merchant = "Nope"
             do {
@@ -150,7 +157,10 @@ struct AddExpenseIntentTests {
         defer { QuickAddWidgetRefresh.reload = previous }
         var calls: [[String]] = []
         QuickAddWidgetRefresh.reload = { calls.append($0) }
-        let intent = AddExpenseIntent()
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        var intent = AddExpenseIntent()
+        intent.privateModeDefaults = settings.defaults
         intent.amount = 3
         intent.merchant = "Bus"
         _ = try await intent.perform()
@@ -195,9 +205,9 @@ struct AddExpenseIntentTests {
 
     @Test("A saved Private mode setting hides the amount without refreshing the controller")
     func savedPrivateModeHidesAmount() throws {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
-        let previous = PrivateModeStorage.load(from: defaults)
-        defer { PrivateModeStorage.save(previous, to: defaults) }
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         let controller = PrivateModeController(defaults: defaults)
         controller.setEnabled(false)
         #expect(controller.masks(.transactions) == false)
@@ -208,10 +218,10 @@ struct AddExpenseIntentTests {
         PrivateModeStorage.save(record, to: defaults)
         #expect(controller.masks(.transactions) == false)
 
-        #expect(AddExpenseIntent.hidesTransactionAmounts)
+        #expect(AddExpenseIntent.hidesTransactionAmounts(in: defaults))
         let reply = AddExpenseIntent.reply(
             for: sampleOutcome,
-            hidesAmount: AddExpenseIntent.hidesTransactionAmounts,
+            hidesAmount: AddExpenseIntent.hidesTransactionAmounts(in: defaults),
             locale: Locale(identifier: "en_US")
         )
         #expect(reply == "Added an expense at Corner Cafe.")

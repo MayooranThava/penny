@@ -334,8 +334,10 @@ struct ReleaseSanityTests {
     @Test("Reset clears the open store, backup, marker, and widget snapshot")
     @MainActor
     func resetErasesOnDeviceFiles() async throws {
-        #expect(WidgetSnapshotStore.activeDefaultsSuite != WidgetSnapshotStore.appGroupID)
-        #expect(WidgetSnapshotStore.activeDefaultsSuite.hasPrefix("PennyTests."))
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
+        #expect(modeStore.name != WidgetSnapshotStore.appGroupID)
+        #expect(modeStore.name.hasPrefix("penny.test."))
 
         let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("PennyReset-\(UUID().uuidString)", isDirectory: true)
@@ -371,24 +373,26 @@ struct ReleaseSanityTests {
                 to: PennyStoreBackup.snapshotDirectory(for: storeURL)
             )
             try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
-            WidgetSnapshotStore.save(resetSnapshot(displayName: "Reset"))
+            WidgetSnapshotStore.save(resetSnapshot(displayName: "Reset"), to: modeStore.defaults)
             let wal = URL(fileURLWithPath: storeURL.path + "-wal")
             let shm = URL(fileURLWithPath: storeURL.path + "-shm")
             let walBefore = fileManager.fileExists(atPath: wal.path)
             let shmBefore = fileManager.fileExists(atPath: shm.path)
 
-            _ = try await PennyPersistence.reset(in: context)
+            try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+                _ = try await PennyPersistence.reset(in: context)
+            }
 
             #expect(fileManager.fileExists(atPath: storeURL.path))
             #expect(fileManager.fileExists(atPath: wal.path) == walBefore)
             #expect(fileManager.fileExists(atPath: shm.path) == shmBefore)
-            try expectNoBackupOrWidget(at: storeURL)
+            try expectNoBackupOrWidget(at: storeURL, defaults: modeStore.defaults)
             try expectNoUserModels(in: context)
         }
 
         let reopened = try PennyPersistence.makeContainer(at: storeURL)
         try expectNoUserModels(in: ModelContext(reopened))
-        try expectNoBackupOrWidget(at: storeURL)
+        try expectNoBackupOrWidget(at: storeURL, defaults: modeStore.defaults)
     }
 
     @Test("Reset removes a deleted transaction title from the .store, -wal, and -shm bytes")
@@ -407,7 +411,11 @@ struct ReleaseSanityTests {
             let context = ModelContext(container)
             context.insert(sampleExpense(title: canary))
             try context.save()
-            _ = try await PennyPersistence.reset(in: context)
+            let modeStore = try PennyTestDefaults()
+            defer { modeStore.remove() }
+            try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+                _ = try await PennyPersistence.reset(in: context)
+            }
 
             for url in PennyStoreBackup.relatedURLs(for: storeURL) {
                 if url.path != storeURL.path, !FileManager.default.fileExists(atPath: url.path) {
@@ -441,7 +449,11 @@ struct ReleaseSanityTests {
         let result = try await PennyPersistence.$beforeStoreCompaction.withValue({ url in
             lock.acquire(url)
         }) {
-            try await PennyPersistence.reset(in: context)
+            let modeStore = try PennyTestDefaults()
+            defer { modeStore.remove() }
+            return try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+                try await PennyPersistence.reset(in: context)
+            }
         }
         #expect(lock.didAcquire)
         #expect(!result.succeeded)
@@ -485,7 +497,11 @@ struct ReleaseSanityTests {
         try context.save()
         #expect(try context.fetch(FetchDescriptor<Transaction>()).count == 5_000)
 
-        let result = try await PennyPersistence.reset(in: context)
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
+        let result = try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+            try await PennyPersistence.reset(in: context)
+        }
         let seconds = result.duration.secondsValue
         let timingLine = String(
             format: "COMPACTION_5000_SECONDS=%.3f\n",
@@ -511,6 +527,8 @@ struct ReleaseSanityTests {
     @Test("Delete all data uses the same cleanup and leaves no transactions")
     @MainActor
     func deleteAllDataUsesReset() async throws {
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
         let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("PennyDelete-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -528,13 +546,15 @@ struct ReleaseSanityTests {
                 to: PennyStoreBackup.snapshotDirectory(for: storeURL)
             )
             try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
-            WidgetSnapshotStore.save(resetSnapshot(displayName: "Delete"))
+            WidgetSnapshotStore.save(resetSnapshot(displayName: "Delete"), to: modeStore.defaults)
 
-            try await PennyPersistence.deleteAllData(in: context)
+            try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+                try await PennyPersistence.deleteAllData(in: context)
+            }
 
             #expect(FileManager.default.fileExists(atPath: storeURL.path))
             #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
-            try expectNoBackupOrWidget(at: storeURL)
+            try expectNoBackupOrWidget(at: storeURL, defaults: modeStore.defaults)
         }
 
         let reopened = try PennyPersistence.makeContainer(at: storeURL)
@@ -544,12 +564,14 @@ struct ReleaseSanityTests {
         #expect(try context.fetch(FetchDescriptor<Debt>()).isEmpty)
         #expect(try context.fetch(FetchDescriptor<SavingsGoal>()).isEmpty)
         #expect(try context.fetch(FetchDescriptor<FinancialAccount>()).isEmpty)
-        try expectNoBackupOrWidget(at: storeURL)
+        try expectNoBackupOrWidget(at: storeURL, defaults: modeStore.defaults)
     }
 
     @Test("Reset demo data keeps the store file and drops the pre-upgrade backup")
     @MainActor
     func resetDemoDataUsesReset() async throws {
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
         let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("PennyResetDemo-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -565,12 +587,14 @@ struct ReleaseSanityTests {
             to: PennyStoreBackup.snapshotDirectory(for: storeURL)
         )
         try Data("1".utf8).write(to: PennyStoreBackup.markerURL(for: storeURL), options: .atomic)
-        WidgetSnapshotStore.save(resetSnapshot(displayName: "Demo"))
+        WidgetSnapshotStore.save(resetSnapshot(displayName: "Demo"), to: modeStore.defaults)
 
-        try await PennyPersistence.resetDemoData(in: context)
+        try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+            try await PennyPersistence.resetDemoData(in: context)
+        }
 
         #expect(FileManager.default.fileExists(atPath: storeURL.path))
-        try expectNoBackupOrWidget(at: storeURL)
+        try expectNoBackupOrWidget(at: storeURL, defaults: modeStore.defaults)
         #expect(try context.fetch(FetchDescriptor<UserSettings>()).first?.usingDemoData == true)
     }
 
@@ -617,13 +641,12 @@ struct ReleaseSanityTests {
         #expect(try context.fetch(FetchDescriptor<UserSettings>()).isEmpty)
     }
 
-    private func expectNoBackupOrWidget(at storeURL: URL) throws {
+    private func expectNoBackupOrWidget(at storeURL: URL, defaults: UserDefaults) throws {
         let fileManager = FileManager.default
         #expect(!fileManager.fileExists(atPath: PennyStoreBackup.snapshotDirectory(for: storeURL).path))
         #expect(!fileManager.fileExists(atPath: PennyStoreBackup.markerURL(for: storeURL).path))
         #expect(!fileManager.fileExists(atPath: PennyStoreBackup.backupRoot(for: storeURL).path))
-        #expect(WidgetSnapshotStore.load() == nil)
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        #expect(WidgetSnapshotStore.load(from: defaults) == nil)
         #expect(defaults.object(forKey: WidgetSnapshotStore.snapshotKey) == nil)
     }
 

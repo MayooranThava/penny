@@ -91,21 +91,21 @@ enum WidgetSnapshotStore {
         }
     }
 
-    static func save(_ snapshot: Snapshot) {
-        guard let defaults = UserDefaults(suiteName: activeDefaultsSuite) else { return }
+    static func save(_ snapshot: Snapshot, to defaults: UserDefaults? = nil) {
+        guard let defaults = defaults ?? UserDefaults(suiteName: activeDefaultsSuite) else { return }
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         defaults.set(data, forKey: snapshotKey)
     }
 
-    static func load() -> Snapshot? {
-        guard let defaults = UserDefaults(suiteName: activeDefaultsSuite),
+    static func load(from defaults: UserDefaults? = nil) -> Snapshot? {
+        guard let defaults = defaults ?? UserDefaults(suiteName: activeDefaultsSuite),
               let data = defaults.data(forKey: snapshotKey) else { return nil }
         return try? JSONDecoder().decode(Snapshot.self, from: data)
     }
 
-    /// Removes the shared snapshot. Tests use `defaultsSuiteOverride` in place of the App Group.
-    static func clear() {
-        guard let defaults = UserDefaults(suiteName: activeDefaultsSuite) else { return }
+    /// Removes the snapshot from `defaults`, or from the active suite when omitted.
+    static func clear(in defaults: UserDefaults? = nil) {
+        guard let defaults = defaults ?? UserDefaults(suiteName: activeDefaultsSuite) else { return }
         defaults.removeObject(forKey: snapshotKey)
     }
 }

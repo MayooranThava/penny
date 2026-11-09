@@ -23,6 +23,9 @@ struct AddExpenseIntent: AppIntent {
     @Parameter(title: "Category", default: "")
     var category: String
 
+    /// Tests pass a throwaway suite. Nil uses the active suite, which is the App Group in the app.
+    var privateModeDefaults: UserDefaults?
+
     static var parameterSummary: some ParameterSummary {
         Summary("Add \(\.$amount)") {
             \.$merchant
@@ -39,18 +42,17 @@ struct AddExpenseIntent: AppIntent {
             note: note,
             category: category
         )
-        let reply = Self.reply(for: outcome, hidesAmount: Self.hidesTransactionAmounts)
+        let reply = Self.reply(for: outcome, hidesAmount: Self.hidesTransactionAmounts(in: privateModeDefaults))
         QuickAddWidgetRefresh.reloadAffected()
         return .result(dialog: IntentDialog(LocalizedStringResource(stringLiteral: reply)))
     }
 
     /// One read of the saved Private mode choice for this run.
     @MainActor
-    static var hidesTransactionAmounts: Bool {
-        guard let defaults = UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite) else {
-            return false
-        }
-        return PrivateModeStorage.load(from: defaults).masks(.transactions)
+    static func hidesTransactionAmounts(in defaults: UserDefaults?) -> Bool {
+        let store = defaults ?? UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite)
+        guard let store else { return false }
+        return PrivateModeStorage.load(from: store).masks(.transactions)
     }
 
     @MainActor

@@ -100,17 +100,11 @@ struct LogApplePayPurchaseIntentTests {
         #expect(!duplicate.contains("15"))
         #expect(!duplicate.contains("$"))
 
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
-        let previousPrivateMode = defaults.object(forKey: PrivateModeDefaults.key)
-        defer {
-            if let previousPrivateMode {
-                defaults.set(previousPrivateMode, forKey: PrivateModeDefaults.key)
-            } else {
-                defaults.removeObject(forKey: PrivateModeDefaults.key)
-            }
-        }
-        PrivateModeDefaults.setEnabled(true, in: defaults)
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
+        PrivateModeDefaults.setEnabled(true, in: modeStore.defaults)
         let intent = LogApplePayPurchaseIntent()
+        intent.privateModeDefaults = modeStore.defaults
         intent.amount = 15.75
         intent.merchant = "Private Cafe"
         intent.currencyCode = "CAD"

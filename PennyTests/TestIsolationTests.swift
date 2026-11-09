@@ -37,11 +37,13 @@ struct TestIsolationTests {
         )
         #expect(try ModelContext(foreign).fetch(FetchDescriptor<RecurringBill>()).isEmpty)
 
-        WidgetSnapshotStore.save(sampleSnapshot(displayName: "Alex"))
-        #expect(WidgetSnapshotStore.load()?.displayName == "Alex")
-        let own = UserDefaults(suiteName: defaultsSuite)
-        #expect(own?.data(forKey: WidgetSnapshotStore.snapshotKey) != nil)
-        let otherSuite = "PennyTests.foreign.\(UUID().uuidString)"
+        let box = try PennyTestDefaults()
+        defer { box.remove() }
+        WidgetSnapshotStore.save(sampleSnapshot(displayName: "Alex"), to: box.defaults)
+        #expect(WidgetSnapshotStore.load(from: box.defaults)?.displayName == "Alex")
+        #expect(box.defaults.data(forKey: WidgetSnapshotStore.snapshotKey) != nil)
+        #expect(box.name != defaultsSuite)
+        let otherSuite = "penny.test.foreign.\(UUID().uuidString)"
         let other = UserDefaults(suiteName: otherSuite)
         defer { other?.removePersistentDomain(forName: otherSuite) }
         #expect(other?.data(forKey: WidgetSnapshotStore.snapshotKey) == nil)

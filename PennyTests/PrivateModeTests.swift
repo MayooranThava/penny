@@ -435,9 +435,11 @@ struct PrivateModeTests {
 
     @Test("PDF and CSV exports keep real numbers when private mode is on")
     func exportsIgnorePrivateMode() throws {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         PrivateModeDefaults.setEnabled(true, in: defaults)
-        #expect(PrivateModeStore.isEnabled)
+        #expect(PrivateModeStorage.load(from: defaults).isEnabled)
 
         let lines = MonthlySummaryPDFService.summaryLines(
             for: MonthlySummaryPDFService.Input(
@@ -477,15 +479,17 @@ struct PrivateModeTests {
     @Test("The flag lives in the App Group suite, defaults off, and survives a new reader")
     @MainActor
     func persistenceSurvivesRelaunch() throws {
-        let suite = WidgetSnapshotStore.activeDefaultsSuite
-        #expect(suite.hasPrefix("PennyTests."))
-        let defaults = try #require(UserDefaults(suiteName: suite))
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let suite = settings.name
+        #expect(suite.hasPrefix("penny.test."))
+        let defaults = settings.defaults
         #expect(PrivateModeDefaults.isEnabled(in: defaults) == false)
         #expect(defaults.object(forKey: PrivateModeDefaults.key) == nil)
         #expect(PrivateModeDefaults.key == "penny.privateMode.enabled")
 
-        let settings = try source("Penny/Models/Models.swift")
-        let userSettings = try slice(settings, from: "final class UserSettings", until: "enum AppAppearance")
+        let modelSource = try source("Penny/Models/Models.swift")
+        let userSettings = try slice(modelSource, from: "final class UserSettings", until: "enum AppAppearance")
         #expect(!userSettings.contains("privateMode"))
 
         let controllerSource = try source("Penny/Services/PrivateModeController.swift")
@@ -508,17 +512,20 @@ struct PrivateModeTests {
     @Test("The eye, Settings, and the shortcut share one flag")
     @MainActor
     func controlsShareOneFlag() async throws {
-        let suite = WidgetSnapshotStore.activeDefaultsSuite
-        let defaults = try #require(UserDefaults(suiteName: suite))
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         let eye = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         eye.toggle()
         #expect(PrivateModeDefaults.isEnabled(in: defaults))
 
-        let settings = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
-        settings.setEnabled(false)
+        let settingsToggle = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
+        settingsToggle.setEnabled(false)
         #expect(PrivateModeDefaults.isEnabled(in: defaults) == false)
 
-        _ = try await TogglePrivateModeIntent().perform()
+        var shortcut = TogglePrivateModeIntent()
+        shortcut.settingsDefaults = defaults
+        _ = try await shortcut.perform()
         #expect(PrivateModeDefaults.isEnabled(in: defaults))
         let afterShortcut = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         #expect(afterShortcut.isEnabled)
@@ -567,7 +574,9 @@ struct PrivateModeTests {
     @Test("Leaving the foreground suppresses the crossfade and re-reads the flag")
     @MainActor
     func appSwitcherMasksBeforeSnapshot() throws {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         let controller = PrivateModeController(defaults: defaults, reloader: RecordingPrivateReloader())
         controller.setEnabled(true)
         controller.noteScenePhase(.inactive)
@@ -647,20 +656,22 @@ struct PrivateModeTests {
 
     @Test("Widget timelines keep real snapshot numbers and mask them at render")
     func widgetsMaskFromTheFlagAtRender() throws {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         PrivateModeDefaults.setEnabled(true, in: defaults)
         let snapshot = WidgetSnapshotStore.Snapshot.placeholder
-        WidgetSnapshotStore.save(snapshot)
+        WidgetSnapshotStore.save(snapshot, to: defaults)
         #expect(snapshot.safeToSpend > 0)
         let shown = WidgetPrivateDisplay.safeToSpend(
             amount: snapshot.safeToSpend,
             currencyCode: snapshot.currencyCode,
-            isPrivate: PrivateModeStore.isEnabled,
+            isPrivate: PrivateModeStorage.load(from: defaults).isEnabled,
             site: .widgetSafeToSpend,
             locale: enUS
         )
         #expect(shown == PrivateAmountLogic.mask)
-        #expect(PrivateModeStore.isEnabled)
+        #expect(PrivateModeStorage.load(from: defaults).isEnabled)
         let stored = try #require(defaults.data(forKey: WidgetSnapshotStore.snapshotKey))
         #expect(String(decoding: stored, as: UTF8.self).contains("3350"))
 
@@ -687,9 +698,11 @@ struct PrivateModeTests {
     @Test("Fifty quick toggles reload once and do not save SwiftData")
     @MainActor
     func fiftyTogglesDoNotTouchData() async throws {
+        let settings = try PennyTestDefaults()
+        defer { settings.remove() }
+        let defaults = settings.defaults
         let snapshot = WidgetSnapshotStore.Snapshot.placeholder
-        WidgetSnapshotStore.save(snapshot)
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        WidgetSnapshotStore.save(snapshot, to: defaults)
         let before = try #require(defaults.data(forKey: WidgetSnapshotStore.snapshotKey))
         #expect(String(decoding: before, as: UTF8.self).contains("3350"))
 
@@ -799,7 +812,9 @@ struct PrivateModeAmountTypeTests {
         for name in names {
             let fixture = try PrivateModeUpgradeFixture.load(named: name)
             #expect(name.contains(fixture.marketingVersion))
-            let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+            let modeStore = try PennyTestDefaults()
+            defer { modeStore.remove() }
+            let defaults = modeStore.defaults
             defaults.removeObject(forKey: PrivateModeStorage.settingsKey)
             defaults.set(fixture.privateModeEnabled, forKey: PrivateModeDefaults.key)
 
@@ -828,16 +843,18 @@ struct PrivateModeAmountTypeTests {
             #expect(settings.monthlyIncome == fixture.incomeAmount)
             #expect(settings.plannedMonthlySavings == fixture.plannedSavingsAmount)
 
-            WidgetSnapshotPublisher.publish(
-                transactions: transactions,
-                categories: [],
-                bills: bills,
-                debts: debts,
-                goals: [],
-                settings: settings,
-                month: PrivateModeUpgradeFixture.sampleDate
-            )
-            let snapshot = try #require(WidgetSnapshotStore.load())
+            try WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+                WidgetSnapshotPublisher.publish(
+                    transactions: transactions,
+                    categories: [],
+                    bills: bills,
+                    debts: debts,
+                    goals: [],
+                    settings: settings,
+                    month: PrivateModeUpgradeFixture.sampleDate
+                )
+            }
+            let snapshot = try #require(WidgetSnapshotStore.load(from: defaults))
             #expect(snapshot.safeToSpend == expectedTotal)
             let inactive = fixture.bills
                 .filter { $0.active == false }
@@ -856,10 +873,10 @@ struct PrivateModeAmountTypeTests {
     }
 
     @Test("A fresh install never shows the upgrade note")
-    func freshInstallHidesNote() {
-        let suite = "PennyTests.PrivateFresh.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
+    func freshInstallHidesNote() throws {
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
+        let defaults = modeStore.defaults
         let fresh = PrivateModeStorage.load(from: defaults)
         #expect(fresh == .fresh)
         #expect(fresh.isEnabled == false)
@@ -950,9 +967,10 @@ struct PrivateModeAmountTypeTests {
     @Test("Turning Private mode on reloads Upcoming Bills and the total widgets")
     @MainActor
     func enablingReloadsUpcomingBills() async throws {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
         let reloader = RecordingPrivateReloader()
-        let controller = PrivateModeController(defaults: defaults, reloader: reloader)
+        let controller = PrivateModeController(defaults: modeStore.defaults, reloader: reloader)
         controller.reloadCoalescer.debounce = 0.05
         controller.setEnabled(true)
         await waitUntil(timeout: 3) { !reloader.calls.isEmpty }
@@ -967,9 +985,10 @@ struct PrivateModeAmountTypeTests {
     @Test("A bill toggle reloads totals and Upcoming Bills, and nothing else does extra work")
     @MainActor
     func widgetReloadTargetsAffectedKinds() async throws {
-        let defaults = try #require(UserDefaults(suiteName: WidgetSnapshotStore.activeDefaultsSuite))
+        let modeStore = try PennyTestDefaults()
+        defer { modeStore.remove() }
         let reloader = RecordingPrivateReloader()
-        let controller = PrivateModeController(defaults: defaults, reloader: reloader)
+        let controller = PrivateModeController(defaults: modeStore.defaults, reloader: reloader)
         controller.reloadCoalescer.debounce = 0.05
         controller.setEnabled(true)
         await waitUntil(timeout: 3) { reloader.calls.count >= 1 }

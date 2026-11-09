@@ -167,8 +167,13 @@ struct SafeToSpendDeletedBillTests {
             let before = try publishSnapshot(income: income, bills: [rent])
             #expect(before.safeToSpend == income - rentAmount)
 
-            _ = try await PennyPersistence.reset(in: context)
-            #expect(WidgetSnapshotStore.load() == nil)
+            let modeStore = try PennyTestDefaults()
+            defer { modeStore.remove() }
+            _ = try publishSnapshot(income: income, bills: [rent], store: modeStore)
+            try await WidgetSnapshotStore.$defaultsSuiteOverride.withValue(modeStore.name) {
+                _ = try await PennyPersistence.reset(in: context)
+            }
+            #expect(WidgetSnapshotStore.load(from: modeStore.defaults) == nil)
             let remaining = try context.fetch(FetchDescriptor<RecurringBill>())
             #expect(remaining.isEmpty)
             #expect(remaining.reduce(Decimal(0)) { $0 + $1.amount } == 0)
@@ -246,8 +251,26 @@ struct SafeToSpendDeletedBillTests {
         debts: [Debt] = [],
         transactions: [Transaction] = [],
         savings: Decimal = 0,
-        month: Date = DateHelpers.startOfMonth()
+        month: Date = DateHelpers.startOfMonth(),
+        store: PennyTestDefaults? = nil
     ) throws -> WidgetSnapshotStore.Snapshot {
+        let box = try store ?? PennyTestDefaults()
+        let ownsStore = store == nil
+        defer { if ownsStore { box.remove() } }
+        try WidgetSnapshotStore.$defaultsSuiteOverride.withValue(box.name) {
+            publish(income: income, bills: bills, debts: debts, transactions: transactions, savings: savings, month: month)
+        }
+        return try #require(WidgetSnapshotStore.load(from: box.defaults))
+    }
+
+    private func publish(
+        income: Decimal,
+        bills: [RecurringBill],
+        debts: [Debt],
+        transactions: [Transaction],
+        savings: Decimal,
+        month: Date
+    ) {
         let settings = UserSettings(
             currencyCode: "CAD",
             monthlyIncome: income,
@@ -265,6 +288,5 @@ struct SafeToSpendDeletedBillTests {
             settings: settings,
             month: month
         )
-        return try #require(WidgetSnapshotStore.load())
     }
 }

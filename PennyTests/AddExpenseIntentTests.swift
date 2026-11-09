@@ -85,6 +85,43 @@ struct AddExpenseIntentTests {
         #expect(shown.contains("Corner Cafe"))
     }
 
+    @Test("Nil settings read Private mode from the active suite")
+    func nilSettingsReadTheSavedPrivateMode() async throws {
+        try await withPennyTestDefaults { defaults in
+            await MainActor.run {
+                let suite = WidgetSnapshotStore.activeDefaultsSuite
+                #expect(suite.hasPrefix("penny.test."))
+                #expect(suite != WidgetSnapshotStore.appGroupID)
+
+                var intent = AddExpenseIntent()
+                #expect(intent.privateModeDefaults == nil)
+
+                var hiddenRecord = PrivateModeRecord.fresh
+                hiddenRecord.isEnabled = true
+                PrivateModeStorage.save(hiddenRecord, to: defaults)
+                let hidden = AddExpenseIntent.reply(
+                    for: self.sampleOutcome,
+                    hidesAmount: AddExpenseIntent.hidesTransactionAmounts(in: intent.privateModeDefaults),
+                    locale: Locale(identifier: "en_US")
+                )
+                #expect(hidden == "Added an expense at Corner Cafe.")
+                #expect(!hidden.contains("12"))
+                #expect(!hidden.contains("$"))
+
+                var shownRecord = PrivateModeRecord.fresh
+                shownRecord.isEnabled = false
+                PrivateModeStorage.save(shownRecord, to: defaults)
+                let shown = AddExpenseIntent.reply(
+                    for: self.sampleOutcome,
+                    hidesAmount: AddExpenseIntent.hidesTransactionAmounts(in: intent.privateModeDefaults),
+                    locale: Locale(identifier: "en_US")
+                )
+                #expect(shown == "Added $12.34 at Corner Cafe.")
+                #expect(intent.privateModeDefaults == nil)
+            }
+        }
+    }
+
     @Test("A failed save leaves no row and throws")
     func saveFailureLeavesNoRow() async throws {
         let container = try PennyPersistence.makeContainer()

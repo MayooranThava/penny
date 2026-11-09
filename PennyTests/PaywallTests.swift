@@ -8,25 +8,38 @@ import Testing
 struct PaywallTests {
     private static let unavailable = "Purchases are unavailable right now. Please try again later."
 
-    @Test("No paywall or product display string contains forever")
-    func paywallAndProductStringsDoNotSayForever() throws {
+    @Test("No paywall or product display string contains forever or lifetime")
+    func paywallAndProductStringsDoNotSayForeverOrLifetime() throws {
         let built = [
             PaywallCopy.purchasesUnavailable,
+            PaywallCopy.productNameFallback,
             PaywallCopy.priceSubtitle(displayPrice: "$4.99"),
             PaywallCopy.priceSubtitle(displayPrice: "CA$12.00")
         ]
+        #expect(PaywallCopy.productNameFallback == "Penny Pro")
         #expect(PaywallCopy.priceSubtitle(displayPrice: "$4.99") == "$4.99 · one-time purchase")
+        let paywall = try String(contentsOf: settingsViewURL(), encoding: .utf8)
+        #expect(paywall.contains(
+            "product.displayName.isEmpty ? PaywallCopy.productNameFallback : product.displayName"
+        ))
         var literals: [String] = []
         for url in try appSwiftSources() {
             let source = try String(contentsOf: url, encoding: .utf8)
             literals.append(contentsOf: stringLiterals(in: source))
         }
         #expect(!literals.isEmpty)
+        // The App Store product ID cannot change. It is the only place the
+        // word "lifetime" may appear in a display string.
+        let productID = PennyProductCatalog.lifetimeProductID
+        #expect(productID == "com.penny.app.pro.lifetime")
         for text in literals + built {
-            #expect(
-                !text.localizedCaseInsensitiveContains("forever"),
-                "Display string contains forever: \(text)"
-            )
+            let visible = text.replacingOccurrences(of: productID, with: "")
+            for word in ["forever", "lifetime"] {
+                #expect(
+                    !visible.localizedCaseInsensitiveContains(word),
+                    "Display string contains \(word): \(text)"
+                )
+            }
         }
     }
 

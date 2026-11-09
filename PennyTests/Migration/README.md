@@ -8,6 +8,7 @@ This repo’s cloud agent cannot install the App Store binaries for v1.0.3 or v1
 
 - **v1.0.3** uses `PennySchemaV103` in `Penny/Persistence/PennySchemaV103.swift`. Those stored properties are the model from commit `dca913c` (the v1.0.3 marketing bump). The test inserts a household (including a `$0.01` row and a long note), closes the container, and calls `PennyPersistence.makeContainer(at:)`.
 - **v1.0.4** uses an unversioned `Schema` of the current model types. That shape has not changed since commit `92c6746`. The shipping v1.0.4 app opened its store the same way, without `PennyMigrationPlan`. The test then opens the file through the plan.
+- **v1.2** uses `Schema(versionedSchema: PennySchemaV1.self)` (version 1.0.4, the schema marketing 1.2 shipped). The case turns Private mode on in the test UserDefaults suite, includes a bill Plan → Delete turned off, and checks every amount after `makeContainer(at:)`. Private mode is not a SwiftData column.
 - **Skip-version** is the v1.0.3 file opened on the current schema. Users do not have to install v1.0.4 in between. The plan’s one lightweight stage adds `paidCycleKey`, `hasCompletedWalkthrough`, and `GoalFundingAllocation`.
 - **5,000 transactions** are written with the v1.0.3 schema. The assertion times only `makeContainer(at:)`, and the sum of the amounts must stay exact.
 

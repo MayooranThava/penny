@@ -70,6 +70,7 @@
 		B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E56848AF87D941B9B7326B77 /* MigrationTests.swift */; };
 		4E523E2D423C47DB804CBB23 /* MonthBoundaryBucketingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45B97867714F8D93CB71E9 /* MonthBoundaryBucketingTests.swift */; };
 		F4C17336404D47ABB0767A02 /* MonthlySummaryPDFServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3828993A707B4D6AB210733F /* MonthlySummaryPDFServiceTests.swift */; };
+		4D9D3321A87B40A9830D32B4 /* PaywallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57E89918A76436DAEF49528 /* PaywallTests.swift */; };
 		1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */; };
 		DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */; };
 		FCC388B0A0C345EDBC733153 /* SafeToSpendDeletedBillTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */; };
@@ -208,6 +209,7 @@
 		E56848AF87D941B9B7326B77 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
 		7D45B97867714F8D93CB71E9 /* MonthBoundaryBucketingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBoundaryBucketingTests.swift; sourceTree = "<group>"; };
 		3828993A707B4D6AB210733F /* MonthlySummaryPDFServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlySummaryPDFServiceTests.swift; sourceTree = "<group>"; };
+		B57E89918A76436DAEF49528 /* PaywallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallTests.swift; sourceTree = "<group>"; };
 		A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeTests.swift; sourceTree = "<group>"; };
 		41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseSanityTests.swift; sourceTree = "<group>"; };
 		9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeToSpendDeletedBillTests.swift; sourceTree = "<group>"; };
@@ -488,6 +490,7 @@
 				C0EDC57A0B474EC28AF7D73D /* Migration */,
 				7D45B97867714F8D93CB71E9 /* MonthBoundaryBucketingTests.swift */,
 				3828993A707B4D6AB210733F /* MonthlySummaryPDFServiceTests.swift */,
+				B57E89918A76436DAEF49528 /* PaywallTests.swift */,
 				A0DF3D77E51A4167A6A42D6B /* PrivateModeTests.swift */,
 				41FE288A1A754AECAEB44CAC /* ReleaseSanityTests.swift */,
 				9C67DD4673D24907B9F986C6 /* SafeToSpendDeletedBillTests.swift */,
@@ -774,6 +777,7 @@
 				B7007AB2B2C04B58945D2F60 /* MigrationTests.swift in Sources */,
 				4E523E2D423C47DB804CBB23 /* MonthBoundaryBucketingTests.swift in Sources */,
 				F4C17336404D47ABB0767A02 /* MonthlySummaryPDFServiceTests.swift in Sources */,
+				4D9D3321A87B40A9830D32B4 /* PaywallTests.swift in Sources */,
 				1155C63AFE5C42AA80E1534B /* PrivateModeTests.swift in Sources */,
 				DC2A532C31BE47E7AFB20A69 /* ReleaseSanityTests.swift in Sources */,
 				FCC388B0A0C345EDBC733153 /* SafeToSpendDeletedBillTests.swift in Sources */,
@@ -911,7 +915,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -950,7 +954,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -989,7 +993,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1021,7 +1025,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.widgets;
 				PRODUCT_NAME = PennyWidgets;
 				SKIP_INSTALL = NO;
@@ -1053,7 +1057,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.widgets;
 				PRODUCT_NAME = PennyWidgets;
 				SKIP_INSTALL = NO;
@@ -1085,7 +1089,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.widgets;
 				PRODUCT_NAME = PennyWidgets;
 				SKIP_INSTALL = NO;
@@ -1108,7 +1112,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1128,7 +1132,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1148,7 +1152,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1168,7 +1172,7 @@
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 2YJ478267N;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1188,7 +1192,7 @@
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 2YJ478267N;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1208,7 +1212,7 @@
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 2YJ478267N;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mayooran.penny.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
